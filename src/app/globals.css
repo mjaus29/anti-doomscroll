@@ -22,6 +22,11 @@ body {
 }
 
 /* Markdown content styling */
+.markdown-body {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
 .markdown-body h1 {
   font-size: 1.75rem;
   font-weight: 700;
@@ -89,13 +94,17 @@ body {
   padding: 1rem;
   margin-bottom: 1rem;
   overflow-x: auto;
+  max-width: 100%;
 }
 
 .markdown-body pre code {
   background: transparent;
   padding: 0;
-  font-size: 0.85rem;
+  font-size: clamp(0.7rem, 2vw, 0.82rem);
   line-height: 1.6;
+  white-space: pre;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 .markdown-body blockquote {
