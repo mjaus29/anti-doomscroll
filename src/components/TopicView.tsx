@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Sidebar } from "./Sidebar";
 import { MarkdownRenderer } from "./MarkdownRenderer";
@@ -39,6 +40,7 @@ export function TopicView({
   sidebarDays,
 }: TopicViewProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     localStorage.setItem("lastVisited", `/day/${dayId}/${topicId}`);
@@ -47,16 +49,16 @@ export function TopicView({
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft" && prevTopic) {
-        window.location.href = `/day/${dayId}/${prevTopic.id}`;
+        router.push(`/day/${dayId}/${prevTopic.id}`);
       } else if (e.key === "ArrowRight" && nextTopic) {
-        window.location.href = `/day/${dayId}/${nextTopic.id}`;
+        router.push(`/day/${dayId}/${nextTopic.id}`);
       } else if (e.key === "Escape") {
         setSidebarOpen(false);
       }
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [dayId, prevTopic, nextTopic]);
+  }, [dayId, prevTopic, nextTopic, router]);
 
   return (
     <div className="min-h-screen flex">
