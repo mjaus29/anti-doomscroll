@@ -1,10 +1,10 @@
 # inheritance
 
 ## TL;DR
-Inheritance explains how JavaScript objects really behave under the hood. The key is to connect the surface syntax to prototypes, internal slots, or language hooks so you can debug behavior instead of memorizing folklore.
+inheritance explains how JavaScript objects really behave under the hood. The key is to connect the surface syntax to prototypes, internal slots, or language hooks so you can debug behavior instead of memorizing folklore.
 
 ## Key Concepts
-- Inheritance is easier once you think in objects, prototypes, and internal language hooks.
+- inheritance is easier once you think in objects, prototypes, and internal language hooks.
 - JavaScript classes are built on top of prototype-based behavior.
 - Dynamic features are powerful, but they can also make debugging harder if overused.
 - Know where the lookup or binding rule comes from instead of memorizing special cases.

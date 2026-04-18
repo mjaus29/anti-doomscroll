@@ -1,10 +1,10 @@
 # setTimeout
 
 ## TL;DR
-SetTimeout is part of JavaScript's async execution model. Start with the mental model of when work gets queued and resumed, then map the API or concept onto that model. Once the model is clear, the syntax becomes much easier to trust.
+setTimeout is part of JavaScript's async execution model. Start with the mental model of when work gets queued and resumed, then map the API or concept onto that model. Once the model is clear, the syntax becomes much easier to trust.
 
 ## Key Concepts
-- SetTimeout only makes sense when you place it on the event-loop timeline.
+- setTimeout only makes sense when you place it on the event-loop timeline.
 - JavaScript runs your current call stack to completion before picking more queued work.
 - Microtasks run before the engine moves to the next macrotask turn.
 - Most async bugs are ordering bugs, cancellation bugs, or unhandled rejection bugs.

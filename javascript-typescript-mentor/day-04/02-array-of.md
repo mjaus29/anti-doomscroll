@@ -1,13 +1,13 @@
 # Array.of
 
 ## TL;DR
-Array.of is a focused array helper for transforming, searching, or inspecting data without hand-written loops. The key is knowing what it returns, whether it mutates the input, and when a neighboring method would be a better fit. That makes your code shorter, clearer, and less bug-prone.
+Array.of creates an array from the arguments you pass exactly as written. Its most important job is avoiding the confusing single-number behavior of the Array constructor. This makes array creation more explicit and interview-friendly.
 
 ## Key Concepts
-- Array.of is usually better than a manual loop when you want one clear data operation.
-- Know the input shape, the callback signature if any, and the exact return value.
-- Check whether the method creates a new array, returns a single value, or only answers a boolean question.
-- Most mistakes come from picking a nearby method that sounds similar but returns something different.
+- Array.of creates an array from its arguments exactly as given.
+- Its big advantage is that Array.of(3) produces [3], while Array(3) creates an empty array with length 3.
+- Use it when you want array creation to be explicit and free from constructor quirks.
+- It is about construction, not mapping or iteration.
 
 ## Why It Matters
 This matters in day-to-day engineering because Array.of affects how readable, predictable, and maintainable your code feels under change. Once you know the mental model, you can choose the feature on purpose instead of copying patterns blindly.

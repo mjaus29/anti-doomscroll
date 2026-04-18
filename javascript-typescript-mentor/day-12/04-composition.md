@@ -1,16 +1,16 @@
 # composition
 
 ## TL;DR
-Composition is a production-oriented practice for keeping systems easier to extend, test, and review. The important question is when it buys clarity and when it becomes extra abstraction that the team has to maintain.
+composition is a production-oriented practice for keeping systems easier to extend, test, and review. The important question is when it buys clarity and when it becomes extra abstraction that the team has to maintain.
 
 ## Key Concepts
-- Composition is a design tool for managing change over time, not just passing an interview.
+- composition is a design tool for managing change over time, not just passing an interview.
 - Good production patterns improve testability, readability, and failure isolation.
 - Team consistency matters as much as the pattern itself.
 - Use abstraction to simplify decisions, not to make simple code look advanced.
 
 ## Why It Matters
-Production systems change under pressure from new requirements, failures, and team growth. Composition gives you vocabulary and structure for making those changes without turning every feature into a rewrite.
+Production systems change under pressure from new requirements, failures, and team growth. composition gives you vocabulary and structure for making those changes without turning every feature into a rewrite.
 
 ## Syntax / Example
 ```ts

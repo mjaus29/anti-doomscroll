@@ -1,10 +1,10 @@
 # typeof
 
 ## TL;DR
-Typeof is a core JavaScript idea worth learning as a mental model first and a syntax feature second. Once you know what the language or runtime is doing, it becomes much easier to write deliberate code and explain your decisions.
+typeof is a core JavaScript idea worth learning as a mental model first and a syntax feature second. Once you know what the language or runtime is doing, it becomes much easier to write deliberate code and explain your decisions.
 
 ## Key Concepts
-- Typeof is best understood through behavior, not memorized definitions.
+- typeof is best understood through behavior, not memorized definitions.
 - Start with the runtime or type-system mental model.
 - Use the most explicit form that matches your intent.
 - Watch the edge cases that show up in interviews and production bugs.

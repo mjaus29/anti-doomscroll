@@ -1,10 +1,10 @@
 # decorators
 
 ## TL;DR
-Decorators is a TypeScript feature that improves correctness at compile time without changing JavaScript runtime behavior on its own. The goal is to model intent clearly, let the checker find mistakes early, and keep types aligned with the real data flow.
+decorators is a TypeScript feature that improves correctness at compile time without changing JavaScript runtime behavior on its own. The goal is to model intent clearly, let the checker find mistakes early, and keep types aligned with the real data flow.
 
 ## Key Concepts
-- Decorators exists at compile time unless it maps onto a JavaScript runtime feature.
+- decorators exists at compile time unless it maps onto a JavaScript runtime feature.
 - The best TypeScript types describe real invariants instead of hiding uncertainty.
 - Prefer inference and clear modeling over clever types for their own sake.
 - When types and runtime checks drift apart, the runtime always wins.

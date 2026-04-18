@@ -1,10 +1,10 @@
 # hoisting
 
 ## TL;DR
-Hoisting sits at the heart of how JavaScript functions execute and how names are resolved. Once you understand the underlying scope and function rules, a lot of confusing runtime behavior becomes predictable.
+hoisting sits at the heart of how JavaScript functions execute and how names are resolved. Once you understand the underlying scope and function rules, a lot of confusing runtime behavior becomes predictable.
 
 ## Key Concepts
-- Hoisting depends on how JavaScript creates function objects and scope records.
+- hoisting depends on how JavaScript creates function objects and scope records.
 - A variable name only makes sense relative to the scope where it is looked up.
 - Hoisting changes availability rules, but not always initialization timing.
 - Closures are not magic storage; they are just functions retaining access to outer bindings.

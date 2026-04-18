@@ -1,16 +1,16 @@
 # destructuring
 
 ## TL;DR
-Destructuring is part of the everyday toolkit for shaping data, unpacking values, and iterating clearly. Focus on what it returns, whether it copies or mutates, and what kind of input it expects. Small data APIs like this pay off constantly in production code.
+destructuring is part of the everyday toolkit for shaping data, unpacking values, and iterating clearly. Focus on what it returns, whether it copies or mutates, and what kind of input it expects. Small data APIs like this pay off constantly in production code.
 
 ## Key Concepts
-- Destructuring helps you shape values, iterate data, or preserve structure with less manual code.
+- destructuring helps you shape values, iterate data, or preserve structure with less manual code.
 - Know whether it copies data, keeps references, or changes how values are unpacked.
 - Small data helpers compound into much cleaner business logic.
 - A precise built-in is usually safer than ad hoc transformation code.
 
 ## Why It Matters
-Data-heavy code is easier to maintain when each transformation is obvious. Destructuring helps you express common object, array, string, or iteration work with less manual bookkeeping and fewer off-by-one mistakes.
+Data-heavy code is easier to maintain when each transformation is obvious. destructuring helps you express common object, array, string, or iteration work with less manual bookkeeping and fewer off-by-one mistakes.
 
 ## Syntax / Example
 ```js

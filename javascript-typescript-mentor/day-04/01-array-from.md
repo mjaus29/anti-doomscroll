@@ -1,13 +1,13 @@
 # Array.from
 
 ## TL;DR
-Array.from is a focused array helper for transforming, searching, or inspecting data without hand-written loops. The key is knowing what it returns, whether it mutates the input, and when a neighboring method would be a better fit. That makes your code shorter, clearer, and less bug-prone.
+Array.from converts array-like or iterable input into a real array, with an optional mapping step built in. It is a clean bridge from platform data structures such as NodeLists, Sets, and strings into normal array workflows. Once you know that mental model, the API feels very predictable.
 
 ## Key Concepts
-- Array.from is usually better than a manual loop when you want one clear data operation.
-- Know the input shape, the callback signature if any, and the exact return value.
-- Check whether the method creates a new array, returns a single value, or only answers a boolean question.
-- Most mistakes come from picking a nearby method that sounds similar but returns something different.
+- Array.from converts iterable or array-like input into a real array.
+- It accepts an optional mapping function, so conversion and mapping can happen in one step.
+- It is especially useful for NodeLists, Sets, strings, and custom iterables.
+- Do not confuse it with Array.of or the Array constructor.
 
 ## Why It Matters
 This matters in day-to-day engineering because Array.from affects how readable, predictable, and maintainable your code feels under change. Once you know the mental model, you can choose the feature on purpose instead of copying patterns blindly.

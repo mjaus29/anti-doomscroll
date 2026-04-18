@@ -1,10 +1,10 @@
 # globalThis
 
 ## TL;DR
-GlobalThis is a modern JavaScript capability that improves expressiveness, interoperability, or platform reach. Focus on what protocol or runtime behavior it participates in, because that is what makes the feature useful beyond the syntax itself.
+globalThis is a modern JavaScript capability that improves expressiveness, interoperability, or platform reach. Focus on what protocol or runtime behavior it participates in, because that is what makes the feature useful beyond the syntax itself.
 
 ## Key Concepts
-- GlobalThis plugs into a language protocol, platform feature, or module system rule.
+- globalThis plugs into a language protocol, platform feature, or module system rule.
 - Modern JavaScript features often compose well because they follow shared protocols like iteration or promises.
 - Support level matters: some features are stable, some are new, and some are still proposals.
 - Understand both the practical use case and the compatibility story.

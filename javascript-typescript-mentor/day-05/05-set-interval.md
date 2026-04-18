@@ -1,10 +1,10 @@
 # setInterval
 
 ## TL;DR
-SetInterval is part of JavaScript's async execution model. Start with the mental model of when work gets queued and resumed, then map the API or concept onto that model. Once the model is clear, the syntax becomes much easier to trust.
+setInterval is part of JavaScript's async execution model. Start with the mental model of when work gets queued and resumed, then map the API or concept onto that model. Once the model is clear, the syntax becomes much easier to trust.
 
 ## Key Concepts
-- SetInterval only makes sense when you place it on the event-loop timeline.
+- setInterval only makes sense when you place it on the event-loop timeline.
 - JavaScript runs your current call stack to completion before picking more queued work.
 - Microtasks run before the engine moves to the next macrotask turn.
 - Most async bugs are ordering bugs, cancellation bugs, or unhandled rejection bugs.

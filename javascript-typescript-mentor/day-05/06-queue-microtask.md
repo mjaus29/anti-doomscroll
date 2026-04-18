@@ -1,10 +1,10 @@
 # queueMicrotask
 
 ## TL;DR
-QueueMicrotask is part of JavaScript's async execution model. Start with the mental model of when work gets queued and resumed, then map the API or concept onto that model. Once the model is clear, the syntax becomes much easier to trust.
+queueMicrotask is part of JavaScript's async execution model. Start with the mental model of when work gets queued and resumed, then map the API or concept onto that model. Once the model is clear, the syntax becomes much easier to trust.
 
 ## Key Concepts
-- QueueMicrotask only makes sense when you place it on the event-loop timeline.
+- queueMicrotask only makes sense when you place it on the event-loop timeline.
 - JavaScript runs your current call stack to completion before picking more queued work.
 - Microtasks run before the engine moves to the next macrotask turn.
 - Most async bugs are ordering bugs, cancellation bugs, or unhandled rejection bugs.

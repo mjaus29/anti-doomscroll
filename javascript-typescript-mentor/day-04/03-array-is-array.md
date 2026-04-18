@@ -1,13 +1,13 @@
 # Array.isArray
 
 ## TL;DR
-Array.isArray is a focused array helper for transforming, searching, or inspecting data without hand-written loops. The key is knowing what it returns, whether it mutates the input, and when a neighboring method would be a better fit. That makes your code shorter, clearer, and less bug-prone.
+Array.isArray is the reliable built-in way to answer one question: is this value really an array? It avoids typeof pitfalls and works better than instanceof across realms. That makes it the right check at API and validation boundaries.
 
 ## Key Concepts
-- Array.isArray is usually better than a manual loop when you want one clear data operation.
-- Know the input shape, the callback signature if any, and the exact return value.
-- Check whether the method creates a new array, returns a single value, or only answers a boolean question.
-- Most mistakes come from picking a nearby method that sounds similar but returns something different.
+- Array.isArray performs a reliable array check and returns a boolean.
+- Prefer it over typeof because arrays are objects and typeof [] is "object".
+- It works correctly across realms where instanceof Array can fail.
+- Use it at input boundaries before you call array methods.
 
 ## Why It Matters
 This matters in day-to-day engineering because Array.isArray affects how readable, predictable, and maintainable your code feels under change. Once you know the mental model, you can choose the feature on purpose instead of copying patterns blindly.
