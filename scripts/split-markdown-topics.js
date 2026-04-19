@@ -23,7 +23,10 @@ function printUsage() {
 }
 
 function toKebabCase(value) {
-  let normalized = value.replaceAll(/\s*\((?:`[^`]+`(?:\s*,\s*`[^`]+`)*)\)\s*/g, " ");
+  let normalized = value.replaceAll(
+    /\s*\((?:`[^`]+`(?:\s*,\s*`[^`]+`)*)\)\s*/g,
+    " "
+  );
 
   for (const [pattern, replacement] of SLUG_REPLACEMENTS) {
     normalized = normalized.replaceAll(pattern, replacement);
@@ -100,7 +103,11 @@ function main() {
   fs.mkdirSync(outputDirPath, { recursive: true });
 
   for (const topic of topics) {
-    fs.writeFileSync(path.join(outputDirPath, topic.filename), topic.content, "utf8");
+    fs.writeFileSync(
+      path.join(outputDirPath, topic.filename),
+      topic.content,
+      "utf8"
+    );
   }
 
   console.log(`Created ${topics.length} topic files in ${outputDirPath}`);
