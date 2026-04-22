@@ -1,6 +1,7 @@
 import { CopilotClient } from "@github/copilot-sdk";
 import type { PermissionRequestResult } from "@github/copilot-sdk";
 import { NextResponse } from "next/server";
+import path from "node:path";
 
 export const runtime = "nodejs";
 
@@ -25,6 +26,24 @@ const denyAllPermissions = (): PermissionRequestResult => ({
   kind: "denied-by-rules",
   rules: [],
 });
+
+function resolveCliPath(): string | undefined {
+  try {
+    const copilotCliPath = path.join(
+      process.cwd(),
+      "node_modules",
+      "@github",
+      "copilot",
+      "npm-loader.js"
+    );
+    return copilotCliPath;
+  } catch {
+    console.warn(
+      "[Copilot Challenge] Could not resolve @github/copilot CLI path"
+    );
+  }
+  return undefined;
+}
 
 function isValidMode(value: string | undefined): value is AssistantMode {
   return value === "review" || value === "hint";
@@ -149,10 +168,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const githubToken =
-      process.env.COPILOT_GITHUB_TOKEN ||
-      process.env.GITHUB_TOKEN ||
-      process.env.GH_TOKEN;
     const encoder = new TextEncoder();
 
     const stream = new ReadableStream<Uint8Array>({
@@ -170,11 +185,10 @@ export async function POST(request: Request) {
         };
 
         try {
-          client = new CopilotClient({
-            githubToken,
-            useLoggedInUser: !githubToken,
-          });
-
+          const resolvedCliPath = resolveCliPath();
+          client = new CopilotClient(
+            resolvedCliPath ? { cliPath: resolvedCliPath } : {}
+          );
           session = await client.createSession({
             model: DEFAULT_MODEL,
             infiniteSessions: { enabled: false },
@@ -201,26 +215,26 @@ export async function POST(request: Request) {
             finalFeedback = event.data.content.trim();
           });
 
-          await session.sendAndWait(
-            {
-              prompt: buildPrompt({
-                mode,
-                learnerLevel,
-                topicTitle,
-                challengeMarkdown,
-                solutionMarkdown,
-                userCode,
-              }),
-            },
-            45000
-          );
+          session.on("session.error", (error) => {
+            console.error("[Copilot Challenge] Session error event:", error);
+          });
+
+          const promptText = buildPrompt({
+            mode,
+            learnerLevel,
+            topicTitle,
+            challengeMarkdown,
+            solutionMarkdown,
+            userCode,
+          });
+
+          await session.sendAndWait({ prompt: promptText }, 45000);
 
           const feedback = (finalFeedback || streamedFeedback).trim();
 
           if (!feedback) {
             throw new Error("Copilot returned an empty response.");
           }
-
           sendEvent({
             type: "complete",
             feedback,
@@ -234,6 +248,10 @@ export async function POST(request: Request) {
             error instanceof Error
               ? error.message
               : "Copilot challenge assistance failed.";
+          const stack = error instanceof Error ? error.stack : undefined;
+
+          console.error("[Copilot Challenge] Error caught:", message);
+          if (stack) console.error("[Copilot Challenge] Stack trace:", stack);
 
           sendEvent({
             type: "error",
@@ -243,11 +261,18 @@ export async function POST(request: Request) {
           });
         } finally {
           if (session) {
-            await session.disconnect().catch(() => undefined);
+            await session.disconnect().catch((err) => {
+              console.warn(
+                "[Copilot Challenge] Error disconnecting session:",
+                err
+              );
+            });
           }
 
           if (client) {
-            await client.stop().catch(() => []);
+            await client.stop().catch((err) => {
+              console.warn("[Copilot Challenge] Error stopping client:", err);
+            });
           }
 
           controller.close();
@@ -266,6 +291,10 @@ export async function POST(request: Request) {
       error instanceof Error
         ? error.message
         : "Copilot challenge assistance failed.";
+    const stack = error instanceof Error ? error.stack : undefined;
+
+    console.error("[Copilot Challenge] POST handler error:", message);
+    if (stack) console.error("[Copilot Challenge] Stack trace:", stack);
 
     return NextResponse.json(
       {

@@ -10,6 +10,7 @@
     "split:topics": "node scripts/split-markdown-topics.js"
   },
   "dependencies": {
+    "@github/copilot": "1.0.34",
     "@github/copilot-sdk": "^0.2.2",
     "@serwist/turbopack": "^9.5.7",
     "next": "^16.2.4",
