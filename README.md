@@ -27,17 +27,17 @@ Open [http://localhost:3000](http://localhost:3000).
 
 The coding challenge panel uses the GitHub Copilot SDK on the server.
 
-Set one of these before starting the app:
+Configure GitHub OAuth for user sign-in:
 
 ```bash
-GITHUB_TOKEN=your_github_token
+GITHUB_CLIENT_ID=your_oauth_app_client_id
+GITHUB_CLIENT_SECRET=your_oauth_app_client_secret
 ```
 
-or
+In your GitHub OAuth App settings, set Authorization callback URL to:
 
-```bash
-GH_TOKEN=your_github_token
-```
+- Local: `http://localhost:3000/api/auth/github/callback`
+- Production: `https://your-app.vercel.app/api/auth/github/callback`
 
 Optional model override:
 
@@ -47,25 +47,27 @@ COPILOT_CHALLENGE_MODEL=gpt-4.1
 
 The default is `gpt-4.1`, which is one of Copilot's included `0x` premium-cost models on paid plans.
 
-### Vercel deployment (bundled CLI)
+OAuth endpoints in this app:
 
-This project uses the bundled Copilot CLI approach with `@github/copilot`.
-The API route resolves `node_modules/@github/copilot/npm-loader.js` and passes it
-as `cliPath` to the SDK.
+- `GET /api/auth/github/login` starts OAuth and redirects to GitHub.
+- `GET /api/auth/github/callback` exchanges the code for a user token and stores it in an HTTP-only cookie.
+- `POST /api/auth/github/logout` clears the auth cookie.
 
-Set one of these environment variables in Vercel:
+### Vercel deployment (GitHub OAuth)
+
+Set these environment variables in Vercel:
 
 ```bash
-GITHUB_TOKEN=your_github_token
-# or
-GH_TOKEN=your_github_token
+GITHUB_CLIENT_ID=your_oauth_app_client_id
+GITHUB_CLIENT_SECRET=your_oauth_app_client_secret
+# optional but recommended for stable callback URL generation
+NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
 ```
 
 Notes:
 
-- The token's account must have an active GitHub Copilot entitlement.
+- Each signed-in user needs an active GitHub Copilot entitlement.
 - `next.config.ts` includes output tracing rules so Copilot CLI runtime files are packaged in serverless output.
-- If needed, override CLI resolution with `COPILOT_CLI_PATH`.
 
 ## Build
 

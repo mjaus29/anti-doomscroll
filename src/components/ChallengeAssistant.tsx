@@ -215,12 +215,15 @@ async function readChallengeStream({
   if (!response.ok || !response.body) {
     const payload = (await response
       .json()
-      .catch(() => ({ error: undefined }))) as {
+      .catch(() => ({ error: undefined, authUrl: undefined }))) as {
       error?: string;
+      authUrl?: string;
     };
 
+    const message =
+      payload.error || "Copilot could not process this challenge.";
     throw new Error(
-      payload.error || "Copilot could not process this challenge."
+      payload.authUrl ? `${message} [AUTH_URL=${payload.authUrl}]` : message
     );
   }
 
@@ -333,6 +336,7 @@ export function ChallengeAssistant({
     useState<ChallengeAssistantResponse | null>(null);
   const [learnerLevel, setLearnerLevel] = useState<LearnerLevel>("beginner");
   const [error, setError] = useState<string | null>(null);
+  const [authUrl, setAuthUrl] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -403,6 +407,7 @@ export function ChallengeAssistant({
       abortControllerRef.current = controller;
 
       setError(null);
+      setAuthUrl(null);
       setIsStreaming(true);
 
       const updatedAt = new Date().toISOString();
@@ -450,11 +455,17 @@ export function ChallengeAssistant({
 
           return currentReply;
         });
-        setError(
+        const message =
           requestError instanceof Error
             ? requestError.message
-            : "Copilot could not process this challenge."
-        );
+            : "Copilot could not process this challenge.";
+        const authMatch = /\[AUTH_URL=(.+?)\]$/.exec(message);
+        if (authMatch?.[1]) {
+          setAuthUrl(authMatch[1]);
+          setError(message.replace(/\s*\[AUTH_URL=.+?\]$/, ""));
+        } else {
+          setError(message);
+        }
       } finally {
         if (abortControllerRef.current === controller) {
           abortControllerRef.current = null;
@@ -576,6 +587,15 @@ export function ChallengeAssistant({
         <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
           {error}
         </p>
+      ) : null}
+
+      {authUrl ? (
+        <a
+          href={authUrl}
+          className="mt-3 inline-flex rounded-lg border border-[var(--accent-dim)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--accent-dim)]/20"
+        >
+          Connect GitHub To Use Copilot
+        </a>
       ) : null}
 
       {assistantReply ? (

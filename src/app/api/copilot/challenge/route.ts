@@ -1,6 +1,6 @@
 import { CopilotClient } from "@github/copilot-sdk";
 import type { PermissionRequestResult } from "@github/copilot-sdk";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { existsSync } from "node:fs";
 import path from "node:path";
 
@@ -8,6 +8,7 @@ export const runtime = "nodejs";
 
 const DEFAULT_MODEL = process.env.COPILOT_CHALLENGE_MODEL?.trim() || "gpt-4.1";
 const MAX_INPUT_LENGTH = 12000;
+const OAUTH_TOKEN_COOKIE = "copilot_github_token";
 
 type AssistantMode = "review" | "hint";
 type LearnerLevel = "beginner" | "intermediate" | "advanced";
@@ -28,16 +29,13 @@ const denyAllPermissions = (): PermissionRequestResult => ({
   rules: [],
 });
 
-function resolveCopilotCliPath(): string {
-  const configuredCliPath = process.env.COPILOT_CLI_PATH?.trim();
-  if (configuredCliPath) {
-    console.log(
-      `[Copilot Challenge] Using COPILOT_CLI_PATH: ${configuredCliPath}`
-    );
-    return configuredCliPath;
+function resolveCliPath(): string {
+  const configuredPath = process.env.COPILOT_CLI_PATH?.trim();
+  if (configuredPath) {
+    return configuredPath;
   }
 
-  const bundledLoaderPath = path.join(
+  const bundledPath = path.join(
     process.cwd(),
     "node_modules",
     "@github",
@@ -45,63 +43,11 @@ function resolveCopilotCliPath(): string {
     "npm-loader.js"
   );
 
-  if (existsSync(bundledLoaderPath)) {
-    console.log(
-      `[Copilot Challenge] Using bundled CLI loader: ${bundledLoaderPath}`
-    );
-    return bundledLoaderPath;
+  if (existsSync(bundledPath)) {
+    return bundledPath;
   }
 
-  console.warn(
-    "[Copilot Challenge] Bundled CLI loader not found, falling back to 'copilot' on PATH"
-  );
   return "copilot";
-}
-
-/**
- * Resolve SSL certificate path for the CLI subprocess.
- * Vercel Lambda (Amazon Linux 2) uses /etc/ssl/certs/ca-bundle.crt.
- * The Copilot CLI binary is compiled against a different OpenSSL cert path,
- * so we override SSL_CERT_FILE/SSL_CERT_DIR in the subprocess env.
- */
-function resolveSslCertEnv(): Record<string, string> {
-  const certCandidates = [
-    "/etc/ssl/certs/ca-bundle.crt", // Amazon Linux (Vercel Lambda)
-    "/etc/ssl/certs/ca-certificates.crt", // Debian/Ubuntu
-    "/etc/pki/tls/certs/ca-bundle.crt", // RHEL/CentOS
-  ];
-
-  for (const certFile of certCandidates) {
-    if (existsSync(certFile)) {
-      console.log(`[Copilot Challenge] Using SSL_CERT_FILE: ${certFile}`);
-      return {
-        SSL_CERT_FILE: certFile,
-        SSL_CERT_DIR: path.dirname(certFile),
-      };
-    }
-  }
-
-  return {};
-}
-
-function logRuntimeDiagnostics() {
-  const isVercel = !!process.env.VERCEL;
-  let tokenKey = "none";
-  if (process.env.GITHUB_TOKEN) tokenKey = "GITHUB_TOKEN";
-  else if (process.env.GH_TOKEN) tokenKey = "GH_TOKEN";
-  console.log(
-    `[Copilot Challenge] Runtime: platform=${process.platform} arch=${process.arch} node=${process.version}`
-  );
-  console.log(`[Copilot Challenge] On Vercel: ${isVercel}`);
-  console.log(
-    `[Copilot Challenge] GitHub token present: ${tokenKey !== "none"} (key: ${tokenKey})`
-  );
-  if (tokenKey === "none") {
-    console.warn(
-      "[Copilot Challenge] No GitHub token found. Set GITHUB_TOKEN or GH_TOKEN in deployment environment."
-    );
-  }
-  console.log(`[Copilot Challenge] Model: ${DEFAULT_MODEL}`);
 }
 
 function isValidMode(value: string | undefined): value is AssistantMode {
@@ -189,8 +135,19 @@ function buildPrompt({
   ].join("\n");
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const githubToken = request.cookies.get(OAUTH_TOKEN_COOKIE)?.value?.trim();
+    if (!githubToken) {
+      return NextResponse.json(
+        {
+          error: "GitHub OAuth sign-in required before using Copilot.",
+          authUrl: "/api/auth/github/login",
+        },
+        { status: 401 }
+      );
+    }
+
     const body = (await request.json()) as ChallengeRequestBody;
     const mode = body.mode;
     const learnerLevel = body.learnerLevel;
@@ -244,20 +201,14 @@ export async function POST(request: Request) {
         };
 
         try {
-          logRuntimeDiagnostics();
-          const cliPath = resolveCopilotCliPath();
-          const sslCertEnv = resolveSslCertEnv();
-          const githubToken =
-            process.env.GITHUB_TOKEN?.trim() ||
-            process.env.GH_TOKEN?.trim() ||
-            undefined;
-          console.log(
-            `[Copilot Challenge] Spawning CLI: ${cliPath}, githubToken: ${githubToken ? "set" : "not set"}, SSL env keys: [${Object.keys(sslCertEnv).join(", ") || "none"}]`
-          );
           client = new CopilotClient({
-            cliPath,
+            cliPath: resolveCliPath(),
             githubToken,
-            env: { ...process.env, ...sslCertEnv },
+            useLoggedInUser: false,
+            env: {
+              ...process.env,
+              COPILOT_GITHUB_TOKEN: githubToken,
+            },
           });
           session = await client.createSession({
             model: DEFAULT_MODEL,
@@ -325,9 +276,7 @@ export async function POST(request: Request) {
 
           sendEvent({
             type: "error",
-            error:
-              "Copilot challenge assistance is unavailable right now. Ensure GitHub Copilot authentication is available in this runtime. " +
-              message,
+            error: "Error: " + message,
           });
         } finally {
           if (session) {
