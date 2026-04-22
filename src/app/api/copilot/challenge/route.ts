@@ -1,6 +1,7 @@
 import { CopilotClient } from "@github/copilot-sdk";
 import type { PermissionRequestResult } from "@github/copilot-sdk";
 import { NextResponse } from "next/server";
+import { existsSync } from "node:fs";
 import path from "node:path";
 
 export const runtime = "nodejs";
@@ -27,8 +28,21 @@ const denyAllPermissions = (): PermissionRequestResult => ({
   rules: [],
 });
 
+type CreateSessionOptions = Parameters<CopilotClient["createSession"]>[0];
+type ProviderOptions = CreateSessionOptions["provider"];
+
 function resolveCliPath(): string | undefined {
   try {
+    const envCliPath = process.env.COPILOT_CLI_PATH?.trim();
+    if (envCliPath) {
+      if (existsSync(envCliPath)) {
+        return envCliPath;
+      }
+      console.warn(
+        `[Copilot Challenge] COPILOT_CLI_PATH does not exist: ${envCliPath}`
+      );
+    }
+
     const copilotCliPath = path.join(
       process.cwd(),
       "node_modules",
@@ -36,13 +50,54 @@ function resolveCliPath(): string | undefined {
       "copilot",
       "npm-loader.js"
     );
-    return copilotCliPath;
+    if (existsSync(copilotCliPath)) {
+      return copilotCliPath;
+    }
+
+    console.warn(
+      `[Copilot Challenge] @github/copilot CLI loader not found at: ${copilotCliPath}`
+    );
   } catch {
     console.warn(
       "[Copilot Challenge] Could not resolve @github/copilot CLI path"
     );
   }
   return undefined;
+}
+
+function resolveProviderConfig(): ProviderOptions {
+  const baseUrl = process.env.COPILOT_PROVIDER_BASE_URL?.trim();
+
+  if (!baseUrl) {
+    return undefined;
+  }
+
+  const type = process.env.COPILOT_PROVIDER_TYPE?.trim();
+  const wireApi = process.env.COPILOT_PROVIDER_WIRE_API?.trim();
+  const apiKey = process.env.COPILOT_PROVIDER_API_KEY?.trim();
+  const bearerToken = process.env.COPILOT_PROVIDER_BEARER_TOKEN?.trim();
+
+  const provider: NonNullable<ProviderOptions> = {
+    baseUrl,
+  };
+
+  if (type === "openai" || type === "azure" || type === "anthropic") {
+    provider.type = type;
+  }
+
+  if (wireApi === "completions" || wireApi === "responses") {
+    provider.wireApi = wireApi;
+  }
+
+  if (apiKey) {
+    provider.apiKey = apiKey;
+  }
+
+  if (bearerToken) {
+    provider.bearerToken = bearerToken;
+  }
+
+  return provider;
 }
 
 function isValidMode(value: string | undefined): value is AssistantMode {
@@ -186,11 +241,13 @@ export async function POST(request: Request) {
 
         try {
           const resolvedCliPath = resolveCliPath();
+          const provider = resolveProviderConfig();
           client = new CopilotClient(
             resolvedCliPath ? { cliPath: resolvedCliPath } : {}
           );
           session = await client.createSession({
             model: DEFAULT_MODEL,
+            provider,
             infiniteSessions: { enabled: false },
             streaming: true,
             onPermissionRequest: denyAllPermissions,
@@ -256,7 +313,7 @@ export async function POST(request: Request) {
           sendEvent({
             type: "error",
             error:
-              "Copilot challenge assistance is unavailable right now. Check your GitHub Copilot authentication or try again. " +
+              "Copilot challenge assistance is unavailable right now. On Vercel, configure COPILOT_PROVIDER_* env vars (BYOK) or ensure Copilot CLI auth is available in runtime. " +
               message,
           });
         } finally {
@@ -299,7 +356,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Copilot challenge assistance is unavailable right now. Check your GitHub Copilot authentication or try again. " +
+          "Copilot challenge assistance is unavailable right now. On Vercel, configure COPILOT_PROVIDER_* env vars (BYOK) or ensure Copilot CLI auth is available in runtime. " +
           message,
       },
       { status: 500 }
