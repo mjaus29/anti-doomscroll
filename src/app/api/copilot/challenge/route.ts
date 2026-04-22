@@ -31,6 +31,9 @@ const denyAllPermissions = (): PermissionRequestResult => ({
 function resolveCopilotCliPath(): string {
   const configuredCliPath = process.env.COPILOT_CLI_PATH?.trim();
   if (configuredCliPath) {
+    console.log(
+      `[Copilot Challenge] Using COPILOT_CLI_PATH: ${configuredCliPath}`
+    );
     return configuredCliPath;
   }
 
@@ -43,10 +46,57 @@ function resolveCopilotCliPath(): string {
   );
 
   if (existsSync(bundledLoaderPath)) {
+    console.log(
+      `[Copilot Challenge] Using bundled CLI loader: ${bundledLoaderPath}`
+    );
     return bundledLoaderPath;
   }
 
+  console.warn(
+    "[Copilot Challenge] Bundled CLI loader not found, falling back to 'copilot' on PATH"
+  );
   return "copilot";
+}
+
+/**
+ * Resolve SSL certificate path for the CLI subprocess.
+ * Vercel Lambda (Amazon Linux 2) uses /etc/ssl/certs/ca-bundle.crt.
+ * The Copilot CLI binary is compiled against a different OpenSSL cert path,
+ * so we override SSL_CERT_FILE/SSL_CERT_DIR in the subprocess env.
+ */
+function resolveSslCertEnv(): Record<string, string> {
+  const certCandidates = [
+    "/etc/ssl/certs/ca-bundle.crt", // Amazon Linux (Vercel Lambda)
+    "/etc/ssl/certs/ca-certificates.crt", // Debian/Ubuntu
+    "/etc/pki/tls/certs/ca-bundle.crt", // RHEL/CentOS
+  ];
+
+  for (const certFile of certCandidates) {
+    if (existsSync(certFile)) {
+      console.log(`[Copilot Challenge] Using SSL_CERT_FILE: ${certFile}`);
+      return {
+        SSL_CERT_FILE: certFile,
+        SSL_CERT_DIR: path.dirname(certFile),
+      };
+    }
+  }
+
+  return {};
+}
+
+function logRuntimeDiagnostics() {
+  const isVercel = !!process.env.VERCEL;
+  let tokenKey = "none";
+  if (process.env.GITHUB_TOKEN) tokenKey = "GITHUB_TOKEN";
+  else if (process.env.GH_TOKEN) tokenKey = "GH_TOKEN";
+  console.log(
+    `[Copilot Challenge] Runtime: platform=${process.platform} arch=${process.arch} node=${process.version}`
+  );
+  console.log(`[Copilot Challenge] On Vercel: ${isVercel}`);
+  console.log(
+    `[Copilot Challenge] GitHub token present: ${tokenKey !== "none"} (key: ${tokenKey})`
+  );
+  console.log(`[Copilot Challenge] Model: ${DEFAULT_MODEL}`);
 }
 
 function isValidMode(value: string | undefined): value is AssistantMode {
@@ -189,8 +239,15 @@ export async function POST(request: Request) {
         };
 
         try {
+          logRuntimeDiagnostics();
+          const cliPath = resolveCopilotCliPath();
+          const sslCertEnv = resolveSslCertEnv();
+          console.log(
+            `[Copilot Challenge] Spawning CLI: ${cliPath}, SSL env keys: [${Object.keys(sslCertEnv).join(", ") || "none"}]`
+          );
           client = new CopilotClient({
-            cliPath: resolveCopilotCliPath(),
+            cliPath,
+            env: { ...process.env, ...sslCertEnv },
           });
           session = await client.createSession({
             model: DEFAULT_MODEL,
