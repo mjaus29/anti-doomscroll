@@ -6,10 +6,7 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   outputFileTracingIncludes: {
-    "/api/copilot/challenge": [
-      "./node_modules/@github/copilot/**/*",
-      "./node_modules/@github/copilot-linux-x64/**/*",
-    ],
+    "/api/copilot/challenge": ["./node_modules/@github/copilot-linux-x64/**/*"],
   },
 };
 
