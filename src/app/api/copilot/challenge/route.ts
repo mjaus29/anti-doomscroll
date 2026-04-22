@@ -96,6 +96,11 @@ function logRuntimeDiagnostics() {
   console.log(
     `[Copilot Challenge] GitHub token present: ${tokenKey !== "none"} (key: ${tokenKey})`
   );
+  if (tokenKey === "none") {
+    console.warn(
+      "[Copilot Challenge] No GitHub token found. Set GITHUB_TOKEN or GH_TOKEN in deployment environment."
+    );
+  }
   console.log(`[Copilot Challenge] Model: ${DEFAULT_MODEL}`);
 }
 
@@ -242,11 +247,16 @@ export async function POST(request: Request) {
           logRuntimeDiagnostics();
           const cliPath = resolveCopilotCliPath();
           const sslCertEnv = resolveSslCertEnv();
+          const githubToken =
+            process.env.GITHUB_TOKEN?.trim() ||
+            process.env.GH_TOKEN?.trim() ||
+            undefined;
           console.log(
-            `[Copilot Challenge] Spawning CLI: ${cliPath}, SSL env keys: [${Object.keys(sslCertEnv).join(", ") || "none"}]`
+            `[Copilot Challenge] Spawning CLI: ${cliPath}, githubToken: ${githubToken ? "set" : "not set"}, SSL env keys: [${Object.keys(sslCertEnv).join(", ") || "none"}]`
           );
           client = new CopilotClient({
             cliPath,
+            githubToken,
             env: { ...process.env, ...sslCertEnv },
           });
           session = await client.createSession({

@@ -47,6 +47,26 @@ COPILOT_CHALLENGE_MODEL=gpt-4.1
 
 The default is `gpt-4.1`, which is one of Copilot's included `0x` premium-cost models on paid plans.
 
+### Vercel deployment (bundled CLI)
+
+This project uses the bundled Copilot CLI approach with `@github/copilot`.
+The API route resolves `node_modules/@github/copilot/npm-loader.js` and passes it
+as `cliPath` to the SDK.
+
+Set one of these environment variables in Vercel:
+
+```bash
+GITHUB_TOKEN=your_github_token
+# or
+GH_TOKEN=your_github_token
+```
+
+Notes:
+
+- The token's account must have an active GitHub Copilot entitlement.
+- `next.config.ts` includes output tracing rules so Copilot CLI runtime files are packaged in serverless output.
+- If needed, override CLI resolution with `COPILOT_CLI_PATH`.
+
 ## Build
 
 ```bash
