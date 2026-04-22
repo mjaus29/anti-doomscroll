@@ -30,11 +30,13 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function TopicPage({ params }: Readonly<PageProps>) {
   const { dayId, topicId } = await params;
-  const result = getTopic(dayId, topicId);
-  if (!result) notFound();
-
-  const { day, topic, topicIndex } = result;
   const allDays = getAllDays();
+  const day = allDays.find((d) => d.id === dayId);
+  if (!day) notFound();
+
+  const topicIndex = day.topics.findIndex((t) => t.id === topicId);
+  if (topicIndex === -1) notFound();
+  const topic = day.topics[topicIndex];
 
   const prevTopic = topicIndex > 0 ? day.topics[topicIndex - 1] : null;
   const nextTopic =

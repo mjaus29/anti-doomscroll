@@ -140,6 +140,7 @@ export function TopicView({
             {prevTopic ? (
               <Link
                 href={`/day/${dayId}/${prevTopic.id}`}
+                prefetch={false}
                 className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3 text-sm text-[var(--text-muted)] hover:border-[var(--accent-dim)] hover:text-white transition-all group max-w-[48%]"
               >
                 <svg
@@ -164,6 +165,7 @@ export function TopicView({
             {nextTopic ? (
               <Link
                 href={`/day/${dayId}/${nextTopic.id}`}
+                prefetch={false}
                 className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3 text-sm text-[var(--text-muted)] hover:border-[var(--accent-dim)] hover:text-white transition-all group max-w-[48%] ml-auto"
               >
                 <span className="truncate">{nextTopic.title}</span>

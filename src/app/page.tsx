@@ -22,6 +22,7 @@ export default function Home() {
           <Link
             key={day.id}
             href={`/day/${day.id}/${day.topics[0]?.id || ""}`}
+            prefetch={false}
             className="group block rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5 transition-all hover:border-[var(--accent-dim)] hover:shadow-lg hover:shadow-purple-900/10"
           >
             <div className="flex items-center justify-between mb-2">

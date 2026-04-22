@@ -117,6 +117,7 @@ export function Sidebar({
                       <Link
                         key={topic.id}
                         href={`/day/${day.id}/${topic.id}`}
+                        prefetch={false}
                         onClick={onClose}
                         className={`flex items-start gap-2 rounded-md px-3 py-2 text-sm transition-colors ${
                           isActive
