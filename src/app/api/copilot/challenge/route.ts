@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
         const updatedAt = new Date().toISOString();
 
         const sendEvent = (event: Record<string, string>) => {
-          controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
+          controller.enqueue(encoder.encode(`${JSON.stringify(event)}s\n`));
         };
 
         try {
@@ -214,6 +214,7 @@ export async function POST(request: NextRequest) {
             env: {
               ...process.env,
               COPILOT_GITHUB_TOKEN: githubToken,
+              HOME: process.env.HOME ?? "/tmp",
             },
           });
           session = await client.createSession({
