@@ -1456,7 +1456,7 @@ export function ChallengeLab({
             TECH GROUPS
           </Link>
           <h1 className="mt-4 text-4xl font-bold sm:text-5xl">Challenge Lab</h1>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-(--text-muted) sm:text-base">
+          <p className="mt-3 max-w-4xl text-sm leading-7 text-(--text-muted) sm:text-base">
             Generate interview-style challenges for one group, solve them in the
             browser, and keep iterating until review passes.
           </p>
