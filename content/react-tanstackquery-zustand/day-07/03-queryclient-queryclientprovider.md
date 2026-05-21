@@ -1,147 +1,203 @@
-# 3 — `QueryClient` & `QueryClientProvider`
+# 3 — QueryClient + QueryClientProvider
+
+---
 
 ## T — TL;DR
 
-`QueryClient` is the central cache and config store for all queries in your app — `QueryClientProvider` makes it available to every component through React Context.
+`QueryClient` is the **central cache and coordinator** for all queries in your app. `QueryClientProvider` makes it available to the entire component tree. Create one `QueryClient` instance per app — never inside a component.
+
+---
 
 ## K — Key Concepts
 
-**Creating and providing the `QueryClient`:**
+```tsx
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-```jsx
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+// ── Create QueryClient — once, at module level ────────────────────────────
+// ❌ Inside a component — new client on every render, cache lost
+function AppBad() {
+  const queryClient = new QueryClient()   // ❌
+  return <QueryClientProvider client={queryClient}>…</QueryClientProvider>
+}
 
-// Create ONCE — outside the component tree (singleton)
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5,     // 5 minutes — data stays "fresh" this long
-      gcTime: 1000 * 60 * 60,        // 1 hour — unused cache entries kept this long (v5: gcTime, not cacheTime)
-      retry: 2,                      // retry failed requests 2x with backoff
-      refetchOnWindowFocus: true,    // refetch when user returns to tab
-    },
-  },
-})
+// ✅ Outside the component — stable across renders
+const queryClient = new QueryClient()   // ✅ module-level singleton
 
-// Wrap your app — provide to the entire tree
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router />
-      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   )
 }
 ```
 
-**`QueryClient` key concepts:**
-
-```jsx
-// staleTime: how long data is considered "fresh"
-// - 0 (default): every component mount triggers background refetch
-// - Infinity: never consider data stale (good for static data)
-// - 5 * 60 * 1000: 5 minutes of freshness
-
-// gcTime: how long UNUSED cached data is kept in memory before garbage collected
-// - Default: 5 minutes
-// - After gcTime expires AND no observers, entry is deleted from cache
-
-// retry: how many times to retry a failed query
-// - Default: 3
-// - Can be a function: (failureCount, error) => failureCount < 3 && error.status !== 401
-
-// refetchOnWindowFocus: refetch when user tabs back to the browser
-// - Default: true — great for real-time feel; set false for cost-sensitive APIs
-```
-
-**Imperative `QueryClient` methods:**
-
-```jsx
-// Access the QueryClient instance imperatively
-import { useQueryClient } from "@tanstack/react-query"
-
-function Component() {
-  const queryClient = useQueryClient()
-
-  // Invalidate (mark stale + trigger refetch)
-  queryClient.invalidateQueries({ queryKey: ["users"] })
-
-  // Prefetch (fetch before rendering)
-  queryClient.prefetchQuery({ queryKey: ["product", id], queryFn: () => fetchProduct(id) })
-
-  // Read cache directly (no fetch)
-  const cached = queryClient.getQueryData(["users"])
-
-  // Write cache directly (optimistic update)
-  queryClient.setQueryData(["user", id], updatedUser)
-
-  // Clear entire cache
-  queryClient.clear()
-}
-```
-
-
-## W — Why It Matters
-
-The `QueryClient` is the engine behind every `useQuery` call. Understanding its configuration — especially `staleTime` vs `gcTime` — is what separates developers who use TanStack Query as a simple fetch wrapper from those who design intelligent caching strategies. Every performance decision in TanStack Query traces back to `QueryClient` config.
-
-## I — Interview Q&A
-
-**Q: What is the `QueryClient` and why is it created outside the component tree?**
-**A:** It's the central cache store for all queries. It's created outside React's component tree so it's a singleton — shared across the entire app and not recreated on re-renders. Placing it inside a component would recreate the cache on every render.
-
-**Q: What is the difference between `staleTime` and `gcTime`?**
-**A:** `staleTime` controls how long data is considered "fresh" — during this window, no background refetch occurs. `gcTime` controls how long unused (no active observers) cache entries survive before being garbage collected. Data can be stale but still in cache; it's only deleted after `gcTime` expires with no active subscribers.
-
-**Q: What does `refetchOnWindowFocus` do?**
-**A:** When `true` (the default), TanStack Query refetches all active queries when the user focuses the browser tab. This keeps data fresh when users switch between tabs. Disable it for APIs with rate limits or when data changes infrequently.
-
-## C — Common Pitfalls
-
-| Pitfall | Fix |
-| :-- | :-- |
-| Creating `new QueryClient()` inside a component | Create it outside — it's a singleton that must persist for the app's lifetime |
-| Not configuring `staleTime` → excessive refetching | Set `staleTime` to match how often your data actually changes |
-| Confusing `staleTime` with `gcTime` | `staleTime` = freshness window; `gcTime` = time before cache cleanup after unused |
-| Not setting smart `retry` logic for 4xx errors | Use a function: `retry: (count, err) => err.status !== 401 && count < 3` |
-
-## K — Coding Challenge
-
-**Challenge:** Configure a `QueryClient` for a dashboard app where: user profiles rarely change, product inventory changes every minute, and auth errors should never be retried:
-
-**Solution:**
-
-```jsx
-import { QueryClient, QueryCache } from "@tanstack/react-query"
-
+```tsx
+// ── QueryClient configuration ─────────────────────────────────────────────
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Smart retry — never retry auth errors
-      retry: (failureCount, error) => {
-        if (error?.status === 401 || error?.status === 403) return false
-        return failureCount < 2
-      },
-      refetchOnWindowFocus: true,
+      staleTime:             1000 * 60 * 5,  // 5 min: data fresh for 5 minutes
+      gcTime:                1000 * 60 * 10, // 10 min: cache removed after 10 min inactive
+      retry:                 3,              // retry failed queries 3 times
+      retryDelay:            attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+      refetchOnWindowFocus:  true,           // refetch when tab regains focus
+      refetchOnReconnect:    true,           // refetch when network reconnects
+      refetchOnMount:        true,           // refetch when component mounts if stale
+    },
+    mutations: {
+      retry: 0,   // mutations don't retry by default
     },
   },
-  queryCache: new QueryCache({
-    onError: (error, query) => {
-      // Only show toast for background errors (cached data already shown)
-      if (query.state.data !== undefined) {
-        console.error(`Background refetch failed: ${error.message}`)
-      }
-    },
-  }),
 })
-
-// Per-query staleTime overrides (set in useQuery, not global)
-// User profiles: staleTime: 1000 * 60 * 30  (30 min — rarely changes)
-// Products:      staleTime: 1000 * 60         (1 min — inventory changes often)
-// Auth/session:  staleTime: Infinity           (until explicit logout)
-
-export { queryClient }
 ```
 
+```tsx
+// ── Key QueryClient options explained ────────────────────────────────────
+//
+// staleTime (default: 0):
+//   How long fetched data is considered "fresh"
+//   During fresh period: no refetch, cached data served immediately
+//   0 = always stale = always eligible for refetch on mount/focus
+//   60_000 = fresh for 1 minute
+//
+// gcTime / cacheTime (default: 5 min):
+//   How long UNUSED cached data is kept in memory
+//   After all components unmount, the cache entry lives this long
+//   Then it's garbage collected
+//   Useful: navigate away and back → instant load from cache
+//
+// retry (default: 3):
+//   Number of times to retry a failed query before showing error
+//   retryDelay: exponential backoff by default
+//
+// refetchOnWindowFocus (default: true):
+//   Refetch stale queries when the browser window/tab regains focus
+//   Simulates real-time data without WebSockets
+```
 
-***
+```tsx
+// ── The QueryClient as a programmatic API ────────────────────────────────
+import { useQueryClient } from '@tanstack/react-query'
+
+function SomeComponent() {
+  const qc = useQueryClient()
+
+  // Invalidate: mark query stale + trigger background refetch
+  function handleMutation() {
+    qc.invalidateQueries({ queryKey: ['products'] })
+  }
+
+  // Prefetch: load data before the user navigates to it
+  function handleHover() {
+    qc.prefetchQuery({
+      queryKey: ['product', 42],
+      queryFn:  () => fetchProduct(42),
+    })
+  }
+
+  // Set data directly: optimistic updates or seeding from a parent response
+  function handleSeedCache(users: User[]) {
+    qc.setQueryData(['users'], users)
+  }
+
+  // Read cache without subscribing
+  const cached = qc.getQueryData<User[]>(['users'])
+}
+```
+
+---
+
+## W — Why It Matters
+
+- The `QueryClient` is the cache — creating it inside a component (the most common mistake) destroys the cache on every render and defeats the entire point of TanStack Query.
+- `staleTime` is the most impactful config knob: `staleTime: 0` means "always re-fetch on focus/mount" (correct for real-time data), `staleTime: Infinity` means "never re-fetch automatically" (correct for static reference data like countries list).
+- `useQueryClient()` inside components is how you programmatically interact with the cache — `invalidateQueries` after a mutation is the canonical post-write refetch pattern.
+
+---
+
+## I — Interview Q&A
+
+### Q: What is `staleTime` and how does it differ from `gcTime`?
+
+**A:** `staleTime` controls how long data is considered "fresh" after being fetched. During the stale period, TanStack Query serves the cached data immediately without background refetching — even on component mount or window focus. After the stale time expires, the data is considered "stale" and will be refetched in the background on next use while still showing the cached value. `gcTime` (garbage collection time) controls how long **unused** data stays in the cache after the last component subscribed to it unmounts. After `gcTime`, the cache entry is deleted — the next mount will show a loading state. Key relationship: `staleTime` ≤ `gcTime` is the typical setup — data can be stale (eligible to refetch) but still cached (available as a fallback while refetching).
+
+---
+
+## C — Common Pitfalls + Fix
+
+### ❌ Wrapping only part of the app in the provider
+
+```tsx
+// ❌ QueryClientProvider too low — components outside can't use useQuery
+function App() {
+  return (
+    <div>
+      <Header />   {/* ❌ can't use useQuery — outside the provider */}
+      <QueryClientProvider client={queryClient}>
+        <MainContent />
+      </QueryClientProvider>
+      <Footer />   {/* ❌ can't use useQuery — outside the provider */}
+    </div>
+  )
+}
+
+// ✅ Wrap the entire app — provider at the root
+function AppFixed() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Header />         {/* ✅ can use useQuery */}
+      <MainContent />    {/* ✅ */}
+      <Footer />         {/* ✅ */}
+    </QueryClientProvider>
+  )
+}
+```
+
+---
+
+## K — Coding Challenge + Solution
+
+### Challenge
+
+Set up a `QueryClient` with: 5-minute stale time for all queries, 10-minute cache, retry 2 times with exponential backoff, and disable `refetchOnWindowFocus` for development.
+
+### Solution
+
+```tsx
+// query-client.ts
+import { QueryClient } from '@tanstack/react-query'
+
+const isDev = process.env.NODE_ENV === 'development'
+
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime:            1000 * 60 * 5,    // 5 min fresh
+      gcTime:               1000 * 60 * 10,   // 10 min in cache after unmount
+      retry:                2,
+      retryDelay:           (attempt) => Math.min(1000 * 2 ** attempt, 15_000),
+      refetchOnWindowFocus: !isDev,           // noisy in dev ✅
+      refetchOnReconnect:   true,
+    },
+  },
+})
+
+// main.tsx
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClient } from './query-client'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+
+function Root() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <App />
+      {isDev && <ReactQueryDevtools initialIsOpen={false} />}
+    </QueryClientProvider>
+  )
+}
+```
+
+---
+
+---

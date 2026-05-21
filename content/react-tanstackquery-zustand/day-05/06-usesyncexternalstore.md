@@ -1,153 +1,231 @@
-# 6 — `useSyncExternalStore`
+# 6 — useSyncExternalStore
+
+---
 
 ## T — TL;DR
 
-`useSyncExternalStore` safely subscribes a React component to an external store — any data source outside React state — with built-in protection against UI tearing in concurrent rendering.
+`useSyncExternalStore` subscribes a component to an **external store** (any non-React state: Redux, Zustand internals, browser APIs like `navigator.onLine`, custom pub-sub) and re-renders it when the store changes. It's tear-safe — correct in React 18 concurrent mode.
+
+---
 
 ## K — Key Concepts
 
-**The API:**
+```tsx
+import { useSyncExternalStore } from 'react'
 
-```jsx
+// ── Syntax ────────────────────────────────────────────────────────────────
 const snapshot = useSyncExternalStore(
-  subscribe,    // (callback) => unsubscribe — called when store changes
-  getSnapshot,  // () => currentValue — must return a stable reference if unchanged
-  getServerSnapshot  // optional: for SSR
+  subscribe,        // (callback) => unsubscribe — called to subscribe to the store
+  getSnapshot,      // () => currentValue — called to read the current value
+  getServerSnapshot // () => serverValue — optional, for SSR
 )
+// React calls getSnapshot on every render to get the current value
+// React calls subscribe once to listen for changes
+// When the store changes: callback() → React re-renders → getSnapshot() called
 ```
 
-**Anatomy — subscribing to a browser API:**
-
-```jsx
-// Subscribe to the online/offline status (external to React)
-function useOnlineStatus() {
+```tsx
+// ── Built-in browser store: online status ────────────────────────────────
+function useOnlineStatus(): boolean {
   return useSyncExternalStore(
     // subscribe: attach/detach listeners
-    (callback) => {
-      window.addEventListener("online", callback)
-      window.addEventListener("offline", callback)
+    callback => {
+      window.addEventListener('online',  callback)
+      window.addEventListener('offline', callback)
       return () => {
-        window.removeEventListener("online", callback)
-        window.removeEventListener("offline", callback)
+        window.removeEventListener('online',  callback)
+        window.removeEventListener('offline', callback)
       }
     },
     // getSnapshot: return current value
     () => navigator.onLine,
-    // getServerSnapshot: SSR fallback
+    // getServerSnapshot: safe value for SSR (no navigator on server)
     () => true
   )
 }
 
-function StatusBadge() {
+function StatusBar() {
   const isOnline = useOnlineStatus()
-  return <span>{isOnline ? "🟢 Online" : "🔴 Offline"}</span>
-}
-```
-
-**Subscribing to a custom store:**
-
-```jsx
-// A simple external store (outside React)
-let store = { count: 0 }
-let listeners = new Set()
-
-const countStore = {
-  getSnapshot: () => store,
-  subscribe: (callback) => {
-    listeners.add(callback)
-    return () => listeners.delete(callback)
-  },
-  increment: () => {
-    store = { count: store.count + 1 }  // ✅ must create new reference
-    listeners.forEach(cb => cb())        // notify React
-  }
-}
-
-// Component subscribes to the external store
-function Counter() {
-  const { count } = useSyncExternalStore(
-    countStore.subscribe,
-    countStore.getSnapshot
-  )
   return (
-    <div>
-      <p>{count}</p>
-      <button onClick={countStore.increment}>+1</button>
-    </div>
+    <p style={{ color: isOnline ? 'green' : 'red' }}>
+      {isOnline ? '🟢 Online' : '🔴 Offline'}
+    </p>
   )
 }
 ```
 
-**Why `getSnapshot` must return stable references:**
+```tsx
+// ── Custom external store ─────────────────────────────────────────────────
+// A minimal pub-sub store compatible with useSyncExternalStore
 
-```jsx
-// ❌ New array reference every call → infinite re-render loop
-getSnapshot: () => [...state.items]
+function createStore<T>(initialState: T) {
+  let state      = initialState
+  const listeners = new Set<() => void>()
 
-// ✅ Same reference if data hasn't changed
-getSnapshot: () => state.items  // only changes when you assign a new array
+  function getSnapshot() { return state }
+
+  function setState(updater: (prev: T) => T) {
+    state = updater(state)
+    listeners.forEach(cb => cb())   // notify all subscribers
+  }
+
+  function subscribe(callback: () => void) {
+    listeners.add(callback)
+    return () => listeners.delete(callback)   // returns unsubscribe ✅
+  }
+
+  return { getSnapshot, setState, subscribe }
+}
+
+// Create a shared counter store (outside React — module-level)
+const counterStore = createStore({ count: 0 })
+
+// Hook: any component subscribes with useSyncExternalStore
+function useCounter() {
+  const { count } = useSyncExternalStore(
+    counterStore.subscribe,
+    counterStore.getSnapshot
+  )
+  return { count, increment: () => counterStore.setState(s => ({ count: s.count + 1 })) }
+}
+
+// Two independent components — both update when store changes
+function ComponentA() {
+  const { count, increment } = useCounter()
+  return <button onClick={increment}>A: {count}</button>
+}
+function ComponentB() {
+  const { count } = useCounter()
+  return <p>B sees: {count}</p>   // updates when A increments ✅
+}
 ```
 
+---
 
 ## W — Why It Matters
 
-Before `useSyncExternalStore`, subscribing to external stores with `useEffect` + `useState` caused "tearing" in React 18's concurrent rendering — different parts of the UI could show different snapshots of the same store in a single render pass. `useSyncExternalStore` is the only React-approved way to subscribe to any external data source safely.
+- `useSyncExternalStore` is the **correct** way to subscribe to non-React state in React 18+ — using `useEffect` + `useState` to subscribe to an external store can miss updates in concurrent mode (tearing).
+- Every major state manager (Redux, Zustand, Jotai) uses `useSyncExternalStore` internally — understanding it explains how those libraries work at the React integration level.
+- Browser APIs like `navigator.onLine`, `matchMedia`, `localStorage` events, and `history` are all external stores — this hook is the idiomatic way to build hooks that read them.
+
+---
 
 ## I — Interview Q&A
 
-**Q: What is `useSyncExternalStore` and when would you use it?**
-**A:** It's a React hook for subscribing to external stores — data that lives outside React state (browser APIs, Zustand, Redux, custom pub-sub systems). It provides two guarantees: (1) your component re-renders when the store changes, and (2) it's safe from tearing in concurrent rendering.
+### Q: Why was `useSyncExternalStore` introduced and when should you use it over `useState` + `useEffect`?
 
-**Q: What is "UI tearing" and how does `useSyncExternalStore` prevent it?**
-**A:** Tearing happens when different components reading the same external store see different values within a single render pass — because React's concurrent renderer can interleave renders. `useSyncExternalStore` forces synchronous reads of the store snapshot, guaranteeing all components see the same value in one render.
+**A:** `useSyncExternalStore` was introduced in React 18 to solve **tearing** — when different components read different values from an external store during a single concurrent render pass. With `useEffect` + `useState`: you subscribe in an effect (fires after render), and between the render and the effect, another render could read a stale value. `useSyncExternalStore` makes React read the store synchronously during render via `getSnapshot`, and forces a synchronous re-render if the value changes mid-commit. Use it when: subscribing to any state that lives outside React (browser APIs, custom stores, third-party state managers). For state that lives inside React, use `useState` or Context.
 
-**Q: Why must `getSnapshot` return a stable reference when data hasn't changed?**
-**A:** React calls `getSnapshot` frequently to check for changes using `Object.is` comparison. If `getSnapshot` returns a new object/array reference every call (even with the same data), React sees a "change" every time and loops into infinite re-renders.
+---
 
-## C — Common Pitfalls
+## C — Common Pitfalls + Fix
 
-| Pitfall | Fix |
-| :-- | :-- |
-| `getSnapshot` returning new array/object reference every call | Cache the reference — only return a new object when data actually changes |
-| Defining `subscribe` inline inside component → resubscribes every render | Move `subscribe` outside the component or wrap in `useCallback` |
-| Using `useEffect` + `useState` for external stores in React 18+ | Use `useSyncExternalStore` — it's the correct API for external subscriptions |
-| Forgetting the server snapshot for SSR | Provide the third argument for SSR environments to avoid hydration mismatch |
+### ❌ `getSnapshot` returning a new object on every call — infinite re-render loop
 
-## K — Coding Challenge
-
-**Challenge:** Build a `useMediaQuery` hook using `useSyncExternalStore` that returns `true` when a CSS media query matches:
-
-**Solution:**
-
-```jsx
-function useMediaQuery(query) {
+```tsx
+// ❌ getSnapshot creates a new object every call → React detects "change" → re-renders → repeat
+function useBadStore() {
   return useSyncExternalStore(
-    // subscribe: listen to media query changes
-    (callback) => {
-      const mql = window.matchMedia(query)
-      mql.addEventListener("change", callback)
-      return () => mql.removeEventListener("change", callback)
-    },
-    // getSnapshot: current match status (boolean — stable primitive ✅)
-    () => window.matchMedia(query).matches,
-    // getServerSnapshot: safe SSR fallback
-    () => false
+    store.subscribe,
+    () => ({ value: store.getValue() })   // ❌ new object every call
+    // React compares with Object.is: {} !== {} → "changed" → re-render → loop
   )
 }
 
-// Usage — no manual event listener cleanup needed
-function ResponsiveNav() {
-  const isMobile = useMediaQuery("(max-width: 768px)")
-  const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)")
+// ✅ Return a stable value — same reference if unchanged, or primitive
+function useGoodStore() {
+  return useSyncExternalStore(
+    store.subscribe,
+    () => store.getValue()   // ✅ returns primitive or same reference if unchanged
+  )
+}
 
-  return (
-    <nav>
-      {isMobile ? <HamburgerMenu /> : <DesktopNav />}
-      <p>Animations: {prefersReducedMotion ? "reduced" : "full"}</p>
-    </nav>
+// ✅ Or use a selector that returns the specific field you need
+function useStoreField<T>(selector: (state: StoreState) => T): T {
+  return useSyncExternalStore(
+    store.subscribe,
+    () => selector(store.getState())
+    // If selector returns a primitive (number, string, boolean) → stable ✅
   )
 }
 ```
 
+---
 
-***
+## K — Coding Challenge + Solution
+
+### Challenge
+
+Build a `useLocalStorage` hook using `useSyncExternalStore` that subscribes to `storage` events so all tabs and all components stay in sync.
+
+### Solution
+
+```tsx
+// Cross-tab localStorage store using useSyncExternalStore
+function createLocalStorageStore<T>(key: string, initialValue: T) {
+
+  function getSnapshot(): T {
+    try {
+      const item = localStorage.getItem(key)
+      return item !== null ? (JSON.parse(item) as T) : initialValue
+    } catch {
+      return initialValue
+    }
+  }
+
+  function getServerSnapshot(): T {
+    return initialValue   // SSR: no localStorage
+  }
+
+  function subscribe(callback: () => void): () => void {
+    // React to external storage changes (other tabs)
+    function handleStorage(e: StorageEvent) {
+      if (e.key === key) callback()
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }
+
+  function setValue(value: T | ((prev: T) => T)): void {
+    const current  = getSnapshot()
+    const next     = typeof value === 'function'
+      ? (value as (prev: T) => T)(current)
+      : value
+    localStorage.setItem(key, JSON.stringify(next))
+    // Dispatch storage event for same-tab listeners (storage event only fires for OTHER tabs)
+    window.dispatchEvent(new StorageEvent('storage', { key }))
+  }
+
+  return { getSnapshot, getServerSnapshot, subscribe, setValue }
+}
+
+// Custom hook
+function useLocalStorage<T>(key: string, initialValue: T): [T, (v: T | ((p: T) => T)) => void] {
+  const store = useMemo(
+    () => createLocalStorageStore<T>(key, initialValue),
+    [key]   // recreate store only when key changes
+  )
+
+  const value = useSyncExternalStore(
+    store.subscribe,
+    store.getSnapshot,
+    store.getServerSnapshot
+  )
+
+  return [value, store.setValue]
+}
+
+// Usage: syncs across tabs and across components in the same app
+function ThemeToggle() {
+  const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'light')
+  return (
+    <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')}>
+      Current theme: {theme}
+    </button>
+  )
+}
+```
+
+---
+
+---

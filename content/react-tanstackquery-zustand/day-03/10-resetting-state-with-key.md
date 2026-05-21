@@ -1,138 +1,331 @@
-# 10 — Resetting State with `key`
+# 10 — Resetting State with Key
+
+---
 
 ## T — TL;DR
 
-Changing a component's `key` prop forces React to unmount and remount it from scratch — this is the idiomatic way to reset any component's state.
+Changing a component's **`key` prop** forces React to unmount the old instance and mount a new one — resetting all state to initial values. This is the intentional, declarative way to reset a component when its context changes (new record, new user, new route).
+
+---
 
 ## K — Key Concepts
 
-**`key` has a dual role in React:**
+```tsx
+// ── key forces remount = state reset ─────────────────────────────────────
+// ❌ Without key — state persists when userId changes
+function ProfileEditor({ userId }: { userId: number }) {
+  const [bio, setBio] = useState('')
+  // bio from userId=1 persists when userId changes to 2 ❌
+  return <textarea value={bio} onChange={e => setBio(e.target.value)} />
+}
 
-1. **In lists** — uniquely identifies items so React can reconcile efficiently
-2. **Outside lists** — acts as a component identity signal; changing it forces full remount
-
-```jsx
-// ✅ Resetting a chat window when switching contacts
-function Messenger() {
-  const [selectedContact, setSelectedContact] = useState(contacts);
-
+// ✅ With key — fresh state for every userId
+function App() {
+  const [userId, setUserId] = useState(1)
   return (
     <>
-      <ContactList
-        contacts={contacts}
-        selected={selectedContact}
-        onSelect={setSelectedContact}
-      />
-      {/* key change → ChatWindow fully remounts → message input clears */}
-      <ChatWindow key={selectedContact.id} contact={selectedContact} />
+      <select value={userId} onChange={e => setUserId(+e.target.value)}>
+        <option value={1}>User 1</option>
+        <option value={2}>User 2</option>
+      </select>
+      <ProfileEditor key={userId} userId={userId} />
+      {/* key changes → React unmounts old → mounts new → state = '' ✅ */}
     </>
-  );
+  )
 }
 ```
 
-**Full reset vs. `useEffect` approach:**
+```tsx
+// ── Common key reset patterns ─────────────────────────────────────────────
 
-```jsx
-// ❌ Verbose — manually resetting every state value in useEffect
-function ChatWindow({ contact }) {
-  const [message, setMessage] = useState("");
-  const [attachments, setAttachments] = useState([]);
-  const [drafts, setDrafts] = useState([]);
+// 1. Reset form when switching records
+function RecordEditor({ recordId }: { recordId: number }) {
+  return <EditForm key={recordId} recordId={recordId} />
+  // EditForm's state resets on every recordId change ✅
+}
+
+// 2. Reset after successful submission
+function SubmittableForm() {
+  const [formKey, setFormKey] = useState(0)
+
+  async function handleSubmit(data: FormData) {
+    await save(data)
+    setFormKey(k => k + 1)   // increment key → form resets ✅
+  }
+
+  return <ContactForm key={formKey} onSubmit={handleSubmit} />
+}
+
+// 3. Reset a component on route change (in a simple router)
+function Page({ route }: { route: string }) {
+  return <PageContent key={route} route={route} />  // fresh state per page ✅
+}
+```
+
+```tsx
+// ── Key vs useEffect for reset — why key is better ────────────────────────
+// ❌ useEffect approach — extra render, timing issues
+function FormWithEffect({ userId }: { userId: number }) {
+  const [name,  setName]  = useState('')
+  const [email, setEmail] = useState('')
 
   useEffect(() => {
-    setMessage("");
-    setAttachments([]);
-    setDrafts([]);
-  }, [contact.id]); // must enumerate every state variable
+    setName('')    // extra render
+    setEmail('')   // stale values visible for one render ❌
+  }, [userId])
+  // Two renders: initial (stale) + after effect (reset)
 }
 
-// ✅ key does it all automatically — no useEffect needed
-<ChatWindow key={contact.id} contact={contact} />;
-// All state in ChatWindow resets when contact changes — zero extra code
-```
-
-**Resetting only part of a component with a wrapper:**
-
-```jsx
-// Only reset the form, not the whole page
-function ProfilePage({ userId }) {
-  return (
-    <div>
-      <h1>Profile</h1>
-      <ProfileForm key={userId} userId={userId} /> {/* only form resets */}
-    </div>
-  );
+// ✅ Key approach — atomic reset, no extra render, no effects
+function ParentWithKey() {
+  const [userId, setUserId] = useState(1)
+  return <FormWithKey key={userId} userId={userId} />
+}
+function FormWithKey({ userId }: { userId: number }) {
+  const [name,  setName]  = useState('')   // always starts fresh ✅
+  const [email, setEmail] = useState('')
 }
 ```
+
+---
 
 ## W — Why It Matters
 
-The `key`-for-reset pattern eliminates entire categories of "stale form state" bugs. Without it, developers write complex `useEffect` chains to manually reset state — fragile code that misses newly added state variables. The `key` pattern is a one-line solution that resets _everything_.
+- The key reset pattern replaces the common but incorrect pattern of `useEffect(() => resetState(), [prop])` — the effect approach has a render flash (stale state visible for one frame), the key approach is atomic.
+- `key` as a reset mechanism is one of the most powerful and underused patterns — senior React developers reach for it immediately when they need "fresh component when context changes."
+- Every CMS admin, data grid, and record editor needs this pattern — switching between records in a list must not carry over state from the previous record.
+
+---
 
 ## I — Interview Q&A
 
-**Q: How do you reset a component's state when a prop changes?**
-**A:** Pass the prop as the component's `key`. When the `key` changes, React unmounts the old component instance and mounts a fresh one, resetting all state. This is cleaner than manually resetting every state variable in a `useEffect`.
+### Q: How do you reset a component's state when a prop changes, and why is the `key` prop the best approach?
 
-**Q: What happens internally when you change a component's `key`?**
-**A:** React treats it as a completely different component — it unmounts the current instance (firing cleanup effects, removing DOM nodes) and mounts a new one with fresh state. It's identical to removing the component and re-adding it.
+**A:** Change the `key` prop on the component. When `key` changes, React unmounts the existing component instance and mounts a brand new one — all state initialises fresh. This is better than `useEffect(() => setState(initial), [prop])` for two reasons: (1) The effect fires after the render, meaning there's at least one render with stale state visible before the effect clears it. The key approach resets before the first render of the new context. (2) You don't have to manually list every state variable to reset — adding a new `useState` automatically benefits from the key reset without any changes to the reset logic. The key approach is declarative, atomic, and maintenance-free.
 
-**Q: Is using `key` outside of lists valid?**
-**A:** Yes — it's an intentional React pattern. While `key` is most commonly seen in lists, React's documentation explicitly recommends using `key` to reset component state outside of lists when needed.
+---
 
-## C — Common Pitfalls
+## C — Common Pitfalls + Fix
 
-| Pitfall                                                         | Fix                                                                    |
-| :-------------------------------------------------------------- | :--------------------------------------------------------------------- |
-| Using `useEffect` to manually reset every state variable        | Replace with `key={id}` — resets all state automatically               |
-| Using `Math.random()` or a timestamp as `key`                   | Generates a new key every render → constant remounting; use stable IDs |
-| Forgetting that `key` resets the ENTIRE component tree below it | Wrap only the part that needs resetting in a keyed element             |
+### ❌ Using `Math.random()` as a key to force reset — uncontrolled
 
-## K — Coding Challenge
-
-**Challenge:** The form keeps the previous user's data when switching users. Fix it with one addition:
-
-```jsx
-function UserEditor() {
-  const [userId, setUserId] = useState(1);
-  const users = {
-    1: { name: "Alice", bio: "Engineer" },
-    2: { name: "Bob", bio: "Designer" },
-  };
-
+```tsx
+// ❌ Random key every render — unmounts+remounts on EVERY render (too aggressive)
+function Carousel({ items }: { items: string[] }) {
   return (
-    <>
-      <button onClick={() => setUserId(1)}>Alice</button>
-      <button onClick={() => setUserId(2)}>Bob</button>
-      <EditForm user={users[userId]} /> {/* ← fix here */}
-    </>
-  );
+    <div>
+      {items.map(item => (
+        <Slide key={Math.random()} item={item} />  // ❌ new key every render → always unmounts
+      ))}
+    </div>
+  )
 }
 
-function EditForm({ user }) {
-  const [name, setName] = useState(user.name);
-  const [bio, setBio] = useState(user.bio);
+// ❌ Random key for controlled reset — unpredictable
+function Form() {
+  return <InputField key={Math.random()} />  // ❌ resets on every parent render ❌
+}
 
+// ✅ Increment a counter to reset on demand
+function Form() {
+  const [resetKey, setResetKey] = useState(0)
   return (
     <>
-      <input value={name} onChange={(e) => setName(e.target.value)} />
-      <textarea value={bio} onChange={(e) => setBio(e.target.value)} />
+      <InputField key={resetKey} />
+      <button onClick={() => setResetKey(k => k + 1)}>Reset form</button>
     </>
-  );
+  )
+}
+
+// ✅ Use stable ID for list items
+items.map(item => <Slide key={item.id} item={item} />)   // stable ✅
+```
+
+---
+
+## K — Coding Challenge + Solution
+
+### Challenge
+
+Build a `RecordEditor` that loads a different record from a list. The form must reset completely when switching records. Include a `hasUnsavedChanges` indicator that also resets.
+
+### Solution
+
+```tsx
+interface Record { id: number; title: string; body: string }
+
+const RECORDS: Record[] = [
+  { id: 1, title: 'First Note',  body: 'Content of first note'  },
+  { id: 2, title: 'Second Note', body: 'Content of second note' },
+  { id: 3, title: 'Third Note',  body: 'Content of third note'  },
+]
+
+interface EditFormProps {
+  record:    Record
+  onSave:    (updated: Record) => void
+}
+
+// Form component — will be reset via key
+function EditForm({ record, onSave }: EditFormProps) {
+  const [title, setTitle] = useState(record.title)
+  const [body,  setBody]  = useState(record.body)
+
+  const hasUnsavedChanges = title !== record.title || body !== record.body
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    onSave({ ...record, title, body })
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {hasUnsavedChanges && (
+        <p className="unsaved-badge">● Unsaved changes</p>
+      )}
+      <div>
+        <label htmlFor="title">Title</label>
+        <input
+          id="title"
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+        />
+      </div>
+      <div>
+        <label htmlFor="body">Body</label>
+        <textarea
+          id="body"
+          value={body}
+          onChange={e => setBody(e.target.value)}
+          rows={5}
+        />
+      </div>
+      <button type="submit" disabled={!hasUnsavedChanges}>Save</button>
+    </form>
+  )
+}
+
+function RecordEditor() {
+  const [records,    setRecords]    = useState<Record[]>(RECORDS)
+  const [selectedId, setSelectedId] = useState<number>(RECORDS[0].id)
+
+  const selectedRecord = records.find(r => r.id === selectedId)!
+
+  function handleSave(updated: Record) {
+    setRecords(prev => prev.map(r => r.id === updated.id ? updated : r))
+  }
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '1rem' }}>
+      <ul>
+        {records.map(r => (
+          <li
+            key={r.id}
+            onClick={() => setSelectedId(r.id)}
+            style={{ fontWeight: r.id === selectedId ? 'bold' : 'normal', cursor: 'pointer' }}
+          >
+            {r.title}
+          </li>
+        ))}
+      </ul>
+
+      {/* key=selectedId → EditForm remounts on every record switch */}
+      {/* hasUnsavedChanges resets too — no stale "unsaved" badge ✅ */}
+      <EditForm
+        key={selectedId}
+        record={selectedRecord}
+        onSave={handleSave}
+      />
+    </div>
+  )
 }
 ```
 
-**Solution:**
+---
 
-```jsx
-// Add key={userId} to EditForm — one change, fixes everything
-<EditForm key={userId} user={users[userId]} />
+## ✅ Day 3 Complete — React State Architecture
 
-// Now when userId changes:
-// → React unmounts the old EditForm
-// → Mounts a fresh EditForm with the new user's initial values
-// → name and bio reset to the new user's data ✅
+| # | Subtopic | Status |
+|---|----------|--------|
+| 1 | Choosing State Structure | ☐ |
+| 2 | Avoiding Redundant State | ☐ |
+| 3 | Avoiding Duplicate State | ☐ |
+| 4 | Deriving Values During Render | ☐ |
+| 5 | Lifting State Up | ☐ |
+| 6 | Sharing State Between Components | ☐ |
+| 7 | Syncing Sibling State | ☐ |
+| 8 | State Colocation | ☐ |
+| 9 | Preserving State | ☐ |
+| 10 | Resetting State with Key | ☐ |
 
-// Without key: name and bio hold the previous user's typed values
-// even after switching, because EditForm stays in the same tree position.
+---
+
+## 🗺️ One-Page Mental Model — Day 3
+
 ```
+STATE STRUCTURE
+  Group values that always change together → { x, y } not separate x, y
+  Avoid contradictory booleans → union type: 'idle'|'loading'|'error'|'success'
+  Flat is easier to update than nested → spread at every level you modify
+  Question for every useState: "do I actually need this in state?"
+
+REDUNDANT STATE
+  Can it be computed from other state or props? → DERIVE it, don't store it
+  total, fullName, filteredList, count → all computable during render
+  Storing derivable values requires manual sync → sync bugs are inevitable
+  useEffect to sync derived state → anti-pattern (extra render + stale flash)
+
+DUPLICATE STATE
+  Same data in two places → two sources of truth → they will disagree
+  selectedItem object → store selectedId instead, find item when needed
+  Set of full objects for multi-select → Set of IDs instead
+  One update instead of two → physically impossible to forget the second update
+
+DERIVING IN RENDER
+  Inline derivation: always accurate, zero maintenance, no sync logic
+  Every render = fresh computation from current state
+  useMemo: derive inline first → profile → THEN memoize if genuinely slow
+  Rule: no useEffect to derive state from state — ever
+
+LIFTING STATE UP
+  Two components need to share state → move to lowest common ancestor
+  Parent owns state + callback → children receive value + onChangeHandler
+  Accordion, tabs, selections → classic lift patterns
+  Cost: parent re-renders on change → use memo if subtree is large/expensive
+
+SHARING STATE
+  Props down 1–2 levels: direct passing ✅
+  Props through 3+ levels (intermediate components don't use them): prop drilling ❌
+  Composition / slot pattern: pass pre-wired JSX as children/slot props
+  Context (Day 4): broadcast to any depth — auth, theme, locale
+
+SYNCING SIBLINGS
+  Siblings cannot communicate directly — never
+  Solution: lift state to common parent → pass value + callback to both
+  Store one canonical form → derive the other (Celsius/Fahrenheit, USD/EUR)
+  Never two states + two useEffects to keep them in sync → causes loops
+
+STATE COLOCATION
+  State should live at the LOWEST component that needs it
+  Lifting too high → unnecessary re-renders in unrelated subtrees
+  Local UI state (hover, open, selected) → stays in the component that shows it
+  Push DOWN by default → lift UP only when sharing is required
+
+PRESERVING STATE
+  Same component type at same position → state preserved across re-renders
+  Different type at same position → unmount + remount → state reset
+  hidden attribute → component stays mounted → state preserved
+  Bug: same component renders different data (users) at same position → use key
+  Never define components inside render → new "type" every render → unmount loop
+
+RESETTING WITH KEY
+  Change key → React unmounts old instance → mounts fresh one → state reset
+  key={recordId} → form resets on every record switch (atomic, no flash)
+  key={formKey} + setFormKey(k => k+1) → reset on demand (submit, cancel)
+  Better than useEffect reset: atomic (no stale render), zero maintenance
+  Never Math.random() as key → resets on every render (too aggressive)
+  Only stable, intentionally-changed values as reset keys
+```
+
+> **Your next action:** Find a form in any React project. Check: is any state computable from other state? If yes — delete it and derive it. Ten minutes of real state cleanup teaches this better than rereading this page.
+
+> "Doing one small thing beats opening a feed."

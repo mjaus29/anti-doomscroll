@@ -1,164 +1,210 @@
-# 4 — Git Hooks, Husky, lint-staged & commitlint
+# 4 — Git Hooks + Husky + lint-staged + commitlint
+
+---
 
 ## T — TL;DR
 
-Git hooks are scripts that run at specific points in the Git workflow; Husky makes them version-controlled and team-shared; lint-staged runs checks only on staged files (fast); commitlint enforces conventional commit format.
+**Git hooks** run scripts at specific Git events (pre-commit, commit-msg, pre-push). **Husky** manages hooks as project config (committed, shared across team). **lint-staged** runs linters only on staged files (fast). **commitlint** enforces Conventional Commit format. Together they prevent bad code and bad commits from entering the repo.
+
+---
 
 ## K — Key Concepts
 
 ```bash
-# ── Native Git hooks (not version-controlled) ─────────────
+# ── Native git hooks ──────────────────────────────────────────────────────
+# Hooks live in .git/hooks/ — not committed, not shared
 ls .git/hooks/
-# applypatch-msg    pre-applypatch    pre-commit
-# commit-msg        pre-merge-commit  pre-push
-# post-commit       pre-rebase        prepare-commit-msg
+# pre-commit, commit-msg, pre-push, post-commit, post-merge...
 
-# Create a native pre-commit hook:
-cat > .git/hooks/pre-commit << 'EOF'
+# Example: .git/hooks/pre-commit (must be executable: chmod +x)
 #!/bin/sh
-npm run lint
-npm run typecheck
-EOF
-chmod +x .git/hooks/pre-commit
-# Problem: .git/hooks is NOT committed — teammates don't get it
+npm run lint && npm run typecheck
+# Runs on every commit — if exits non-zero, commit aborted
 
-# ── Husky — version-controlled hooks (modern setup) ───────
-npm install -D husky
-npx husky init                     # creates .husky/ directory + package.json script
-
-# package.json (auto-added by husky init):
-{
-  "scripts": {
-    "prepare": "husky"             # runs husky on npm install — hooks always set up
-  }
-}
-
-# .husky/pre-commit
-npm run lint-staged                # fast: only staged files
-
-# .husky/commit-msg
-npx --no-install commitlint --edit $1   # validate commit message format
-
-# .husky/pre-push
-npm run typecheck                  # full typecheck before push
-
-# ── lint-staged — fast: only run on staged files ──────────
-npm install -D lint-staged
-
-# .lintstagedrc.js (or lint-staged key in package.json)
-module.exports = {
-  // TypeScript/JavaScript files
-  "*.{ts,tsx,js,jsx}": [
-    "eslint --fix",              // fix what can be auto-fixed
-    "prettier --write",          // format
-  ],
-  // Other files — format only
-  "*.{json,md,yml,yaml}": [
-    "prettier --write"
-  ],
-  // CSS
-  "*.{css,scss}": [
-    "stylelint --fix",
-    "prettier --write"
-  ]
-}
-// Files are automatically re-staged after auto-fix
-// If lint fails: commit is blocked, error shown, no changes committed
-
-# ── commitlint — enforce conventional commits ─────────────
-npm install -D @commitlint/cli @commitlint/config-conventional
-
-# commitlint.config.js
-module.exports = {
-  extends: ["@commitlint/config-conventional"],
-  rules: {
-    "scope-enum": [2, "always", [
-      "auth", "api", "ui", "db", "cache", "deps", "ci", "docs"
-    ]],
-    "subject-min-length": [2, "always", 10],   // min 10 chars in description
-    "body-max-line-length": [1, "always", 100], // warn if body line > 100 chars
-    "footer-max-line-length": [0, "always", 200] // disable footer limit
-  }
-}
-
-# .husky/commit-msg (already shown above)
-npx --no-install commitlint --edit $1
-
-# Test commitlint manually:
-echo "feat: add login" | npx commitlint          # ✅
-echo "added login stuff" | npx commitlint         # ❌ invalid format
-echo "feat(auth): add OAuth" | npx commitlint     # ✅
-echo "feat(billing): add Stripe" | npx commitlint # ❌ "billing" not in scope-enum
-
-# ── Full setup sequence for a new project ─────────────────
-npm install -D husky lint-staged @commitlint/cli @commitlint/config-conventional
-npx husky init
-
-echo "npx lint-staged" > .husky/pre-commit
-echo "npx --no-install commitlint --edit \$1" > .husky/commit-msg
-echo "npm run typecheck" > .husky/pre-push
-
-# Now every developer who runs npm install gets all hooks automatically ✅
-```
-
-
-## W — Why It Matters
-
-Husky + lint-staged is the team-wide quality gate at zero CI cost — problems are caught before they're committed, not after CI runs 3 minutes later. The key insight: `lint-staged` runs only on staged files, not the whole codebase — a commit that touches 3 files runs lint on 3 files, not 500.
-
-## I — Interview Q&A
-
-**Q: Why use lint-staged instead of running ESLint on the whole project in a pre-commit hook?**
-A: Full project lint can take 30+ seconds in large codebases — slow enough that developers start using `--no-verify` to skip hooks. lint-staged runs lint only on files being committed, typically taking under 2 seconds. Fast hooks get used; slow ones get skipped.
-
-**Q: How does Husky ensure hooks are installed for all team members?**
-A: Husky adds `"prepare": "husky"` to `package.json`. `prepare` is an npm lifecycle hook that runs automatically on every `npm install`. When a developer clones the repo and runs `npm install`, Husky runs and configures Git to use `.husky/` as the hooks directory.
-
-## C — Common Pitfalls
-
-| Pitfall | Fix |
-| :-- | :-- |
-| `--no-verify` becoming a team habit | Keep hooks fast (< 5s) — lint-staged + typecheck on changed files only |
-| Husky not running on CI | CI doesn't run `npm install --ignore-scripts` or equivalent; hooks are intentionally skipped on CI (CI has its own checks) |
-| commitlint blocking merge commits like "Merge branch 'main'" | Add `defaultIgnores: true` in commitlint config — merge commits are ignored by default |
-
-## K — Coding Challenge
-
-**Set up the complete Husky + lint-staged + commitlint stack for a TypeScript project:**
-
-**Solution:**
-
-```bash
-npm install -D husky lint-staged @commitlint/cli @commitlint/config-conventional
-npx husky init
+# ── Husky — shared hooks as project config ────────────────────────────────
+npm install --save-dev husky
+npx husky init           # creates .husky/ directory + adds prepare script
 
 # .husky/pre-commit:
+npm run lint-staged
+
+# .husky/commit-msg:
+npx --no -- commitlint --edit $1
+
+# .husky/pre-push:
+npm run typecheck
+
+# package.json prepare script (runs on npm install):
+{
+  "scripts": {
+    "prepare": "husky"   # installs hooks automatically for new team members
+  }
+}
+```
+
+```json
+// ── lint-staged — run linters only on staged files ────────────────────────
+// package.json
+{
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "prettier --write",
+      "eslint --fix --max-warnings 0"
+    ],
+    "*.{js,mjs,cjs}": [
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "*.ts": [
+      "bash -c 'tsc --noEmit'"
+    ]
+  }
+}
+```
+
+```js
+// ── commitlint — enforce Conventional Commits ────────────────────────────
+// commitlint.config.js
+export default {
+  extends: ['@commitlint/config-conventional'],
+  rules: {
+    'type-enum': [2, 'always', [
+      'feat', 'fix', 'docs', 'style', 'refactor',
+      'test', 'chore', 'perf', 'ci', 'build', 'revert'
+    ]],
+    'scope-enum': [1, 'always', [    // 1 = warning (not error)
+      'auth', 'api', 'db', 'ui', 'deps', 'config'
+    ]],
+    'subject-max-length': [2, 'always', 100],
+    'subject-case': [2, 'always', 'lower-case'],
+    'body-max-line-length': [2, 'always', 200],
+  }
+}
+```
+
+```bash
+# ── Installation in one go ────────────────────────────────────────────────
+npm install --save-dev husky lint-staged commitlint @commitlint/config-conventional
+npx husky init
+
+# .husky/pre-commit (auto-created by husky init — modify it):
 echo "npx lint-staged" > .husky/pre-commit
 
 # .husky/commit-msg:
-echo "npx --no-install commitlint --edit \$1" > .husky/commit-msg
+echo "npx --no -- commitlint --edit \$1" > .husky/commit-msg
 
-# .lintstagedrc.js:
-cat > .lintstagedrc.js << 'EOF'
-module.exports = {
-  "*.{ts,tsx}": ["eslint --fix", "prettier --write"],
-  "*.{json,md}": ["prettier --write"]
-}
-EOF
-
-# commitlint.config.js:
-cat > commitlint.config.js << 'EOF'
-module.exports = { extends: ["@commitlint/config-conventional"] }
-EOF
-
-# Now test:
-git add src/index.ts
-git commit -m "added stuff"
-# ❌ commitlint: type may not be empty; subject may not be empty
-
-git commit -m "feat(auth): add OAuth2 login handler"
-# ✅ lint-staged runs on src/index.ts only → commit succeeds
+# Test commitlint:
+echo "bad commit message" | npx commitlint   # exits 1 — invalid ✅
+echo "feat(auth): add login" | npx commitlint  # exits 0 — valid ✅
 ```
 
+---
 
-***
+## W — Why It Matters
+
+- `lint-staged` is what makes pre-commit hooks fast enough to be practical — running ESLint + Prettier on all 10,000 files takes 30 seconds; running it only on 3 staged files takes 0.3 seconds. Without it, developers disable hooks.
+- `commitlint` enables `semantic-release` to work correctly — if commits aren't in Conventional format, the automated release tool can't determine version bumps. Enforcing at commit time prevents broken release pipelines.
+- Husky's `prepare` script means every developer who runs `npm install` automatically gets the hooks — no "but I don't have the hooks" exceptions on the team.
+
+---
+
+## I — Interview Q&A
+
+### Q: What is the purpose of `lint-staged` and why use it over running the full linter in a hook?
+
+**A:** `lint-staged` runs configured linters/formatters only on files that are currently staged for commit (tracked by `git add`). Running the full linter on every pre-commit hook is slow on large codebases — it processes every file in the project even when only 1-2 files changed. `lint-staged` narrows the scope to only staged files, making hooks run in under a second instead of tens of seconds. This speed difference is critical — slow hooks get disabled by developers under pressure. `lint-staged` also automatically passes only the staged file paths to tools like Prettier, so they only modify relevant files.
+
+---
+
+## C — Common Pitfalls + Fix
+
+### ❌ Hooks not running for new team members
+
+```bash
+# ❌ Hooks are in .git/hooks/ which isn't committed
+# New team member: git clone → npm install → no hooks
+git commit -m "bad format"   # passes — hooks missing ❌
+
+# ✅ Use Husky with prepare script
+# package.json:
+# "scripts": { "prepare": "husky" }
+# npm install → runs prepare → installs Husky hooks ✅
+
+# ✅ Verify hooks are installed
+ls .husky/          # pre-commit, commit-msg, pre-push
+cat .husky/pre-commit  # npx lint-staged
+
+# ✅ Skip hooks when needed (with justification)
+git commit --no-verify -m "chore: emergency deploy"
+# Document WHY you skipped in commit body
+```
+
+---
+
+## K — Coding Challenge + Solution
+
+### Challenge
+
+Set up a complete Husky + lint-staged + commitlint stack for a TypeScript project. Include pre-commit (format + lint), commit-msg (conventional), and pre-push (typecheck + test).
+
+### Solution
+
+```bash
+# Install
+npm install --save-dev husky lint-staged commitlint @commitlint/config-conventional
+npx husky init
+```
+
+```json
+// package.json
+{
+  "scripts": {
+    "prepare": "husky",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --max-warnings 0",
+    "test": "vitest run"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "prettier --write",
+      "eslint --fix --max-warnings 0"
+    ],
+    "*.{json,md,yml}": ["prettier --write"]
+  }
+}
+```
+
+```bash
+# .husky/pre-commit
+#!/bin/sh
+npx lint-staged
+
+# .husky/commit-msg
+#!/bin/sh
+npx --no -- commitlint --edit $1
+
+# .husky/pre-push
+#!/bin/sh
+echo "Running pre-push checks..."
+npm run typecheck && npm test -- --run
+```
+
+```js
+// commitlint.config.js
+export default {
+  extends: ['@commitlint/config-conventional'],
+  rules: {
+    'type-enum': [2, 'always', [
+      'feat','fix','docs','style','refactor','test','chore','perf','ci','build','revert'
+    ]],
+    'subject-max-length': [2, 'always', 100],
+    'subject-case': [2, 'always', 'lower-case'],
+  }
+}
+```
+
+---
+
+---

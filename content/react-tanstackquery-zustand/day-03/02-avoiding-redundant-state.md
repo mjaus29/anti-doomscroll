@@ -1,108 +1,192 @@
 # 2 — Avoiding Redundant State
 
+---
+
 ## T — TL;DR
 
-If a value can be computed from existing state or props during render, it is redundant state — store only the source, derive the rest.
+**Redundant state** is state you can compute from existing props or state. If it can be derived, don't store it — compute it during render. Storing derivable values creates sync bugs: the derived state goes stale when the source changes.
+
+---
 
 ## K — Key Concepts
 
-**What is redundant state?**
+```tsx
+// ── Classic redundant state bug ───────────────────────────────────────────
+interface Item { id: number; name: string; price: number; qty: number }
 
-Redundant state is any variable stored in `useState` whose value could be calculated from other state or props that already exist.
+// ❌ total is redundant — computable from items
+function Cart() {
+  const [items, setItems] = useState<Item[]>([])
+  const [total, setTotal] = useState(0)    // ❌ redundant
 
-```jsx
-// ❌ Redundant — fullName is derived from firstName + lastName
-const [firstName, setFirstName] = useState("")
-const [lastName, setLastName] = useState("")
-const [fullName, setFullName] = useState("")  // redundant!
+  function addItem(item: Item) {
+    setItems(prev => [...prev, item])
+    setTotal(prev => prev + item.price * item.qty)   // must remember to sync ❌
+  }
+  function removeItem(id: number) {
+    const item = items.find(i => i.id === id)!
+    setItems(prev => prev.filter(i => i.id !== id))
+    setTotal(prev => prev - item.price * item.qty)   // easy to forget or get wrong ❌
+  }
+  // Total can drift out of sync with items ❌
+}
 
-function handleFirstNameChange(e) {
-  setFirstName(e.target.value)
-  setFullName(e.target.value + " " + lastName)  // must remember to sync!
+// ✅ Derive total during render — always in sync
+function CartFixed() {
+  const [items, setItems] = useState<Item[]>([])
+  const total = items.reduce((sum, i) => sum + i.price * i.qty, 0)  // computed ✅
+
+  function addItem(item: Item) {
+    setItems(prev => [...prev, item])   // one update — total follows automatically ✅
+  }
+  function removeItem(id: number) {
+    setItems(prev => prev.filter(i => i.id !== id))   // total correct automatically ✅
+  }
 }
 ```
 
-```jsx
-// ✅ Derive fullName during render — always in sync, zero effort
-const [firstName, setFirstName] = useState("")
-const [lastName, setLastName] = useState("")
-const fullName = firstName + " " + lastName  // derived, not stored
-```
-
-**Common redundant state patterns to eliminate:**
-
-```jsx
-// ❌ Redundant filtered list
-const [items, setItems] = useState([...])
-const [filteredItems, setFilteredItems] = useState([...])
+```tsx
+// ── Full name from first + last ───────────────────────────────────────────
+// ❌ fullName is redundant
+const [firstName, setFirstName] = useState('')
+const [lastName,  setLastName]  = useState('')
+const [fullName,  setFullName]  = useState('')   // ❌ must sync manually
 
 // ✅ Derive during render
-const [items, setItems] = useState([...])
-const [filter, setFilter] = useState("all")
-const filteredItems = items.filter(item => filter === "all" || item.type === filter)
-
-// ❌ Redundant count
-const [items, setItems] = useState([...])
-const [count, setCount] = useState(0)
-
-// ✅ Derive during render
-const count = items.length
+const [firstName, setFirstName] = useState('')
+const [lastName,  setLastName]  = useState('')
+const fullName = `${firstName} ${lastName}`.trim()   // always accurate ✅
 ```
 
+```tsx
+// ── "Mirror state" anti-pattern ───────────────────────────────────────────
+// ❌ Copying prop into state — prop changes don't update the state copy
+interface ListProps { initialItems: string[] }
+function List({ initialItems }: ListProps) {
+  const [items, setItems] = useState(initialItems)   // ❌ copy of prop
+
+  // If parent changes initialItems, state won't update
+  // (state is initialised once — prop change doesn't re-init)
+}
+
+// ✅ Only copy prop into state if you NEED to edit it locally
+// AND name it clearly to signal it starts as the prop value:
+function ListEditable({ initialItems }: ListProps) {
+  const [items, setItems] = useState(initialItems)   // intentional: editing locally ✅
+  // Document: state diverges intentionally from prop after first render
+}
+
+// ✅ If you only need to display it: just use the prop directly
+function ListDisplay({ items }: { items: string[] }) {
+  return <ul>{items.map((item, i) => <li key={i}>{item}</li>)}</ul>
+}
+```
+
+---
 
 ## W — Why It Matters
 
-Redundant state always leads to sync bugs — whenever you update the source, you must remember to update every derived copy. Miss one update and the UI shows inconsistent data. Eliminating redundant state removes entire categories of bugs.
+- Redundant state is the leading cause of "the total shows the wrong amount" type bugs — you update one value and forget to update the derived one. Removing it makes the bug physically impossible.
+- The "mirror prop to state" anti-pattern is extremely common for beginners — they `useState(props.value)` and wonder why the component doesn't update when the parent passes a new value. State only initialises once.
+- Every `useState` call you remove is one fewer thing to synchronise, one fewer test case, one fewer stale-closure risk.
+
+---
 
 ## I — Interview Q&A
 
-**Q: What is redundant state?**
-**A:** Any value stored in `useState` that can be calculated from props or existing state during render. It should be removed and replaced with a derived variable computed inline, not stored.
+### Q: What is redundant state and why is it dangerous?
 
-**Q: What's the risk of keeping redundant state?**
-**A:** You must manually keep it in sync with its source. If you update the source but forget to update the derived state, your UI becomes inconsistent. The more copies of the same data, the higher the chance of divergence.
+**A:** Redundant state is a value stored in `useState` that can be computed directly from other state or props. It's dangerous because it creates two sources of truth that must be kept in sync manually. Every update to the source value requires a matching update to the derived value — miss one and the UI shows inconsistent data. The fix is to remove the redundant state and compute the value during render instead. Since render runs on every state change, derived values are always accurate. The only exception: computations that are genuinely expensive to repeat on every render, where `useMemo` (Day 4) is the right tool — not extra state.
 
-**Q: How do you know if a value should be state or a derived variable?**
-**A:** Ask: "Can I calculate this from what I already have?" If yes → derive it during render, don't store it. Only store things that *cannot* be computed — user input, fetched data, toggle states.
+---
 
-## C — Common Pitfalls
+## C — Common Pitfalls + Fix
 
-| Pitfall | Fix |
-| :-- | :-- |
-| Storing `fullName` separately from `firstName` + `lastName` | Derive: `const fullName = \`\${firstName} \${lastName}\`` |
-| Storing a filtered/sorted copy of an array | Derive with `.filter()` / `.sort()` during render using a `filter` state variable |
-| Storing `itemCount` separately from an items array | Derive: `const count = items.length` |
+### ❌ Storing filter results as state instead of deriving them
 
-## K — Coding Challenge
+```tsx
+interface Product { id: number; name: string; category: string; price: number }
 
-**Challenge:** Refactor to remove all redundant state:
+// ❌ filteredProducts is redundant — computable from products + filter
+function ProductPage() {
+  const [products,         setProducts]         = useState<Product[]>([])
+  const [categoryFilter,   setCategoryFilter]   = useState('all')
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])   // ❌
 
-```jsx
-function Cart() {
-  const [items, setItems] = useState([
-    { id: 1, name: "Apple", price: 1.5, qty: 2 },
-    { id: 2, name: "Banana", price: 0.5, qty: 5 },
-  ])
-  const [totalPrice, setTotalPrice] = useState(0)    // redundant
-  const [itemCount, setItemCount] = useState(0)      // redundant
-  const [isEmpty, setIsEmpty] = useState(false)      // redundant
-```
+  function handleFilter(cat: string) {
+    setCategoryFilter(cat)
+    setFilteredProducts(cat === 'all' ? products : products.filter(p => p.category === cat))
+    // Bug: if products change (add/remove), filteredProducts goes stale ❌
+  }
+}
 
-**Solution:**
+// ✅ Derive — always in sync with both products and filter
+function ProductPageFixed() {
+  const [products,       setProducts]       = useState<Product[]>([])
+  const [categoryFilter, setCategoryFilter] = useState('all')
 
-```jsx
-function Cart() {
-  const [items, setItems] = useState([
-    { id: 1, name: "Apple", price: 1.5, qty: 2 },
-    { id: 2, name: "Banana", price: 0.5, qty: 5 },
-  ])
-
-  // ✅ All derived during render — always in sync
-  const totalPrice = items.reduce((sum, item) => sum + item.price * item.qty, 0)
-  const itemCount = items.reduce((sum, item) => sum + item.qty, 0)
-  const isEmpty = items.length === 0
+  const filteredProducts = categoryFilter === 'all'
+    ? products
+    : products.filter(p => p.category === categoryFilter)
+  // Always correct — recomputed on every render ✅
 }
 ```
 
+---
 
-***
+## K — Coding Challenge + Solution
+
+### Challenge
+
+Audit this component and remove all redundant state. A user list with search, filter by status, and a count display.
+
+### Solution
+
+```tsx
+interface User { id: number; name: string; email: string; active: boolean }
+
+// ❌ Before: three redundant state variables
+function UserListBad() {
+  const [users,         setUsers]         = useState<User[]>([])
+  const [search,        setSearch]        = useState('')
+  const [showActive,    setShowActive]    = useState(false)
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([])  // ❌ redundant
+  const [userCount,     setUserCount]     = useState(0)           // ❌ redundant
+  const [activeCount,   setActiveCount]   = useState(0)           // ❌ redundant
+}
+
+// ✅ After: only genuine state, rest derived
+function UserListGood() {
+  const [users,      setUsers]      = useState<User[]>([])
+  const [search,     setSearch]     = useState('')
+  const [showActive, setShowActive] = useState(false)
+
+  // Derived during render — always correct
+  const filtered = users
+    .filter(u => !showActive || u.active)
+    .filter(u => u.name.toLowerCase().includes(search.toLowerCase()))
+
+  const totalCount  = users.length            // derived ✅
+  const activeCount = users.filter(u => u.active).length   // derived ✅
+
+  return (
+    <div>
+      <p>{activeCount} active / {totalCount} total</p>
+      <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search…" />
+      <label>
+        <input type="checkbox" checked={showActive} onChange={e => setShowActive(e.target.checked)} />
+        Active only
+      </label>
+      <ul>
+        {filtered.map(u => (
+          <li key={u.id}>{u.name} — {u.active ? 'Active' : 'Inactive'}</li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+```
+
+---
+
+---

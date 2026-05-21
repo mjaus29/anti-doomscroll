@@ -1,193 +1,184 @@
 # 2 — Cross-Slice Actions
 
+---
+
 ## T — TL;DR
 
-Cross-slice actions coordinate state changes across multiple slices in a single atomic operation — implemented using `get()` to read and call actions from other slices within the bounded store.
+A **cross-slice action** modifies multiple slices at once — e.g., `logout` clears auth, cart, and filters in one call. Use `get()` to read any slice's state, and `set()` to update fields across slices from any action.
+
+---
 
 ## K — Key Concepts
 
-**3 patterns for cross-slice coordination:**
+```tsx
+// ── get() enables cross-slice reads ──────────────────────────────────────
+export const createAuthSlice = (
+  set: SetState<RootStore>,
+  get: GetState<RootStore>
+): AuthSlice => ({
+  user: null,
 
-```jsx
-// PATTERN 1: Direct cross-slice call via get()
-// One slice calls another slice's action
-const createAuthSlice = (set, get) => ({
-  logout: () => {
-    set({ user: null, token: null })
-    get().clearCart()           // ← calls cartSlice.clearCart
-    get().resetFilters()        // ← calls filterSlice.resetFilters
-  },
-})
+  logout: async () => {
+    await fetch('/api/logout', { method: 'POST' })
 
-// PATTERN 2: Dedicated "orchestration" slice for complex cross-cutting actions
-const createAppSlice = (set, get) => ({
-  // Lives in its own slice — owns actions that touch multiple domains
-  initializeApp: async () => {
-    const token = get().token
-    if (!token) return
-
-    const [user, cart, preferences] = await Promise.all([
-      fetchUser(token),
-      fetchCart(token),
-      fetchPreferences(token),
-    ])
-
-    // Update multiple slices in one set() call
+    // Cross-slice: clear auth + cart + filters in one set call ✅
     set({
-      user,                           // authSlice state
-      cart: cart.items,               // cartSlice state
-      theme: preferences.theme,       // uiSlice state
-      currency: preferences.currency, // uiSlice state
-    })
-  },
-
-  resetAll: () =>
-    set({
-      user: null, token: null, isAuthenticated: false,  // auth reset
-      cart: [],                                          // cart reset
-      theme: "light", sidebarOpen: false,               // ui reset
-      filters: {}, page: 1,                             // filter reset
-    }, true),  // replace: true ← replaces entire store state ✅
-})
-
-// PATTERN 3: Atomic multi-slice update in a single set()
-const createOrderSlice = (set, get) => ({
-  placeOrder: async () => {
-    const { cart, user } = get()
-    const order = await submitOrder({ items: cart, userId: user.id })
-
-    // Atomic update of multiple slices
-    set({
-      cart: [],                                             // clear cart
-      orders: [...get().orders, order],                    // add to orders
-      notifications: [
-        { message: "Order placed! 🎉", type: "success" },
-        ...get().notifications,
-      ],
+      // Auth fields
+      user:      null,
+      isLoggedIn: false,
+      // Cart fields (from CartSlice)
+      items:     [],
+      // Filter fields (from FilterSlice)
+      category:  'all',
+      sortBy:    'popular',
     })
   },
 })
 ```
 
-**Reading cross-slice state (not just calling actions):**
+```tsx
+// ── Cross-slice action as a standalone orchestrator ────────────────────────
+// Alternative: keep slices pure, add a "root-level" action that orchestrates
 
-```jsx
-const createCartSlice = (set, get) => ({
-  cart: [],
+export const useStore = create<RootStore>((set, get) => ({
+  ...createAuthSlice(set, get),
+  ...createCartSlice(set, get),
+  ...createFilterSlice(set, get),
 
-  // Read from another slice before updating
-  addToCart: (item) => {
-    const isAuthenticated = get().isAuthenticated   // ← reads authSlice state
+  // Orchestration action: lives at root, calls into multiple slices
+  resetAppState: () => {
+    // Reset each slice to its initial state
+    set({
+      user:        null,
+      isLoggedIn:  false,
+      items:       [],
+      category:    'all',
+      sortBy:      'popular',
+      sidebarOpen: false,
+    })
+  },
 
-    if (!isAuthenticated) {
-      get().addNotification({ message: "Please log in to add to cart", type: "warning" })
-      return
-    }
+  checkout: async () => {
+    const { items, user } = get()   // read both slices via get() ✅
+    if (!user || items.length === 0) return
 
-    const existingItem = get().cart.find((i) => i.id === item.id)
-    if (existingItem) {
-      set((s) => ({
-        cart: s.cart.map((i) =>
-          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
-        ),
-      }))
-    } else {
-      set((s) => ({ cart: [...s.cart, { ...item, quantity: 1 }] }))
-    }
+    await submitOrder({ userId: user.id, items })
+
+    // Post-checkout: clear cart only, keep auth
+    set({ items: [] })
+    get().addNotif({ text: 'Order placed!', type: 'success' })   // call another slice action
+  },
+}))
+```
+
+```tsx
+// ── Calling a slice action from another slice via get() ───────────────────
+export const createCartSlice = (
+  set: SetState<RootStore>,
+  get: GetState<RootStore>
+): CartSlice => ({
+  items: [],
+
+  addItemWithNotif: (item) => {
+    set(s => ({ items: [...s.items, item] }))
+    // Call another slice's action
+    get().addNotif({ text: `${item.name} added to cart`, type: 'success' })  // ✅
   },
 })
 ```
 
+---
 
 ## W — Why It Matters
 
-Cross-slice actions are what make the bounded store model genuinely powerful versus just having multiple independent stores. A logout that clears cart, resets filters, adds a notification, and cancels pending requests — happens atomically in one action call. With separate stores, you'd need to coordinate all of this in a component or service layer, which couples your UI code to state coordination logic.
+- The main reason to use slices over bounded stores is precisely this: `logout` in one store needs to clear another store's state. With bounded stores you'd need to import both stores — possible but creates hidden coupling. With slices and `get()`, it's explicit and co-located.
+- `get()` is the escape hatch for reading current state without subscribing — it's synchronous and always returns the live value, unlike closure captures that go stale.
+- Orchestration actions at the root level (`checkout`, `resetAppState`) are a clean pattern: slices stay focused on their domain, root-level actions coordinate across them.
+
+---
 
 ## I — Interview Q&A
 
-**Q: How do you call an action from Slice A inside Slice B?**
-**A:** Use `get()` — it returns the entire combined store state including all other slices' actions. Inside Slice B's action, call `get().someActionFromSliceA()`. This works because all slices share the same store reference and their functions are merged into one state object.
+### Q: How do you implement an action that modifies multiple slices in Zustand?
 
-**Q: What is an "orchestration slice" and when do you use one?**
-**A:** An orchestration slice (often `appSlice`) owns complex actions that coordinate multiple domains — initialization, checkout, full reset. It reads and updates state across all slices in a single operation. Use it when a workflow is too complex to belong to a single domain slice.
+**A:** Two approaches: (1) From within a slice — call `set()` with keys from other slices. Since all slices are merged into one store object, `set({ user: null, items: [] })` works even if `user` is in AuthSlice and `items` is in CartSlice. (2) Root-level orchestration — define the cross-slice action at the `create()` level, not inside a slice factory. It has access to `set` and `get` and can call slice actions via `get().sliceAction()` or spread multiple slice resets in one `set()` call. The second pattern keeps slices cleaner by keeping orchestration concerns out of them.
 
-**Q: What's the difference between multiple `get()` calls vs a single `set()` with all changes?**
-**A:** Multiple sequential `set()` calls trigger one re-render per call — potentially inefficient. A single `set({ ...allChanges })` is atomic — one state update, one re-render cycle. For cross-slice updates, batch into one `set()` call whenever possible.
+---
 
-## C — Common Pitfalls
+## C — Common Pitfalls + Fix
 
-| Pitfall | Fix |
-| :-- | :-- |
-| Circular cross-slice dependencies — A calls B, B calls A | Extract the shared logic into a third "shared" or "app" slice |
-| Forgetting that `get()` returns a snapshot — stale after `await` | After `await`, call `get()` again to read fresh state — not the pre-await snapshot |
-| Multiple sequential `set()` calls for one logical operation | Batch into one `set({ ...allChanges })` — one state transition, one re-render |
-| Action in Slice A imports Slice B's file directly | Always use `get()` — never import between slice files (circular deps + tight coupling) |
+### ❌ Importing one bounded store inside another — hidden coupling
 
-## K — Coding Challenge
+```tsx
+// ❌ CartStore imports AuthStore — circular dependency risk
+import { useAuthStore } from './authStore'
 
-**Challenge:** Build a `checkoutSlice` orchestration action that: validates auth, places the order, clears the cart, adds a success notification, and updates order history — all in one cross-slice action:
-
-**Solution:**
-
-```jsx
-// slices/checkoutSlice.ts
-export const createCheckoutSlice = (set, get) => ({
-  orders: [],
-  isCheckingOut: false,
-  checkoutError: null,
-
+const useCartStore = create(set => ({
+  items: [],
   checkout: async () => {
-    // Guard: must be authenticated
-    if (!get().isAuthenticated) {
-      get().addNotification({ message: "Please log in to checkout", type: "warning" })
-      return
-    }
-
-    // Guard: cart must not be empty
-    if (get().cart.length === 0) {
-      get().addNotification({ message: "Your cart is empty", type: "error" })
-      return
-    }
-
-    set({ isCheckingOut: true, checkoutError: null })
-
-    try {
-      const { cart, user, token } = get()   // read cross-slice state
-
-      const order = await fetch("/api/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ items: cart, userId: user.id }),
-      }).then((r) => {
-        if (!r.ok) throw new Error(`Checkout failed: HTTP ${r.status}`)
-        return r.json()
-      })
-
-      // Atomic cross-slice update: cart + orders + notifications + checkout state
-      set({
-        cart: [],                                  // cartSlice: clear cart
-        orders: [...get().orders, order],          // checkoutSlice: add order
-        isCheckingOut: false,
-        notifications: [                           // notificationSlice: success
-          {
-            id: crypto.randomUUID(),
-            message: `Order #${order.id} placed! 🎉`,
-            type: "success",
-            at: Date.now(),
-          },
-          ...get().notifications,
-        ],
-      })
-    } catch (error) {
-      set({ isCheckingOut: false, checkoutError: error.message })
-      get().addNotification({ message: error.message, type: "error" })
-    }
+    const user = useAuthStore.getState().user  // ❌ tight coupling between bounded stores
+    if (!user) return
+    await submitOrder({ userId: user.id })
   },
-})
+}))
+
+// ✅ If two stores need to coordinate: merge into slices
+// Or: pass the needed value as an argument to the action
+const useCartStore = create(set => ({
+  items: [],
+  checkout: async (userId: number) => {   // ✅ caller provides what's needed
+    await submitOrder({ userId })
+    set({ items: [] })
+  },
+}))
+// Component:
+const { checkout } = useCartStore(s => s.checkout)
+const userId       = useAuthStore(s => s.user?.id)
+// <button onClick={() => userId && checkout(userId)}>Checkout</button>
 ```
 
+---
 
-***
+## K — Coding Challenge + Solution
+
+### Challenge
+
+Add a `placeOrder` root action to a store with `AuthSlice + CartSlice + NotificationSlice` — it reads user + cart, submits, clears cart, and adds a success notification.
+
+### Solution
+
+```tsx
+type AppStore = AuthSlice & CartSlice & NotificationSlice & {
+  placeOrder: () => Promise<void>
+}
+
+export const useAppStore = create<AppStore>((set, get) => ({
+  ...createAuthSlice(set, get),
+  ...createCartSlice(set, get),
+  ...createNotificationSlice(set),
+
+  placeOrder: async () => {
+    const { user, items, clearCart, addNotif } = get()
+
+    if (!user)           return addNotif({ text: 'Please log in first',   type: 'error' })
+    if (items.length === 0) return addNotif({ text: 'Your cart is empty', type: 'info' })
+
+    try {
+      await fetch('/api/orders', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ userId: user.id, items }),
+      }).then(r => { if (!r.ok) throw new Error(`Order failed: ${r.status}`) })
+
+      clearCart()   // CartSlice action via get() ✅
+      addNotif({ text: `Order placed for ${user.name}!`, type: 'success' })
+    } catch (err) {
+      addNotif({ text: (err as Error).message, type: 'error' })
+    }
+  },
+}))
+```
+
+---
+
+---

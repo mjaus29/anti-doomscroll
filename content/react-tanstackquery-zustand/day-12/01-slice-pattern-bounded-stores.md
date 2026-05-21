@@ -1,205 +1,194 @@
-# 1 — Slice Pattern & Bounded Stores
+# 1 — Slice Pattern + Bounded Stores
+
+---
 
 ## T — TL;DR
 
-The slice pattern splits a large Zustand store into focused, domain-specific functions that are combined into one "bounded store" — giving you code separation without sacrificing cross-slice coordination.
+As stores grow, split them into **slices** — typed sub-sections of one store — or into **bounded stores** — completely separate `create()` calls per domain. Slices share a single store instance; bounded stores are fully independent.
+
+---
 
 ## K — Key Concepts
 
-**Why slices — the problem they solve:**
+```tsx
+// ── Option A: Bounded stores — one create() per domain ───────────────────
+// Simplest. Each store is independent. No cross-store complexity.
+// Use when domains are truly unrelated.
 
-```jsx
-// ❌ One giant store — everything tangled together
-const useBigStore = create((set, get) => ({
-  user: null, token: null, login: () => {}, logout: () => {},          // auth
-  cart: [], addToCart: () => {}, removeFromCart: () => {},             // cart
-  theme: "light", toggleTheme: () => {},                               // UI
-  sidebarOpen: false, toggleSidebar: () => {},                         // UI
-  notifications: [], addNotification: () => {},                        // notifications
-  // 200 more lines...
+// stores/auth.ts
+export const useAuthStore = create<AuthStore>(set => ({ user: null, login: async () => {} }))
+
+// stores/ui.ts
+export const useUIStore = create<UIStore>(set => ({ sidebarOpen: false }))
+
+// stores/cart.ts
+export const useCartStore = create<CartStore>(set => ({ items: [] }))
+```
+
+```tsx
+// ── Option B: Slice pattern — one create(), multiple slices ───────────────
+// Use when slices need to share state or call each other's actions.
+
+// slices/authSlice.ts
+export interface AuthSlice {
+  user:      User | null
+  isLoggedIn: boolean
+  setUser:   (user: User | null) => void
+}
+
+export const createAuthSlice = (
+  set: StoreApi<RootStore>['setState'],
+  get: StoreApi<RootStore>['getState']
+): AuthSlice => ({
+  user:      null,
+  isLoggedIn: false,
+  setUser: (user) => set({ user, isLoggedIn: !!user }),
+})
+```
+
+```tsx
+// slices/cartSlice.ts
+export interface CartSlice {
+  items:    CartItem[]
+  addItem:  (item: CartItem) => void
+  clearCart: () => void
+}
+
+export const createCartSlice = (
+  set: StoreApi<RootStore>['setState'],
+  get: StoreApi<RootStore>['getState']
+): CartSlice => ({
+  items: [],
+  addItem: (item) =>
+    set(state => ({ items: [...state.items, item] })),
+  clearCart: () => set({ items: [] }),
+})
+```
+
+```tsx
+// stores/root.ts — combine slices
+import { create, StoreApi } from 'zustand'
+import { AuthSlice, createAuthSlice } from './slices/authSlice'
+import { CartSlice, createCartSlice } from './slices/cartSlice'
+
+export type RootStore = AuthSlice & CartSlice
+
+export const useStore = create<RootStore>((set, get) => ({
+  ...createAuthSlice(set, get),
+  ...createCartSlice(set, get),
 }))
 
-// ✅ Slice pattern — each domain in its own file, merged into one store
+// Typed selector hooks
+export const useUser    = () => useStore(s => s.user)
+export const useCart    = () => useStore(s => s.items)
+export const useSetUser = () => useStore(s => s.setUser)
 ```
 
-**Slice creator signature — the key convention:**
+```
+── When to choose which ─────────────────────────────────────────────────────
 
-```jsx
-// Each slice is a FUNCTION that takes (set, get, api) and returns its slice
-const createAuthSlice = (set, get) => ({
-  // State
-  user: null,
-  token: null,
-  isAuthenticated: false,
-
-  // Actions (can access other slices via get())
-  login: (user, token) => set({ user, token, isAuthenticated: true }),
-  logout: () => {
-    set({ user: null, token: null, isAuthenticated: false })
-    get().clearCart()     // ← cross-slice: calls cart slice action via get()
-  },
-})
-
-const createCartSlice = (set, get) => ({
-  cart: [],
-  addToCart: (item) => set((s) => ({ cart: [...s.cart, item] })),
-  clearCart: () => set({ cart: [] }),
-  getTotal: () => get().cart.reduce((sum, i) => sum + i.price, 0),
-})
-
-const createUISlice = (set) => ({
-  theme: "light",
-  sidebarOpen: false,
-  toggleTheme: () => set((s) => ({ theme: s.theme === "light" ? "dark" : "light" })),
-  toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
-})
+Bounded stores                      Slice pattern
+─────────────────────────────────   ──────────────────────────────────────
+Domains are independent             Slices share state or call each other
+Simpler — no RootStore type         One DevTools view for the whole state
+Good default for most apps          Cross-slice actions are a first-class need
+Easier to tree-shake                Needed when "logout clears everything"
 ```
 
-**Bounded store — combining all slices:**
-
-```jsx
-import { create } from "zustand"
-import { devtools, persist } from "zustand/middleware"
-
-// Combine: spread each slice creator into one store ✅
-export const useBoundStore = create(
-  devtools(
-    persist(
-      (...a) => ({
-        ...createAuthSlice(...a),
-        ...createCartSlice(...a),
-        ...createUISlice(...a),
-      }),
-      { name: "app-store" }
-    ),
-    { name: "AppStore" }
-  )
-)
-```
-
-**File structure for the slice pattern:**
-
-```
-src/
-├── stores/
-│   ├── slices/
-│   │   ├── authSlice.ts     ← domain: user, token, login, logout
-│   │   ├── cartSlice.ts     ← domain: cart, addToCart, clearCart
-│   │   ├── uiSlice.ts       ← domain: theme, sidebar, modals
-│   │   └── filterSlice.ts   ← domain: search filters, pagination
-│   └── index.ts             ← useBoundStore combining all slices
-```
-
-**Using the bounded store in components:**
-
-```jsx
-function CartIcon() {
-  // Selector works across slices — same hook
-  const cartCount = useBoundStore((s) => s.cart.length)
-  return <span>🛒 {cartCount}</span>
-}
-
-function UserMenu() {
-  const { user, logout } = useBoundStore(
-    useShallow((s) => ({ user: s.user, logout: s.logout }))
-  )
-  // logout internally calls clearCart() across slices ✅
-  return <button onClick={logout}>{user?.name} (Logout)</button>
-}
-```
-
+---
 
 ## W — Why It Matters
 
-The slice pattern is how Zustand scales from a 20-line store to a 2,000-line codebase without becoming unmaintainable. Each slice has a single responsibility, lives in its own file, can be tested independently, and communicates with other slices through the shared `get()`. It mirrors the domain-driven structure that senior engineers expect in production apps.
+- A single monolithic store with 30+ fields becomes unmaintainable — slices are the Zustand equivalent of Redux's `combineReducers`, but without the ceremony.
+- Bounded stores are the simpler default — start here and only combine into slices if you need cross-store actions.
+- The slice pattern centralizes DevTools: one store shows all state in one panel instead of hunting across multiple stores.
+
+---
 
 ## I — Interview Q&A
 
-**Q: What is the slice pattern in Zustand and why use it?**
-**A:** The slice pattern splits a store into domain-specific creator functions, each defining state and actions for one concern (auth, cart, UI). They're combined with spread syntax inside a single `create()` call, forming a bounded store. Benefits: code organization by domain, single hook for components, and cross-slice communication via `get()`.
+### Q: What is the slice pattern in Zustand and when should you use it?
 
-**Q: What is a "bounded store" in Zustand?**
-**A:** A bounded store is the single `create()` call that combines all slices into one unified hook — `useBoundStore`. "Bounded" means all slices share the same state context, so `get()` in any slice can read the entire store state including other slices. It contrasts with multiple independent stores.
+**A:** The slice pattern splits a large store into typed sub-objects (`AuthSlice`, `CartSlice`), each defined as a factory function that receives `set`/`get` and returns its portion of state and actions. These are spread into a single `create()` call to form a combined store. Use it when multiple domains need to share state or trigger each other's actions — like a logout action that clears auth AND cart AND filters simultaneously. For truly independent domains, separate `create()` calls (bounded stores) are simpler and preferred. The slice pattern's main advantage is a single DevTools view and type-safe cross-slice access via `get()`.
 
-**Q: How do slices communicate with each other?**
-**A:** Through `get()` — since all slices share the same store, `get()` returns the complete combined state. An action in `authSlice` can call `get().clearCart()` — a function defined in `cartSlice` — because both exist on the same store state object.
+---
 
-## C — Common Pitfalls
+## C — Common Pitfalls + Fix
 
-| Pitfall | Fix |
-| :-- | :-- |
-| State key collisions across slices — two slices both define `isLoading` | Namespace keys: `authIsLoading`, `cartIsLoading`, or use nested objects per slice |
-| Passing `set` from the bounded store into a slice that was written for a local `set` | Always write slices as `createSlice = (set, get) => (...)` — they receive the bounded store's `set` |
-| Cross-slice calls using imported store hooks instead of `get()` | Use `get().action()` inside actions — don't import `useBoundStore` inside the store file |
-| Forgetting to spread all slices in the bounded store | `...createAuthSlice(...a), ...createCartSlice(...a)` — every slice must be spread |
+### ❌ Putting everything in one flat file as the store grows
 
-## K — Coding Challenge
+```tsx
+// ❌ 200-line create() with auth, cart, UI, filters all mixed
+const useStore = create(set => ({
+  user: null, isLoggedIn: false, login: () => {}, logout: () => {},
+  items: [], addItem: () => {}, removeItem: () => {}, // cart
+  theme: 'light', sidebarOpen: false,                 // UI
+  category: 'all', sortBy: 'popular',                 // filters
+  // ... 30 more fields and actions
+}))
+// Impossible to navigate, test, or modify safely ❌
 
-**Challenge:** Build a 3-slice bounded store for an e-commerce app — `authSlice`, `cartSlice`, `notificationSlice` — where logout clears the cart AND adds a "Logged out" notification (cross-slice action):
-
-**Solution:**
-
-```jsx
-// slices/authSlice.ts
-export const createAuthSlice = (set, get) => ({
-  user: null,
-  token: null,
-  isAuthenticated: false,
-
-  login: (user, token) => {
-    set({ user, token, isAuthenticated: true })
-    get().addNotification({ message: `Welcome back, ${user.name}!`, type: "success" })
-  },
-
-  logout: () => {
-    const name = get().user?.name
-    set({ user: null, token: null, isAuthenticated: false })
-    get().clearCart()                                    // ← cartSlice action
-    get().addNotification({ message: `Goodbye, ${name}`, type: "info" }) // ← notificationSlice
-  },
-})
-
-// slices/cartSlice.ts
-export const createCartSlice = (set, get) => ({
-  cart: [],
-  addToCart: (item) => {
-    set((s) => ({ cart: [...s.cart, item] }))
-    get().addNotification({ message: `${item.name} added to cart`, type: "success" })
-  },
-  removeFromCart: (id) => set((s) => ({ cart: s.cart.filter((i) => i.id !== id) })),
-  clearCart: () => set({ cart: [] }),
-  getCartTotal: () => get().cart.reduce((sum, i) => sum + i.price * i.quantity, 0),
-})
-
-// slices/notificationSlice.ts
-export const createNotificationSlice = (set) => ({
-  notifications: [],
-  addNotification: ({ message, type = "info" }) =>
-    set((s) => ({
-      notifications: [
-        { id: crypto.randomUUID(), message, type, at: Date.now() },
-        ...s.notifications,
-      ].slice(0, 10),   // max 10 notifications
-    })),
-  dismissNotification: (id) =>
-    set((s) => ({ notifications: s.notifications.filter((n) => n.id !== id) })),
-})
-
-// stores/index.ts — bounded store
-import { create } from "zustand"
-import { devtools } from "zustand/middleware"
-
-export const useBoundStore = create(
-  devtools(
-    (...a) => ({
-      ...createAuthSlice(...a),
-      ...createCartSlice(...a),
-      ...createNotificationSlice(...a),
-    }),
-    { name: "AppStore" }
-  )
-)
+// ✅ Slice pattern: each domain in its own file, combined cleanly
+export const useStore = create<RootStore>((set, get) => ({
+  ...createAuthSlice(set, get),
+  ...createCartSlice(set, get),
+  ...createUISlice(set, get),
+  ...createFilterSlice(set, get),
+}))
 ```
 
+---
 
-***
+## K — Coding Challenge + Solution
+
+### Challenge
+
+Create two slices — `NotificationSlice` (list of notifications, `addNotif`, `dismissNotif`) and `UISlice` (sidebarOpen, activeModal) — and combine them into a single `useAppStore`.
+
+### Solution
+
+```tsx
+// slices/notificationSlice.ts
+export interface Notification { id: number; text: string; type: 'info' | 'error' | 'success' }
+export interface NotificationSlice {
+  notifications: Notification[]
+  addNotif:      (n: Omit<Notification, 'id'>) => void
+  dismissNotif:  (id: number) => void
+}
+export const createNotificationSlice = (set: any): NotificationSlice => ({
+  notifications: [],
+  addNotif: (n) => set((s: any) => ({
+    notifications: [...s.notifications, { ...n, id: Date.now() }]
+  })),
+  dismissNotif: (id) => set((s: any) => ({
+    notifications: s.notifications.filter((n: Notification) => n.id !== id)
+  })),
+})
+
+// slices/uiSlice.ts
+export interface UISlice {
+  sidebarOpen: boolean
+  activeModal: string | null
+  toggleSidebar: () => void
+  openModal:     (name: string) => void
+  closeModal:    () => void
+}
+export const createUISlice = (set: any): UISlice => ({
+  sidebarOpen: false,
+  activeModal: null,
+  toggleSidebar: () => set((s: any) => ({ sidebarOpen: !s.sidebarOpen })),
+  openModal:     (name) => set({ activeModal: name }),
+  closeModal:    () => set({ activeModal: null }),
+})
+
+// stores/app.ts
+type AppStore = NotificationSlice & UISlice
+export const useAppStore = create<AppStore>((set, get) => ({
+  ...createNotificationSlice(set),
+  ...createUISlice(set),
+}))
+```
+
+---
+
+---

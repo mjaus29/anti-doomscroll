@@ -1,127 +1,231 @@
 # 9 — Preserving State
 
+---
+
 ## T — TL;DR
 
-React preserves a component's state as long as the same component type renders at the same position in the tree between renders.
+React **preserves** a component's state as long as it renders at the **same position in the tree** with the **same type**. Conditional rendering at the same position with the same type preserves state. Understanding preservation prevents bugs where state persists when it shouldn't.
+
+---
 
 ## K — Key Concepts
 
-**State preservation rules:**
-
-React identifies components by their **position in the tree** and their **type**. Same position + same type = state is preserved across re-renders.
-
-```jsx
-// State IS preserved — same component type in same position
+```tsx
+// ── Same position + same type = preserved state ───────────────────────────
 function App() {
-  const [isFancy, setIsFancy] = useState(false)
+  const [isPaused, setIsPaused] = useState(false)
+
   return (
     <div>
-      {isFancy ? <Counter color="pink" /> : <Counter color="blue" />}
+      {isPaused
+        ? <Counter />     // same position, same type
+        : <Counter />     // → state PRESERVED when isPaused changes ✅
+      }
     </div>
   )
 }
-// Counter's internal count is NOT reset when isFancy toggles
-// React sees: "same Counter at position 0" → preserve state
+// Toggling isPaused doesn't reset the Counter's count
+// React sees: position 0 = Counter before, Counter after → same → keep state
 ```
 
-**State is RESET when:**
-
-- The component type changes at that position
-- The component unmounts (removed from tree)
-- The `key` prop changes
-
-```jsx
-// State IS reset — different types at same position
-{isFancy ? <FancyCounter /> : <PlainCounter />}
-// Different types → React unmounts one, mounts the other → state lost
-
-// State IS reset — same type, different key
-{version === 1 ? <Counter key="v1" /> : <Counter key="v2" />}
-// Different keys → treated as different component instances
-```
-
-**Never define components inside other components:**
-
-```jsx
-// ❌ Creates a new type on every render → state resets every render!
-function Parent() {
-  function Child() {  // new function reference each render
-    const [count, setCount] = useState(0)
-    return <button onClick={() => setCount(c => c + 1)}>{count}</button>
-  }
-  return <Child />
-}
-
-// ✅ Define outside
-function Child() {
-  const [count, setCount] = useState(0)
-  return <button onClick={() => setCount(c => c + 1)}>{count}</button>
-}
-function Parent() {
-  return <Child />
-}
-```
-
-
-## W — Why It Matters
-
-Unexplained state resets and unexpected state preservation are two of the most confusing bugs in React. Both trace back to this rule. Understanding it lets you predict exactly when state will and won't be preserved — a clear sign of senior React understanding.
-
-## I — Interview Q&A
-
-**Q: When does React preserve component state between renders?**
-**A:** When the same component type renders at the same tree position on consecutive renders. React matches components by position and type — if both match, state is preserved regardless of prop changes.
-
-**Q: Why does defining a component inside another component cause bugs?**
-**A:** Because the inner component is a new function reference on every render — React sees it as a different type each time and unmounts/remounts it, resetting all state. Always define components at the module level.
-
-**Q: Does changing props reset a component's state?**
-**A:** No. Props changing does not reset state. Only unmounting, type changes, or `key` changes reset state. This is why `useState(prop)` gets stale — the prop changes but the state doesn't reset.
-
-## C — Common Pitfalls
-
-| Pitfall | Fix |
-| :-- | :-- |
-| Defining components inside render — resets state on every render | Always define components at the module/file level |
-| Expecting a prop change to reset state | Use `key` prop to force a state reset |
-| Assuming same-looking conditional renders have separate state | React tracks by position, not appearance — same position = same state |
-
-## K — Coding Challenge
-
-**Challenge:** Why does `Counter`'s count survive the checkbox toggle? Will it reset if you change `isFancy`?
-
-```jsx
+```tsx
+// ── Different type at same position = state destroyed ──────────────────────
 function App() {
   const [isFancy, setIsFancy] = useState(false)
 
   return (
-    <>
-      {isFancy ? <Counter label="Fancy" /> : <Counter label="Plain" />}
-      <label>
-        <input type="checkbox" checked={isFancy} onChange={e => setIsFancy(e.target.checked)} />
-        Fancy mode
-      </label>
-    </>
+    <div>
+      {isFancy
+        ? <FancyCounter />   // different type
+        : <Counter />        // → state DESTROYED when switching ✅
+      }
+    </div>
+  )
+}
+// Counter → FancyCounter: different component types → unmount + remount → fresh state
+```
+
+```tsx
+// ── Why this matters: the hidden state preservation bug ──────────────────
+interface Props { name: string; score: number }
+
+function PlayerCard({ name, score }: Props) {
+  const [isHighlighted, setIsHighlighted] = useState(false)
+
+  return (
+    <div>
+      <p>{name}: {score}</p>
+      <button onClick={() => setIsHighlighted(h => !h)}>
+        {isHighlighted ? '★' : '☆'}
+      </button>
+    </div>
   )
 }
 
-function Counter({ label }) {
+function Scoreboard() {
+  const [showSecond, setShowSecond] = useState(false)
+
+  return (
+    <div>
+      {/* Both render PlayerCard at position 0 — state persists between players! */}
+      {showSecond
+        ? <PlayerCard name="Bob"   score={42} />
+        : <PlayerCard name="Alice" score={37} />
+      }
+    </div>
+  )
+}
+// Bug: if Alice's card is highlighted, switching to Bob shows Bob's card highlighted ❌
+// Fix: use key prop (subtopic 10) or render both and hide one
+```
+
+```tsx
+// ── Intentionally preserving state with display:none ─────────────────────
+// Sometimes you WANT to preserve state while hiding
+function TabbedForm() {
+  const [activeTab, setActiveTab] = useState(0)
+
+  return (
+    <>
+      {[0, 1, 2].map(i => (
+        <div key={i} hidden={activeTab !== i}>  {/* hidden keeps component mounted */}
+          <StepForm step={i} />   {/* state preserved when hidden ✅ */}
+        </div>
+      ))}
+    </>
+  )
+}
+// hidden attribute: component stays in DOM → state preserved
+// vs conditional rendering: component unmounts → state lost
+```
+
+---
+
+## W — Why It Matters
+
+- The "same type at same position preserves state" rule explains bugs like: switching between two user profiles with the same component but different IDs — the input state from user A appears on user B.
+- `hidden` attribute vs conditional rendering is a real architectural choice — forms especially benefit from `hidden` (user doesn't lose typed data when switching tabs), while lists benefit from conditional rendering (don't mount off-screen items).
+- Understanding preservation is the prerequisite for understanding why key-based reset (subtopic 10) works — changing the key changes identity, forcing remount.
+
+---
+
+## I — Interview Q&A
+
+### Q: When does React preserve a component's state vs reset it?
+
+**A:** React preserves state when a component renders at the **same position in the component tree** with the **same type** across renders. The position is determined by the structure of the JSX tree — not the variable names or conditions in your code. If `{condition ? <A /> : <A />}` renders at the same position, state is preserved between condition changes. State is reset when: the component is removed from the tree (unmounted), a different component type renders at that position, or the `key` prop changes. The practical consequence: if the same component type renders at the same position but with different data (like different user IDs), you must use a `key` prop to force fresh state.
+
+---
+
+## C — Common Pitfalls + Fix
+
+### ❌ Nesting component definitions inside render — forces remount every render
+
+```tsx
+// ❌ Component defined inside another component — new type on every render
+function ParentBad() {
   const [count, setCount] = useState(0)
-  return <button onClick={() => setCount(c => c + 1)}>{label}: {count}</button>
+
+  // This creates a NEW function reference (new "type") on every render
+  function InnerInput() {
+    const [text, setText] = useState('')
+    return <input value={text} onChange={e => setText(e.target.value)} />
+  }
+
+  return (
+    <div>
+      <button onClick={() => setCount(c => c + 1)}>{count}</button>
+      <InnerInput />  {/* Unmounts and remounts on every render → state lost ❌ */}
+    </div>
+  )
+}
+
+// ✅ Define components at the module level — stable type reference
+function InnerInput() {
+  const [text, setText] = useState('')
+  return <input value={text} onChange={e => setText(e.target.value)} />
+}
+
+function ParentGood() {
+  const [count, setCount] = useState(0)
+  return (
+    <div>
+      <button onClick={() => setCount(c => c + 1)}>{count}</button>
+      <InnerInput />   {/* same type across renders — state preserved ✅ */}
+    </div>
+  )
 }
 ```
 
-**Solution:**
+---
 
-```jsx
-// The count is PRESERVED when toggling isFancy.
-// Reason: it's always <Counter> at position 0 — same type, same position.
-// React doesn't care about the label prop change — position + type match.
+## K — Coding Challenge + Solution
 
-// To force a reset when mode changes, add a key:
-{isFancy ? <Counter key="fancy" label="Fancy" /> : <Counter key="plain" label="Plain" />}
-// Now toggling isFancy → different key → unmount + remount → count resets to 0 ✅
+### Challenge
+
+Show the preservation bug with a `CommentInput` component that renders for two different users, then add the `hidden` pattern to preserve state while switching views.
+
+### Solution
+
+```tsx
+function CommentInput({ authorName }: { authorName: string }) {
+  const [text, setText] = useState('')
+  return (
+    <div>
+      <p>Comment as {authorName}:</p>
+      <textarea
+        value={text}
+        onChange={e => setText(e.target.value)}
+        placeholder="Write a comment…"
+      />
+      <p>{text.length} chars</p>
+    </div>
+  )
+}
+
+// ── Version 1: Bug — state preserved across user switch ───────────────────
+function BuggyCommentSection() {
+  const [showBob, setShowBob] = useState(false)
+  return (
+    <div>
+      <button onClick={() => setShowBob(b => !b)}>
+        Switch to {showBob ? 'Alice' : 'Bob'}
+      </button>
+      {/* Same position, same type → text persists when switching ❌ */}
+      {showBob
+        ? <CommentInput authorName="Bob"   />
+        : <CommentInput authorName="Alice" />
+      }
+    </div>
+  )
+}
+
+// ── Version 2: Preserve state for BOTH using hidden ───────────────────────
+function PreservingCommentSection() {
+  const [activeUser, setActiveUser] = useState<'Alice' | 'Bob'>('Alice')
+  const users = ['Alice', 'Bob'] as const
+
+  return (
+    <div>
+      <div>
+        {users.map(u => (
+          <button key={u} onClick={() => setActiveUser(u)}
+            style={{ fontWeight: u === activeUser ? 'bold' : 'normal' }}>
+            {u}
+          </button>
+        ))}
+      </div>
+      {/* hidden keeps components mounted → state preserved for both users ✅ */}
+      {users.map(u => (
+        <div key={u} hidden={activeUser !== u}>
+          <CommentInput authorName={u} />
+        </div>
+      ))}
+    </div>
+  )
+}
 ```
 
+---
 
-***
+---

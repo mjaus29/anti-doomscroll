@@ -1,135 +1,140 @@
 # 6 — Squash vs Merge Commit vs Rebase Merge
 
+---
+
 ## T — TL;DR
 
-These are the three merge strategies for closing a PR — squash collapses all commits into one, merge commit preserves branch topology, rebase creates linear history without a merge commit; each team picks one and stays consistent.
+These are the three ways GitHub merges a PR. **Squash** = all commits combined into one on main. **Merge commit** = preserves all commits + adds a merge commit. **Rebase** = replays all commits linearly on main, no merge commit. Each produces a different history shape — choose based on your team's history philosophy.
+
+---
 
 ## K — Key Concepts
 
 ```
-── Starting state ────────────────────────────────────────
+── Starting state ─────────────────────────────────────────────────────────────
+main:    A ← B ← C
+feature: A ← B ← C ← D ← E ← F (3 commits: D, E, F)
 
-main:    A → B
-feature: A → B → C → D → E (3 feature commits: "WIP", "fix typo", "add tests")
+── 1. Squash and merge ────────────────────────────────────────────────────────
+main after: A ← B ← C ← S
+                         ↑ S = squash commit containing all of D+E+F changes
+                           One commit. Authored by PR author.
+                           Feature branch commits D, E, F not in main's history.
 
-── Strategy 1: Squash and Merge ─────────────────────────
+Pros:  Clean linear history. Each PR = 1 commit. Easy git bisect.
+Cons:  Individual commit messages (D, E, F) lost on main.
+       Feature branch becomes "unmerged" — use git branch -D.
 
-main:    A → B → S   (S = single squashed commit: all C+D+E changes)
+── 2. Merge commit ────────────────────────────────────────────────────────────
+main after: A ← B ← C ← D ← E ← F ← M
+                                        ↑ M = merge commit with 2 parents (C and F)
+                           All original commits preserved with original SHAs.
 
-git switch main
-git merge --squash feature/login
-git commit -m "feat(auth): add login flow (#42)"
+Pros:  Full history preserved. Can see exact work from each commit.
+       Standard git merge tracking.
+Cons:  History has merge commits ("noise"). git log --graph needed.
+       Bisect harder with many feature branches in history.
 
-Result:
-✅ Clean linear main history
-✅ One commit per feature — easy to revert entire feature
-✅ No WIP/typo commits polluting main
-❌ Individual commit history lost on main
-❌ Feature branch not "fully merged" — `git branch -d` needs `-D`
-❌ Author attribution collapsed to one person
+── 3. Rebase and merge ────────────────────────────────────────────────────────
+main after: A ← B ← C ← D' ← E' ← F'
+                          New SHAs — replayed on top of C.
+                          Linear history. All commits preserved.
 
-Best for: PRs with messy WIP commits, teams wanting clean main
+Pros:  Linear history AND all individual commits visible.
+Cons:  Rebased commits have new SHAs — feature branch diverges.
+       Can lose context of which PR commits came from.
 
-── Strategy 2: Merge Commit (no-ff) ─────────────────────
-
-main:    A → B → M   (M = merge commit with two parents)
-              ↗   ↗
-             C → D → E
-
-git switch main
-git merge --no-ff feature/login -m "Merge feat(auth): login flow (#42)"
-
-Result:
-✅ Full history preserved — every commit visible
-✅ Branch topology visible in git log --graph
-✅ Easy to see what was part of which feature
-❌ Merge commits add noise to `git log --oneline`
-❌ Non-linear history harder to bisect
-
-Best for: open-source projects, auditable enterprise codebases
-
-── Strategy 3: Rebase Merge ─────────────────────────────
-
-main:    A → B → C' → D' → E'   (rebased commits, new SHAs)
-
-git switch feature/login
-git rebase main
-git switch main
-git merge --ff-only feature/login   # fast-forward only
-
-Result:
-✅ Linear history — `git log` reads like a story
-✅ Full per-commit history preserved (unlike squash)
-✅ Easy to bisect (linear)
-❌ Rewrites commit SHAs — author dates may change
-❌ Requires force-push after rebase
-❌ Can create conflicts per commit (not per file)
-
-Best for: teams that value linear history + full commit detail
-(e.g., Linux kernel, many OSS projects)
-
-── Choosing a strategy ───────────────────────────────────
-
-| Team type                     | Recommended strategy   |
-|-------------------------------|------------------------|
-| Fast-moving SaaS product      | Squash merge           |
-| Open-source library           | Merge commit or Rebase |
-| Strict linear history culture | Rebase merge           |
-| Auditable enterprise          | Merge commit (no-ff)   |
-| Mixed (depends on PR)         | Pick one and enforce   |
-
-The most important rule: PICK ONE and enforce it via
-GitHub branch protection → "allowed merge types"
+── Recommendation matrix ─────────────────────────────────────────────────────
+High-velocity team, CI-driven:     Squash → clean, fast to bisect
+Open source, preserve attribution: Merge commit → full credit
+Library with meaningful commits:   Rebase merge → linear + detailed
 ```
 
+---
 
 ## W — Why It Matters
 
-Inconsistency between merge strategies is worse than any single bad choice — a `git log --graph` that mixes squash commits with merge commits with rebased commits is unreadable. GitHub's branch protection lets you enforce exactly one strategy, removing the decision from individual PR authors.
+- Squash merge is the most team-friendly for application code — one commit per feature/fix makes `git log --oneline main` readable and `git bisect` effective. The PR itself preserves the full commit history.
+- Rebase merge requires every PR branch to be rebased onto `main` before merging (otherwise replayed commits diverge from intent). Without enforcement via branch protection "require up to date", this causes confusing histories.
+- Consistency matters more than which strategy — pick one for `main` and enforce it with branch protection ("allow squash merging only"). Mixed strategies on one branch produce an unreadable history.
+
+---
 
 ## I — Interview Q&A
 
-**Q: If you squash-merge a PR, can you use `git bisect` to find which "commit" introduced a bug?**
-A: Only to the squash commit level — you can find which PR introduced it, but not which individual commit within the PR. For fine-grained bisect across all commits, you need rebase merge (linear history with all commits). Squash is fast for history browsing but loses bisect granularity.
+### Q: Why would you choose squash merge over rebase merge for a team GitHub workflow?
 
-**Q: Why does squash merge require `git branch -D` instead of `git branch -d`?**
-A: Git's safe `-d` checks if the branch's commits are reachable from the current branch. After a squash merge, the original commits (C, D, E) are NOT in main's history — only the squashed commit S is. So Git considers the branch "not merged" and requires `-D` to force delete.
+**A:** Squash merge creates one commit per PR on `main`, making history scannable — each line in `git log --oneline main` represents one complete feature or fix. This makes `git bisect` effective (test each "feature unit" rather than individual implementation steps) and code review context clear (blame shows the PR-level change, not a specific WIP commit). Rebase merge preserves all individual commits but requires them to be meaningful — it works well when developers write intentional commits throughout, but breaks down when PR histories have "wip:", "fix typo", "address review" commits. Squash merge is forgiving of messy in-PR history while keeping the permanent record clean.
 
-## C — Common Pitfalls
+---
 
-| Pitfall | Fix |
-| :-- | :-- |
-| Mixing merge strategies across PRs — unreadable history | Enforce one strategy in GitHub Settings → Branches → merge methods |
-| Rebase merge leaving old remote branch with old SHAs | Always force push after rebase and update PR branch before merge |
-| Squash commit message defaulting to list of all PR commits | Write a meaningful squash message summarizing the PR intent |
+## C — Common Pitfalls + Fix
 
-## K — Coding Challenge
-
-**Demonstrate all three strategies on the same branch:**
+### ❌ Mixing merge strategies on main — unreadable history
 
 ```bash
-# feature/demo has commits: "WIP: step1", "WIP: step2", "final: done"
+# ❌ Some PRs squashed, some rebased, some merge committed
+git log --oneline main
+# abc123 Merge pull request #45 from feature/auth    ← merge commit
+# def456 feat: add payment endpoint                   ← squash
+# ghi789 wip: started something                      ← rebase (bad commit)
+# jkl012 fix: typo                                   ← rebase (trivial)
+# mno345 feat: add user profile                      ← squash
+# pqr678 Merge pull request #38 from feature/ui      ← merge commit
+# Completely inconsistent ❌
+
+# ✅ Enforce ONE strategy in branch protection settings:
+# Repository → Settings → General → Pull Requests:
+#   ✅ Allow squash merging       (check this one)
+#   ❌ Allow merge commits        (uncheck)
+#   ❌ Allow rebase merging       (uncheck)
 ```
 
-**Solution:**
+---
+
+## K — Coding Challenge + Solution
+
+### Challenge
+
+Simulate all three merge strategies on a local repo and compare the resulting histories.
+
+### Solution
 
 ```bash
-# Strategy 1: Squash
+# Setup
+git init merge-demo && cd merge-demo
+echo "v1" > app.ts && git add . && git commit -m "init: base"
+
+# Branch with 3 commits
+git switch -c feature/test
+echo "feat1" >> app.ts && git commit -am "feat: step 1"
+echo "feat2" >> app.ts && git commit -am "wip: step 2"
+echo "feat3" >> app.ts && git commit -am "fix: step 3"
+
+# ── Strategy 1: Squash ────────────────────────────────────────────────────
 git switch main
-git merge --squash feature/demo
-git commit -m "feat(demo): complete demo feature"
+git merge --squash feature/test
+git commit -m "feat: complete feature (squash of 3 commits)"
+git log --oneline    # 2 commits: init + feat ✅
 
-# Strategy 2: Merge commit
+# Reset main for next demo
+git reset --hard HEAD~1
+
+# ── Strategy 2: Merge commit ─────────────────────────────────────────────
+git merge --no-ff feature/test -m "merge: feature/test PR"
+git log --oneline --graph   # shows merge topology
+
+# Reset main for next demo
+git reset --hard HEAD~4  # remove the 3 commits + merge commit
+
+# ── Strategy 3: Rebase merge ─────────────────────────────────────────────
+git switch feature/test
+git rebase main
 git switch main
-git merge --no-ff feature/demo -m "Merge feat(demo): demo feature (#1)"
-
-# Strategy 3: Rebase + fast-forward
-git switch feature/demo && git rebase main
-git switch main && git merge --ff-only feature/demo
-
-# Enforce team default (GitHub Settings alternative):
-# Settings → Branches → main → Allow squash merging only ← one source of truth
+git merge --ff-only feature/test   # fast-forward (linear = always FF)
+git log --oneline    # 4 commits: init + 3 replayed ✅
 ```
 
+---
 
-***
+---

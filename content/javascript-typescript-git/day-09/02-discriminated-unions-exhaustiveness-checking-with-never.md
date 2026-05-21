@@ -1,125 +1,177 @@
-# 2 — Discriminated Unions & Exhaustiveness Checking with `never`
+# 2 — Discriminated Unions + Exhaustiveness Checking with never
+
+---
 
 ## T — TL;DR
 
-Discriminated unions use a shared literal field to let TypeScript narrow each variant; `never` in the `default` branch guarantees you've handled all cases — if you add a new variant, TypeScript errors everywhere you forgot to update.
+A **discriminated union** is a union where every member has a common literal field (the **discriminant**) that uniquely identifies it. TypeScript uses the discriminant in a switch/if to narrow to the exact member. Combined with `never` in the default branch, you get **exhaustiveness checking** — a compile error if you forget a case.
+
+---
 
 ## K — Key Concepts
 
-```ts
-// ── Discriminated union ────────────────────────────────────
-type NetworkState =
-  | { status: "loading" }
-  | { status: "success"; data: string[] }
-  | { status: "error"; code: number; message: string }
+```typescript
+// ── Discriminated union ───────────────────────────────────────────────────
+// Each variant has 'type' (or 'kind', 'tag') as a unique literal
+type Shape =
+  | { type: 'circle';    radius: number }
+  | { type: 'rectangle'; width: number; height: number }
+  | { type: 'triangle';  base: number;  height: number }
 
-function render(state: NetworkState): string {
-  switch (state.status) {           // `status` is the discriminant
-    case "loading":
-      return "Loading..."
-    case "success":
-      return state.data.join(", ") // ✅ data available here
-    case "error":
-      return `Error ${state.code}: ${state.message}` // ✅ code + message
-  }
-}
-
-// ── Exhaustiveness check with never ───────────────────────
-function assertNever(x: never): never {
-  throw new Error(`Unhandled case: ${JSON.stringify(x)}`)
-}
-
-function renderWithExhaustive(state: NetworkState): string {
-  switch (state.status) {
-    case "loading":  return "Loading..."
-    case "success":  return state.data.join(", ")
-    case "error":    return `Error ${state.code}: ${state.message}`
-    default:
-      return assertNever(state)   // ← state is `never` here if all cases handled
-  }
-}
-// Add a new variant to NetworkState without updating this switch
-// → TypeScript error: Argument of type '{ status: "timeout" }' is not assignable to 'never'
-// You get a compile error at every switch that isn't updated ✅
-
-// ── Alternative: never assignment pattern ─────────────────
-function renderAlt(state: NetworkState): string {
-  switch (state.status) {
-    case "loading":  return "Loading..."
-    case "success":  return state.data.join(", ")
-    case "error":    return `Error ${state.code}: ${state.message}`
-    default: {
-      const _exhaustive: never = state  // inline — same effect, no helper needed
-      throw new Error(`Unhandled: ${JSON.stringify(_exhaustive)}`)
-    }
-  }
-}
-
-// ── Discriminated unions for Redux/state machines ──────────
-type Action =
-  | { type: "INCREMENT"; by: number }
-  | { type: "DECREMENT"; by: number }
-  | { type: "RESET" }
-
-function reducer(state: number, action: Action): number {
-  switch (action.type) {
-    case "INCREMENT": return state + action.by  // ✅ by is number
-    case "DECREMENT": return state - action.by  // ✅ by is number
-    case "RESET":     return 0
-    default: return assertNever(action)         // exhaustive guard
+function area(shape: Shape): number {
+  switch (shape.type) {
+    case 'circle':
+      return Math.PI * shape.radius ** 2    // only .radius available ✅
+    case 'rectangle':
+      return shape.width * shape.height     // only .width/.height ✅
+    case 'triangle':
+      return (shape.base * shape.height) / 2
   }
 }
 ```
 
+```typescript
+// ── Exhaustiveness checking with never ────────────────────────────────────
+function assertNever(value: never, message?: string): never {
+  throw new Error(message ?? `Unhandled value: ${JSON.stringify(value)}`)
+}
+
+type Status = 'pending' | 'active' | 'suspended' | 'deleted'
+
+function describe(status: Status): string {
+  switch (status) {
+    case 'pending':   return 'Awaiting review'
+    case 'active':    return 'Account is live'
+    case 'suspended': return 'Temporarily disabled'
+    case 'deleted':   return 'Account removed'
+    default:
+      return assertNever(status)
+      // If you add 'archived' to Status and forget a case:
+      // TS2345: Argument of type 'string' is not assignable to type 'never' ✅
+  }
+}
+
+// ── Discriminated union for API state ─────────────────────────────────────
+type AsyncState<T> =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'success'; data: T }
+  | { status: 'error';   error: Error }
+
+function renderState<T>(state: AsyncState<T>, render: (data: T) => string): string {
+  switch (state.status) {
+    case 'idle':    return 'Not started'
+    case 'loading': return 'Loading...'
+    case 'success': return render(state.data)   // data available ✅
+    case 'error':   return `Error: ${state.error.message}`
+    default: return assertNever(state)           // exhaustive ✅
+  }
+}
+```
+
+```typescript
+// ── Multiple discriminants ────────────────────────────────────────────────
+type Action =
+  | { type: 'user/login';  payload: { email: string; password: string } }
+  | { type: 'user/logout' }
+  | { type: 'post/create'; payload: { title: string; body: string } }
+  | { type: 'post/delete'; payload: { id: number } }
+
+// Extract payload type for a specific action
+type ActionPayload<A extends Action, T extends A['type']> =
+  Extract<A, { type: T }> extends { payload: infer P } ? P : never
+
+type LoginPayload = ActionPayload<Action, 'user/login'>
+// { email: string; password: string } ✅
+
+// Type-safe dispatch
+function dispatch(action: Action): void {
+  switch (action.type) {
+    case 'user/login':  handleLogin(action.payload); break
+    case 'user/logout': handleLogout(); break
+    case 'post/create': handleCreate(action.payload); break
+    case 'post/delete': handleDelete(action.payload); break
+    default: assertNever(action)
+  }
+}
+```
+
+---
 
 ## W — Why It Matters
 
-The `assertNever` pattern is the TypeScript equivalent of a compile-time test for completeness. When a business model grows (new payment method, new order status), TypeScript enforces that every handler is updated — before the code ships. This is the pattern that prevents "we forgot to handle the new case" bugs.
+- Discriminated unions are how Redux actions, React component variants, API states, and result types are typed — every library that models "one of several shapes" uses this pattern. Understanding it reads 90% of real TypeScript codebases.
+- `assertNever` in the `default` branch turns a runtime safety net into a compile-time guarantee — adding a new union member without handling it becomes a TS error, not a silent bug.
+- The discriminant field (`type`, `kind`, `status`) is the minimum change that makes a union safely narrowable — without it, TypeScript can't tell the branches apart and you'd need `in` checks for every property.
+
+---
 
 ## I — Interview Q&A
 
-**Q: What makes a union "discriminated"?**
-A: A shared property with a unique literal type per variant — the discriminant. `{ status: "loading" }` and `{ status: "success" }` share `status` but with different literal values. TypeScript uses this to narrow the entire object's type inside each branch.
+### Q: What makes a union "discriminated" and why is the discriminant important?
 
-**Q: What happens if you skip the `default: assertNever(state)` pattern?**
-A: TypeScript only errors on missing cases if it can prove the function doesn't return in some path (with `noImplicitReturns`). Without `assertNever`, you might miss a case silently. With it, TypeScript catches unhandled variants at compile time.
+**A:** A discriminated union has a common property (the discriminant) whose type is a unique literal in each union member — `type: 'circle'`, `type: 'rectangle'`. TypeScript uses this to narrow the entire union to a single member inside a conditional or switch. Without a discriminant, you'd need to check for unique properties with `in` (`'radius' in shape`) which is fragile and doesn't scale. The discriminant makes the intent explicit: checking `shape.type === 'circle'` unambiguously selects the circle variant, giving full access to `.radius` with no casts.
 
-## C — Common Pitfalls
+---
 
-| Pitfall | Fix |
-| :-- | :-- |
-| Discriminant is not a literal type (e.g., `status: string`) | Use string literal types: `status: "loading" \| "success"` not `string` |
-| Two variants sharing the same discriminant value | Each discriminant value must be unique per variant |
-| `assertNever` missing from the codebase — just using `default: break` | Always implement the helper — it's 2 lines and saves hours |
+## C — Common Pitfalls + Fix
 
-## K — Coding Challenge
+### ❌ Non-literal discriminant — TypeScript can't narrow
 
-**Add a new `"cancelled"` variant and ensure `assertNever` catches every switch that's missing the new case:**
+```typescript
+// ❌ discriminant is 'string' — TypeScript can't tell members apart
+type A = { kind: string; x: number }
+type B = { kind: string; y: number }
+type AB = A | B
+function use(v: AB) {
+  if (v.kind === 'a') v.x   // TS error: x might not exist (kind is just string) ❌
+}
 
-```ts
-type OrderStatus =
-  | { status: "pending" }
-  | { status: "fulfilled"; shippedAt: Date }
-  // Add: | { status: "cancelled"; reason: string }
-```
-
-**Solution:**
-
-```ts
-type OrderStatus =
-  | { status: "pending" }
-  | { status: "fulfilled"; shippedAt: Date }
-  | { status: "cancelled"; reason: string }   // ← new variant
-
-function describeOrder(order: OrderStatus): string {
-  switch (order.status) {
-    case "pending":   return "Waiting for fulfillment"
-    case "fulfilled": return `Shipped on ${order.shippedAt.toDateString()}`
-    case "cancelled": return `Cancelled: ${order.reason}` // ← must add this
-    default: return assertNever(order)  // errors if any case is missing
-  }
+// ✅ Use literal types as discriminants
+type A2 = { kind: 'a'; x: number }
+type B2 = { kind: 'b'; y: number }
+type AB2 = A2 | B2
+function use2(v: AB2) {
+  if (v.kind === 'a') v.x   // ✅ narrowed to A2
 }
 ```
 
+---
 
-***
+## K — Coding Challenge + Solution
+
+### Challenge
+
+Model a payment system as a discriminated union: `PaymentMethod` with `card`, `bankTransfer`, `crypto` variants. Write `processPayment(method: PaymentMethod): string` with exhaustive checking. Add a new `wallet` variant and fix the compile error.
+
+### Solution
+
+```typescript
+type PaymentMethod =
+  | { type: 'card';         cardNumber: string; expiry: string; cvv: string }
+  | { type: 'bankTransfer'; accountNo: string;  routingNo: string }
+  | { type: 'crypto';       address: string;    network: 'ETH' | 'BTC' | 'SOL' }
+  | { type: 'wallet';       walletId: string;   provider: string }
+
+function processPayment(method: PaymentMethod): string {
+  switch (method.type) {
+    case 'card':
+      return `Charging card ending ${method.cardNumber.slice(-4)}`
+    case 'bankTransfer':
+      return `Transfer to account ${method.accountNo}`
+    case 'crypto':
+      return `Sending to ${method.address} on ${method.network}`
+    case 'wallet':                         // ← added to fix exhaustiveness ✅
+      return `Paying via ${method.provider} wallet ${method.walletId}`
+    default:
+      return assertNever(method)           // TS error until all cases handled ✅
+  }
+}
+function assertNever(v: never): never {
+  throw new Error(`Unhandled: ${JSON.stringify(v)}`)
+}
+```
+
+---
+
+---

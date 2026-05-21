@@ -1,105 +1,187 @@
 # 4 — State as a Snapshot
 
+---
+
 ## T — TL;DR
 
-State is a snapshot frozen at the time of each render — calling `setState` doesn't change the current snapshot, it schedules a new render with a new snapshot.
+When React calls your component, it captures the current state values as **constants for that render**. The component's JSX, event handlers, and all other code in that render closure see a **frozen snapshot** of state — not a live reference. Calling the setter doesn't change the current snapshot; it queues the next one.
+
+---
 
 ## K — Key Concepts
 
-**The core mental model:**
+```tsx
+// ── State is fixed per render ─────────────────────────────────────────────
+function AlertDemo() {
+  const [message, setMessage] = useState('Hello')
 
-Each render gets its own frozen copy of state. Event handlers created during that render "see" only that render's state — not future values.
-
-```jsx
-function Counter() {
-  const [count, setCount] = useState(0)
-
-  function handleAlertClick() {
-    setTimeout(() => {
-      // This alert "closes over" count from THIS render
-      alert("You clicked: " + count)
-    }, 3000)
+  function handleClick() {
+    setMessage('Goodbye')       // schedules next render with 'Goodbye'
+    alert(message)              // still 'Hello' — this render's snapshot ❌ surprise
+    console.log(message)        // 'Hello' — same snapshot
   }
 
-  return (
-    <>
-      <button onClick={() => setCount(count + 1)}>+1 (now: {count})</button>
-      <button onClick={handleAlertClick}>Show alert in 3s</button>
-    </>
-  )
+  // After React re-renders, message WILL be 'Goodbye' in the new snapshot
+  // But in THIS render's closure, message = 'Hello' forever
+  return <button onClick={handleClick}>{message}</button>
 }
-// If you click +1 three times, then immediately click "Show alert":
-// → Alert shows 0, not 3
-// Because handleAlertClick captured count=0 from THAT render's snapshot
 ```
 
-**Every render is its own world:**
+```tsx
+// ── Multiple setters in one handler ──────────────────────────────────────
+function VoteCounter() {
+  const [votes, setVotes] = useState(0)
 
-- Its own state values
-- Its own event handlers
-- Its own local variables
-- React gives the *next* render new state values — the current render never changes
+  function handleThreeVotes() {
+    // All three lines read from the SAME snapshot (votes = 0)
+    setVotes(votes + 1)   // queue: set to 0 + 1 = 1
+    setVotes(votes + 1)   // queue: set to 0 + 1 = 1 (same snapshot!)
+    setVotes(votes + 1)   // queue: set to 0 + 1 = 1 (same snapshot!)
+    // Result after re-render: votes = 1, not 3 ← surprising but correct per model
+  }
 
+  function handleThreeVotesFixed() {
+    // Functional updater works with the latest queued value
+    setVotes(prev => prev + 1)   // 0 → 1
+    setVotes(prev => prev + 1)   // 1 → 2
+    setVotes(prev => prev + 1)   // 2 → 3 ✅
+  }
+
+  return <button onClick={handleThreeVotesFixed}>+3 votes ({votes})</button>
+}
+```
+
+```tsx
+// ── setTimeout captures the snapshot ─────────────────────────────────────
+function TimerDemo() {
+  const [count, setCount] = useState(0)
+
+  function handleClick() {
+    setCount(count + 5)   // schedules next render: count = 5
+
+    // This closure captures count = 0 (current snapshot)
+    setTimeout(() => {
+      alert(`count in timeout: ${count}`)   // alerts 0, not 5 ← snapshot!
+    }, 3000)
+
+    // To get the latest value in async code: use a ref (Day 3)
+  }
+
+  return <button onClick={handleClick}>Add 5 (current: {count})</button>
+}
+// This is "stale closure" — the most common source of async bugs in React
+```
+
+---
 
 ## W — Why It Matters
 
-This is the most common source of confusion for React developers coming from imperative backgrounds. The `setTimeout` / stale state bug appears in production constantly. Understanding snapshots prevents bugs in async code, intervals, and closures.
+- Snapshot semantics are the explanation for the most common React "bug reports" — "why does my state show the old value inside setTimeout?" The snapshot model answers it immediately.
+- Understanding snapshots explains why calling `setCount(count + 1)` three times only increments by 1 — all three read the same `count` from the snapshot. This drives the need for the functional updater.
+- Every render is an isolated function call with its own constants — there's no "live" state variable. This mental shift from imperative (variables that change in place) to declarative (new snapshots on each render) is the fundamental React mindset.
+
+---
 
 ## I — Interview Q&A
 
-**Q: Why doesn't state update immediately after calling `setState`?**
-**A:** Because `setState` doesn't mutate the current snapshot — it schedules a re-render. The current render's state variable is frozen. The new value is only available in the *next* render's snapshot.
+### Q: What does "state as a snapshot" mean in React?
 
-**Q: What is a stale closure in React?**
-**A:** When an event handler or `useEffect` callback "closes over" an old state value from a previous render snapshot. The handler is called later, but still references the stale value. The fix is to use functional updater form or `useRef` for values you need across renders.
+**A:** Each time React calls your component function, it provides the current state values as fixed constants for that render — they don't change during the execution of that render, even if you call `setState`. Think of each render as a photograph — it captures state at a moment in time. Calling `setState` doesn't modify the photo; it requests a new photo to be taken. Any closures created during that render (event handlers, timeouts, effects) will always see the state values from their render's snapshot. This explains why state inside `setTimeout` can be stale — the callback closed over an old snapshot. The functional updater form (`prev => prev + 1`) escapes this by not relying on the closure value.
 
-**Q: If I call `setName("Alice")` and then immediately `console.log(name)`, what do I see?**
-**A:** The old value. `setName` schedules a re-render but doesn't mutate the current `name` variable. The new value appears in the next render's snapshot.
+---
 
-## C — Common Pitfalls
+## C — Common Pitfalls + Fix
 
-| Pitfall | Fix |
-| :-- | :-- |
-| Reading state immediately after setting it | State only updates in the NEXT render — store new value in a local variable if needed now |
-| Stale state in `setTimeout` / `setInterval` | Use functional updater `setState(prev => ...)` or `useRef` |
-| Expecting state to "sync" mid-handler | All state reads within one handler see the same snapshot |
+### ❌ Reading state right after setting it and expecting the new value
 
-## K — Coding Challenge
+```tsx
+// ❌ Expecting updated state immediately after setter call
+function Form() {
+  const [email, setEmail] = useState('')
 
-**Challenge:** What does this log when the button is clicked?
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setEmail('')                      // schedules re-render
+    console.log(email)                // still the old value ❌
+    sendEmail(email)                  // also old value ✅ (this one is fine)
+    // email won't be '' until the NEXT render
+  }
+  return <input value={email} onChange={e => setEmail(e.target.value)} />
+}
 
-```jsx
-function App() {
-  const [name, setName] = useState("Alice")
+// ✅ Work with the local value you already have
+function FormFixed() {
+  const [email, setEmail] = useState('')
 
-  function handleClick() {
-    setName("Bob")
-    console.log(name)   // What prints here?
-    setName("Carol")
-    console.log(name)   // And here?
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    sendEmail(email)     // use the current snapshot value ✅
+    setEmail('')         // then schedule clearing
+  }
+  return <input value={email} onChange={e => setEmail(e.target.value)} />
+}
+```
+
+---
+
+## K — Coding Challenge + Solution
+
+### Challenge
+
+Predict the output of this component — what does the alert show and what does the counter display? Then fix it to show the updated value in the alert.
+
+```tsx
+function Quiz() {
+  const [score, setScore] = useState(10)
+  function handleAdd() {
+    setScore(score + 5)
+    alert(`Score is now: ${score}`)
+  }
+  return <button onClick={handleAdd}>Add 5 (current: {score})</button>
+}
+```
+
+### Solution
+
+```tsx
+// Prediction:
+// - alert shows: "Score is now: 10" (snapshot value — not 15)
+// - button label shows: 10 (before click), then 15 (after re-render)
+// The setter schedules, the alert runs synchronously in the same snapshot
+
+// ✅ Fix 1: capture the new value in a local variable
+function QuizFixed() {
+  const [score, setScore] = useState(10)
+
+  function handleAdd() {
+    const newScore = score + 5     // compute new value once
+    setScore(newScore)             // schedule update
+    alert(`Score is now: ${newScore}`)   // use local variable ✅
   }
 
-  return <button onClick={handleClick}>Change Name</button>
+  return <button onClick={handleAdd}>Add 5 (current: {score})</button>
+}
+
+// ✅ Fix 2: show in UI instead of alert (the React way)
+function QuizBetter() {
+  const [score,      setScore]      = useState(10)
+  const [lastAdded,  setLastAdded]  = useState<number | null>(null)
+
+  function handleAdd() {
+    setScore(prev => prev + 5)
+    setLastAdded(5)
+  }
+
+  return (
+    <div>
+      <p>Score: {score}</p>
+      {lastAdded != null && <p>Last added: +{lastAdded}</p>}
+      <button onClick={handleAdd}>Add 5</button>
+    </div>
+  )
 }
 ```
 
-**Solution:**
+---
 
-```jsx
-// Both console.log calls print "Alice"
-// Reason: name is a snapshot from THIS render (where name = "Alice")
-// setName schedules future renders — it does NOT mutate name in this render
-
-// After the click, React re-renders with name = "Carol"
-// (the last setState wins in the same render cycle)
-
-// To "see" the new value immediately, store it in a variable:
-function handleClick() {
-  const nextName = "Bob"
-  setName(nextName)
-  console.log(nextName)  // ✅ "Bob" — reading the local variable, not state
-}
-```
-
-
-***
+---

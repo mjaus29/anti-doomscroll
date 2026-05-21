@@ -1,127 +1,187 @@
 # 1 — Hook Rules
 
+---
+
 ## T — TL;DR
 
-There are exactly two rules for hooks: call them only at the top level, and only inside React functions — violating either causes subtle, hard-to-diagnose bugs.
+There are two rules for hooks: **only call hooks at the top level** (never inside loops, conditions, or nested functions), and **only call hooks from React function components or custom hooks**. These rules exist because React identifies hooks by their call order — breaking the order corrupts state.
+
+---
 
 ## K — Key Concepts
 
-**Rule 1: Only call hooks at the top level**
+```tsx
+// ── Rule 1: Only call hooks at the top level ──────────────────────────────
+// ❌ Hook inside a condition — call order changes based on condition
+function BrokenComponent({ isAdmin }: { isAdmin: boolean }) {
+  if (isAdmin) {
+    const [name, setName] = useState('') // ❌ only called sometimes
+  }
+  const [email, setEmail] = useState('')  // React now thinks THIS is hook #1
+}
 
-Never call hooks inside loops, conditions, or nested functions. React tracks hooks by their call order — if that order changes between renders, React loses track of which state belongs to which hook.
+// ❌ Hook inside a loop
+function BrokenList({ items }: { items: string[] }) {
+  return items.map((item, i) => {
+    const [checked, setChecked] = useState(false) // ❌ number of hooks varies
+    return <li key={i}>{item}</li>
+  })
+}
 
-```jsx
-// ❌ Hook inside condition — call order changes when flag toggles
-function Component({ flag }) {
-  if (flag) {
-    const [count, setCount] = useState(0)  // sometimes called, sometimes not
+// ❌ Hook inside a nested function
+function BrokenForm() {
+  function handleSubmit() {
+    const [error, setError] = useState('') // ❌ inside a nested function
   }
 }
 
-// ✅ Always called — condition goes inside the hook's logic
-function Component({ flag }) {
-  const [count, setCount] = useState(0)  // always called, same order
-  if (!flag) return null
+// ✅ All hooks at top level, unconditionally
+function CorrectComponent({ isAdmin }: { isAdmin: boolean }) {
+  const [name,  setName]  = useState('')   // always hook #1
+  const [email, setEmail] = useState('')   // always hook #2
+
+  // Condition is inside the JSX or logic — not wrapping the hook call
+  if (!isAdmin) return null
+  return <form>...</form>
 }
 ```
 
-**Rule 2: Only call hooks inside React functions**
-
-Hooks can only live inside:
-
-- React function components
-- Custom hooks (functions prefixed with `use`)
-
-```jsx
-// ❌ Hook in a regular utility function
-function getUser() {
-  const [user] = useState(null)  // ERROR — not a React function
+```tsx
+// ── Rule 2: Only call hooks from React functions ───────────────────────────
+// ❌ Hook in a plain utility function
+function formatUser(id: number) {
+  const [user, setUser] = useState(null)  // ❌ plain function, not a component
+  return user
 }
 
-// ✅ Hook in a custom hook
-function useUser() {
-  const [user, setUser] = useState(null)  // valid
+// ❌ Hook in a class component
+class MyClass extends React.Component {
+  render() {
+    const [x] = useState(0)  // ❌ hooks don't work in class components
+    return null
+  }
+}
+
+// ✅ Hook in a function component
+function UserProfile({ id }: { id: number }) {
+  const [user, setUser] = useState(null)  // ✅
+  return <div>{user?.name}</div>
+}
+
+// ✅ Hook in a custom hook (function starting with 'use')
+function useUser(id: number) {
+  const [user, setUser] = useState(null)  // ✅ custom hook
   return user
 }
 ```
 
-**Why these rules exist — React's linked list:**
+```
+── Why the rules exist ────────────────────────────────────────────────────────
 
-React internally tracks hooks as an ordered list per component. Every render, it walks the list in sequence and matches each hook call to its stored state. If call order changes (due to conditionals or loops), React reads the wrong state for every subsequent hook.
+React tracks hooks by CALL ORDER, not by name.
+Each component render: hook call 1 → useState slot 1
+                       hook call 2 → useState slot 2
+                       hook call 3 → useEffect slot 1
+
+If a hook call is skipped (condition) or added (loop):
+  render 1: hook1=slot1, hook2=slot2, hook3=slot3
+  render 2: hook1 skipped → hook2 gets slot1 (wrong data!) ❌
+
+ESLint plugin: eslint-plugin-react-hooks enforces both rules automatically
+Install: npm install --save-dev eslint-plugin-react-hooks
+```
+
+---
 
 ## W — Why It Matters
 
-Hook rule violations are silent at first but corrupt state in unpredictable ways — you'll see wrong values, missed updates, and crashes that only appear under specific conditions. The `eslint-plugin-react-hooks` package statically enforces both rules and should be enabled in every project.
+- The rules aren't arbitrary restrictions — they're a consequence of React's implementation. Hook call order is the only way React maps each hook call to its stored state. Violating order corrupts state silently.
+- `eslint-plugin-react-hooks` catches violations at development time — it's non-optional in any professional React project. Not installing it means relying on runtime errors.
+- Custom hooks (any function starting with `use`) follow the same rules and get the same ESLint enforcement — this is why the naming convention is mandatory, not stylistic.
+
+---
 
 ## I — Interview Q&A
 
-**Q: What are the two rules of hooks?**
-**A:** (1) Only call hooks at the top level — not inside loops, conditions, or nested functions. (2) Only call hooks inside React function components or custom hooks. These rules ensure React can maintain a stable, consistent hook call order per component per render.
+### Q: Why can't you call a hook inside an `if` statement?
 
-**Q: Why can't you call a hook inside an `if` statement?**
-**A:** React relies on the order hooks are called to associate each call with its stored state. If you conditionally call a hook, the order changes between renders — React maps each hook to the wrong state, causing corrupt values and crashes.
+**A:** React identifies each hook call by its **call order** within a component — not by name or variable. On every render, the first `useState` call maps to slot 1, the second to slot 2, and so on. If a hook is inside an `if` statement, it may or may not be called depending on the condition. When it's skipped, all subsequent hook calls shift positions — React reads the wrong state for every hook that follows. This produces bugs that are extremely hard to trace. The rule is enforced by `eslint-plugin-react-hooks` at development time. To conditionally use a value, call the hook unconditionally and then apply the condition to its output.
 
-**Q: How do you conditionally use a hook's result?**
-**A:** Call the hook unconditionally at the top level, then use the result conditionally inside the render logic. If the hook itself has conditional behavior, put the condition *inside* the hook.
+---
 
-## C — Common Pitfalls
+## C — Common Pitfalls + Fix
 
-| Pitfall | Fix |
-| :-- | :-- |
-| `if (condition) { useState(...) }` | Call `useState` at top level; use condition on the returned value |
-| Hook inside a `for` loop | Extract the loop body into a child component with its own hooks |
-| Calling hooks in async functions or callbacks | Hooks must be called synchronously in the component body |
-| Ignoring `eslint-plugin-react-hooks` warnings | Enable exhaustive-deps and rules-of-hooks rules — they catch violations statically |
+### ❌ Early return before all hooks are called
 
-## K — Coding Challenge
+```tsx
+// ❌ Early return before hooks — hooks after the return are skipped
+function UserCard({ user }: { user: User | null }) {
+  if (!user) return null    // ❌ early return BEFORE hooks below
 
-**Challenge:** Find and fix all hook rule violations:
+  const [expanded, setExpanded] = useState(false)   // sometimes skipped
+  useEffect(() => { document.title = user.name }, [user.name])  // sometimes skipped
+}
 
-```jsx
-function UserProfile({ userId, isAdmin }) {
-  if (isAdmin) {
-    const [adminData, setAdminData] = useState(null)  // violation 1
-  }
+// ✅ Call all hooks first, then handle the condition
+function UserCardFixed({ user }: { user: User | null }) {
+  const [expanded, setExpanded] = useState(false)   // always called ✅
+  useEffect(() => {
+    if (!user) return
+    document.title = user.name
+  }, [user?.name])
 
+  if (!user) return null   // early return AFTER hooks ✅
+  return <div>{user.name}</div>
+}
+```
+
+---
+
+## K — Coding Challenge + Solution
+
+### Challenge
+
+Find all hook rule violations in this component and fix them without changing the intended behaviour.
+
+```tsx
+function Dashboard({ userId, showStats }: { userId: number; showStats: boolean }) {
+  if (!userId) return <p>No user</p>
+  const [name, setName] = useState('')
   for (let i = 0; i < 3; i++) {
-    const [panel, setPanel] = useState(false)  // violation 2
+    useEffect(() => { console.log(i) }, [])
   }
-
-  async function loadData() {
-    const [data, setData] = useState(null)  // violation 3
+  if (showStats) {
+    const [stats, setStats] = useState<number[]>([])
   }
-
-  const [name, setName] = useState("")  // ✅ this one is fine
   return <div>{name}</div>
 }
 ```
 
-**Solution:**
+### Solution
 
-```jsx
-function UserProfile({ userId, isAdmin }) {
-  // ✅ Hooks always at top level, unconditional
-  const [adminData, setAdminData] = useState(null)
-  const [panels, setPanels] = useState([false, false, false])  // array instead of loop
-  const [data, setData] = useState(null)
-  const [name, setName] = useState("")
+```tsx
+function Dashboard({ userId, showStats }: { userId: number; showStats: boolean }) {
+  // ✅ All hooks moved to top level — no conditions, no loops
+  const [name,  setName]  = useState('')
+  const [stats, setStats] = useState<number[]>([])
 
-  // Load data in useEffect, not useState
-  useEffect(() => {
-    async function loadData() {
-      // fetch and call setData here
-    }
-    loadData()
-  }, [userId])
+  // ✅ Three separate effects instead of looped hooks
+  useEffect(() => { console.log(0) }, [])
+  useEffect(() => { console.log(1) }, [])
+  useEffect(() => { console.log(2) }, [])
+
+  // ✅ Guard clause AFTER all hooks
+  if (!userId) return <p>No user</p>
 
   return (
     <div>
       {name}
-      {isAdmin && <AdminPanel data={adminData} />}  {/* condition on result, not on hook */}
+      {showStats && <ul>{stats.map((s, i) => <li key={i}>{s}</li>)}</ul>}
     </div>
   )
 }
 ```
 
+---
 
-***
+---

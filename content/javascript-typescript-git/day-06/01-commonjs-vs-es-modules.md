@@ -1,91 +1,169 @@
 # 1 — CommonJS vs ES Modules
 
+---
+
 ## T — TL;DR
 
-CommonJS (`require`/`module.exports`) is Node.js's legacy synchronous module system; ES Modules (`import`/`export`) are the async, tree-shakable standard that works in both browsers and Node.js.
+**CommonJS** (CJS) uses `require`/`module.exports` — synchronous, dynamic, Node.js default for `.js` files without `"type":"module"`. **ES Modules** (ESM) uses `import`/`export` — static, async-capable, the standard for browsers and modern Node.js. They are NOT interchangeable — know the differences and how to mix them.
+
+---
 
 ## K — Key Concepts
 
-```js
-// ─── CommonJS (CJS) ───────────────────────────────────────
-// math.js
+```javascript
+// ── CommonJS ──────────────────────────────────────────────────────────────
+// math.cjs
 const PI = 3.14159
-function circle(r) { return PI * r * r }
-module.exports = { PI, circle }          // single object export
-module.exports.square = (n) => n * n     // additive
 
-// index.js
-const { PI, circle } = require("./math") // synchronous — blocks
-const math = require("./math")           // entire module object
-const path = require("path")             // Node built-in
-// require() path doesn't need extension: require("./math")
+function add(a, b) { return a + b }
+function multiply(a, b) { return a * b }
 
-// ─── ES Modules (ESM) ─────────────────────────────────────
-// math.mjs (or .js with "type":"module" in package.json)
-export const PI = 3.14159
-export function circle(r) { return PI * r * r }
-export const square = (n) => n * n
+module.exports = { PI, add, multiply }          // export object
+// Or:
+module.exports.add = add                         // property by property
+exports.add = add                                // shorthand (same reference as module.exports)
+// ❌ exports = { add } — breaks the reference to module.exports
 
-// index.mjs
-import { PI, circle } from "./math.mjs"   // extension required in ESM!
-import * as math from "./math.mjs"        // namespace import
-import("./math.mjs").then(m => m.circle)  // dynamic import
+// main.cjs
+const math = require('./math')                  // whole module
+const { add, PI } = require('./math')           // destructure
+const add2 = require('./math').add              // member access
 
-// CJS inside ESM project
-import { createRequire } from "module"
-const require = createRequire(import.meta.url)
-const legacyCJS = require("./legacy.cjs")
+// CJS characteristics:
+// - Synchronous (blocks — fine for local files, bad for remote)
+// - require() can be called anywhere (dynamic, conditional)
+// - Caches modules — require('./x') twice returns same object
+// - __dirname, __filename available
+// - module.exports is whatever you set it to
 ```
 
-| Feature | CommonJS | ES Modules |
-| :-- | :-- | :-- |
-| Syntax | `require` / `module.exports` | `import` / `export` |
-| Loading | Synchronous | Asynchronous |
-| Tree-shaking | ❌ Hard | ✅ Native |
-| Top-level `await` | ❌ | ✅ |
-| Browser native | ❌ | ✅ |
-| Live bindings | ❌ (copies) | ✅ |
-| File ext | `.js` / `.cjs` | `.mjs` or `.js` + `"type":"module"` |
+```javascript
+// ── ES Modules ────────────────────────────────────────────────────────────
+// math.mjs  (or .js with "type":"module" in package.json)
+export const PI = 3.14159
+
+export function add(a, b) { return a + b }
+export function multiply(a, b) { return a * b }
+
+// main.mjs
+import { add, PI } from './math.mjs'            // named import
+import { add as sum } from './math.mjs'          // rename
+import * as math from './math.mjs'               // namespace
+import './side-effects.mjs'                      // side-effect only
+
+// ESM characteristics:
+// - Static — imports resolved at parse time (before code runs)
+// - Async — safe for network fetches (browser <script type="module">)
+// - Live bindings — exported values stay in sync when updated
+// - Strict mode by default
+// - import.meta available (no __dirname/__filename)
+// - Top-level await supported
+```
+
+```javascript
+// ── Key differences ────────────────────────────────────────────────────────
+/*
+                  CommonJS            ES Modules
+Syntax            require/exports     import/export
+Resolution        Runtime (dynamic)   Parse time (static)
+Async             No                  Yes
+Strict mode       Opt-in              Always
+Top-level await   No                  Yes
+Tree-shaking      No                  Yes (static analysis)
+__dirname         Yes                 No (use import.meta.url)
+Default ext       .js (no "type")     .js (with "type":"module") or .mjs
+Circular imports  Partial object      Live binding (handled better)
+Browser native    No                  Yes
+*/
+
+// ── Interop in Node.js ────────────────────────────────────────────────────
+// ESM can import CJS (as default import):
+import cjsModule from './legacy.cjs'   // entire module.exports as default ✅
+// CJS cannot require() ESM — use dynamic import() instead:
+const esm = await import('./modern.mjs')   // in an async context ✅
+```
+
+```javascript
+// ── package.json configuration ────────────────────────────────────────────
+{
+  "type": "module",       // treat .js as ESM (use .cjs for CJS files)
+  "exports": {
+    ".":          "./dist/index.js",       // main entry
+    "./utils":    "./dist/utils.js",       // sub-path export
+    "./package.json": "./package.json"     // allow package.json access
+  },
+  "main":   "./dist/index.cjs",   // CJS fallback (older tools)
+  "module": "./dist/index.js"     // ESM entry (bundlers)
+}
+```
+
+---
 
 ## W — Why It Matters
 
-The entire npm ecosystem is converging on ESM — Node.js, Deno, Bun, and all modern bundlers (Vite, Rollup) default to it. CJS is being deprecated in new libraries. Tree-shaking (dead code elimination) only works reliably with ESM, directly impacting bundle size.
+- Most modern Node.js projects use `"type": "module"` — you write `.js` as ESM and name legacy files `.cjs`. Without understanding this, `require is not defined` errors and `__dirname` not found errors will block you every time.
+- ESM enables tree-shaking in bundlers (Webpack, Rollup, Vite) — static `import` statements let the bundler know exactly what's used and remove the rest. `require()` is dynamic and prevents this.
+- The CJS/ESM interop rules matter daily in a full-stack project — `axios`, `prisma`, and most npm packages are either ESM or dual-CJS/ESM. Knowing you can `import` a CJS package but can't `require` an ESM package saves hours of debugging.
+
+---
 
 ## I — Interview Q&A
 
-**Q: What are "live bindings" in ES Modules and why do they matter?**
-A: When you import a named export from an ESM, you get a live read-only view of the export — if the exporting module updates the variable, your import reflects the change. CJS gives you a snapshot copy at require-time. Live bindings enable patterns like hot module replacement and circular dependency handling.
+### Q: What are three key differences between CommonJS and ES Modules?
 
-**Q: Can you `require()` an ES Module in Node.js?**
-A: Not synchronously — `require()` is sync but ESM loading is async. From Node 22+, you can `require()` synchronous ESM files. Generally, use `import()` (dynamic) to load ESM from CJS, or use `createRequire` for the reverse.
+**A:** (1) **Static vs dynamic** — ESM `import` is resolved at parse time (static), enabling tree-shaking and circular dependency detection. CJS `require()` is runtime (dynamic) — it can be in an `if` block. (2) **Synchronous vs async** — `require()` blocks execution until the file is read; ESM supports async module loading and top-level `await`. (3) **Live bindings vs value copies** — ESM exports are live bindings: if the exporting module updates a variable, the importing module sees the update. CJS `require()` copies the value at the time of require — changes to the original don't propagate. Additionally, ESM is always strict mode; CJS is opt-in.
 
-## C — Common Pitfalls
+---
 
-| Pitfall | Fix |
-| :-- | :-- |
-| Omitting file extension in ESM imports | Always use `./file.js` — ESM requires explicit extensions |
-| Mixing `require` and `import` in the same file | Pick one system per file; use `.mjs`/`.cjs` to be explicit |
-| `module.exports = fn` then `import { fn }` failing | CJS default export → `import fn from "./mod.cjs"` |
-| `"type":"module"` breaking existing CJS files | Rename CJS files to `.cjs` to opt out |
+## C — Common Pitfalls + Fix
 
-## K — Coding Challenge
+### ❌ Assigning to `exports` directly — breaks the `module.exports` link
 
-**Convert this CJS module to ESM:**
+```javascript
+// ❌ This replaces the exports variable locally — module.exports unchanged
+exports = { add, multiply }  // no effect outside this file ❌
 
-```js
-// utils.js (CJS)
-const { format } = require("date-fns")
-function formatDate(d) { return format(d, "yyyy-MM-dd") }
-module.exports = { formatDate }
+// ✅ Assign to module.exports
+module.exports = { add, multiply }  // ✅
+
+// ✅ Or add properties to the existing exports object
+exports.add      = add        // ✅
+exports.multiply = multiply   // ✅
 ```
 
-**Solution:**
+---
 
-```js
-// utils.js (ESM)
-import { format } from "date-fns"
-export function formatDate(d) { return format(d, "yyyy-MM-dd") }
+## K — Coding Challenge + Solution
+
+### Challenge
+
+Create a dual-mode module `config.js` that exports a `getConfig()` function. Show the CJS version (`module.exports`) and ESM version (`export`). Then show how to consume the CJS version from ESM.
+
+### Solution
+
+```javascript
+// config.cjs — CommonJS
+const defaults = { port: 3000, env: 'development' }
+function getConfig(overrides = {}) {
+  return { ...defaults, ...overrides }
+}
+module.exports = { getConfig }
+
+// config.mjs — ES Module
+const defaults = { port: 3000, env: 'development' }
+export function getConfig(overrides = {}) {
+  return { ...defaults, ...overrides }
+}
+
+// main.mjs — consuming CJS from ESM
+import cjsConfig from './config.cjs'    // whole module.exports = default
+const { getConfig } = cjsConfig
+console.log(getConfig({ port: 8080 }))  // { port: 8080, env: 'development' }
+
+// Or with dynamic import from non-async context:
+const { getConfig: gc } = await import('./config.cjs').then(m => m.default ?? m)
 ```
 
+---
 
-***
+---

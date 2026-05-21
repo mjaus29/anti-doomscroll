@@ -1,0 +1,223 @@
+# 1 — `useFieldArray` — Setup and Core Concepts
+
+---
+
+## T — TL;DR
+
+`useFieldArray` manages an array of fields — each item in the array is a form object with its own registered inputs. It gives you a `fields` array to render, and methods (`append`, `remove`, etc.) to mutate it. Use it for line items, tag lists, team members, or any repeating group of inputs.
+
+---
+
+## K — Key Concepts
+
+```tsx
+import { useForm, useFieldArray } from 'react-hook-form'
+import { zodResolver }            from '@hookform/resolvers/zod'
+import { z }                      from 'zod'
+
+// ─── Schema: array field inside an object
+const InvoiceSchema = z.object({
+  clientName: z.string().min(1),
+  lineItems:  z.array(z.object({
+    description: z.string().min(1, 'Required'),
+    qty:         z.coerce.number().int().positive('Must be > 0'),
+    unitPrice:   z.coerce.number().positive('Must be > 0')
+  })).min(1, 'At least one line item required')
+})
+type InvoiceForm = z.infer<typeof InvoiceSchema>
+
+function InvoiceForm() {
+  const { register, control, handleSubmit, formState: { errors } } =
+    useForm<InvoiceForm>({
+      resolver:      zodResolver(InvoiceSchema),
+      defaultValues: {
+        clientName: '',
+        lineItems:  [{ description: '', qty: 1, unitPrice: 0 }]
+      }
+    })
+
+  // ─── useFieldArray
+  const { fields, append, remove } = useFieldArray({
+    control,          // from useForm — required
+    name: 'lineItems' // must match the array field in your schema
+  })
+  // fields: [{ id: 'rhf-generated-id', description: '', qty: 1, unitPrice: 0 }, ...]
+  // id is a stable RHF-generated key — use it as the React key, NOT index
+```
+
+```tsx
+  return (
+    <form onSubmit={handleSubmit(console.log)} className="space-y-4 max-w-md">
+      <input {...register('clientName')} placeholder="Client name"
+             className="w-full border rounded-xl px-3 py-2 text-sm" />
+
+      {fields.map((field, index) => (
+        // ✅ Use field.id as key — stable across re-orders
+        <div key={field.id} className="flex gap-2 items-start">
+          <input
+            {...register(`lineItems.${index}.description`)}
+            placeholder="Description"
+            className="flex-1 border rounded-xl px-3 py-2 text-sm"
+          />
+          <input
+            {...register(`lineItems.${index}.qty`)}
+            type="number" placeholder="Qty" style={{ width: 70 }}
+            className="border rounded-xl px-3 py-2 text-sm"
+          />
+          <input
+            {...register(`lineItems.${index}.unitPrice`)}
+            type="number" step="0.01" placeholder="Price" style={{ width: 90 }}
+            className="border rounded-xl px-3 py-2 text-sm"
+          />
+          <button type="button" onClick={() => remove(index)}
+                  className="px-3 py-2 text-red-500 border border-red-200
+                               rounded-xl text-sm hover:bg-red-50">
+            ✕
+          </button>
+        </div>
+      ))}
+
+      {errors.lineItems?.root && (
+        <p className="text-xs text-red-600">{errors.lineItems.root.message}</p>
+      )}
+
+      <button type="button"
+              onClick={() => append({ description: '', qty: 1, unitPrice: 0 })}
+              className="text-sm text-blue-600 underline">
+        + Add line item
+      </button>
+
+      <button type="submit"
+              className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold">
+        Create invoice
+      </button>
+    </form>
+  )
+}
+```
+
+```
+useFieldArray key facts:
+
+  fields array      → RHF-managed, each item has a stable .id
+  register path     → 'arrayName.${index}.fieldName'  (template literal)
+  Never use index as React key → use field.id (stable across re-orders)
+  defaultValues must include the array → at least []
+  Appended items use append({...defaults}) — must match item schema shape
+```
+
+---
+
+## W — Why It Matters
+
+- `useFieldArray` is the only correct way to manage dynamic arrays in RHF. Managing an array manually with `useState` and `setValue` causes stale ref issues — inputs lose focus and validation breaks.
+- The `field.id` rule is critical. Using `index` as a key causes React to reuse DOM nodes when items are removed or reordered — inputs get the wrong values because the DOM node is recycled.
+- `defaultValues` must include the array field (even as `[]`) — without it, the first `append` call produces uncontrolled-to-controlled warnings and `isDirty` doesn't work.
+
+---
+
+## I — Interview Q&A
+
+### Q: Why should you use `field.id` as the React key instead of `index` in `useFieldArray`?
+
+**A:** When you remove an item from the middle of an array (e.g. index 1 of 3), React re-uses the existing DOM nodes for items that shift down. Using `index` as the key means item at index 2 gets moved to index 1's DOM node — the input value appears correct in the DOM but RHF's internal store maps that node to the wrong field. Using `field.id` (a stable UUID generated by RHF per item) means each DOM node is uniquely tied to its field — React mounts a new node when the item's id changes and properly unmounts removed ones.
+
+---
+
+## C — Common Pitfalls + Fix
+
+### ❌ Using array index as React key
+
+```tsx
+// ❌ Reorders cause wrong values in inputs
+{fields.map((field, index) => (
+  <div key={index}>  {/* ← bug */}
+```
+
+**Fix:**
+
+```tsx
+// ✅ Stable identity
+{fields.map((field, index) => (
+  <div key={field.id}>
+```
+
+---
+
+## K — Coding Challenge + Solution
+
+### Challenge
+
+Build a `TeamForm` with a repeating `members` array (each has `name` string, `email` string). Start with one empty member. "Add member" appends a blank entry. "Remove" deletes by index. Submit logs the full array.
+
+### Solution
+
+```tsx
+'use client'
+import { useForm, useFieldArray } from 'react-hook-form'
+import { zodResolver }            from '@hookform/resolvers/zod'
+import { z }                      from 'zod'
+
+const TeamSchema = z.object({
+  teamName: z.string().min(1, 'Required'),
+  members:  z.array(z.object({
+    name:  z.string().min(1, 'Name required'),
+    email: z.string().email('Invalid email')
+  })).min(1, 'At least one member required')
+})
+type TeamForm = z.infer<typeof TeamSchema>
+
+export function TeamForm() {
+  const { register, control, handleSubmit, formState: { errors } } = useForm<TeamForm>({
+    resolver:      zodResolver(TeamSchema),
+    defaultValues: { teamName: '', members: [{ name: '', email: '' }] }
+  })
+
+  const { fields, append, remove } = useFieldArray({ control, name: 'members' })
+
+  const cls = 'border rounded-xl px-3 py-2 text-sm w-full'
+  const err = 'text-xs text-red-600 mt-1'
+
+  return (
+    <form onSubmit={handleSubmit(console.log)} className="space-y-5 max-w-md">
+      <div>
+        <input {...register('teamName')} placeholder="Team name" className={cls} />
+        {errors.teamName && <p className={err}>{errors.teamName.message}</p>}
+      </div>
+
+      <div className="space-y-3">
+        {fields.map((field, i) => (
+          <div key={field.id} className="p-3 border border-gray-200 rounded-2xl space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-gray-500">Member {i + 1}</span>
+              {fields.length > 1 && (
+                <button type="button" onClick={() => remove(i)}
+                        className="text-xs text-red-500 hover:text-red-700">Remove</button>
+              )}
+            </div>
+            <input {...register(`members.${i}.name`)}  placeholder="Full name"  className={cls} />
+            {errors.members?.[i]?.name  && <p className={err}>{errors.members[i]?.name?.message}</p>}
+            <input {...register(`members.${i}.email`)} placeholder="Email" type="email" className={cls} />
+            {errors.members?.[i]?.email && <p className={err}>{errors.members[i]?.email?.message}</p>}
+          </div>
+        ))}
+        {errors.members?.root && <p className={err}>{errors.members.root.message}</p>}
+      </div>
+
+      <button type="button" onClick={() => append({ name: '', email: '' })}
+              className="text-sm text-blue-600 underline">
+        + Add member
+      </button>
+
+      <button type="submit"
+              className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold">
+        Save team
+      </button>
+    </form>
+  )
+}
+```
+
+---
+
+---

@@ -1,110 +1,181 @@
 # 5 — Re-render Cycle
 
+---
+
 ## T — TL;DR
 
-A React component re-renders when its state changes, its parent re-renders, or its context changes — React then reconciles the output with the DOM.
+React re-renders a component when: its **state changes**, its **parent re-renders**, or its **context changes** (Day 3). A re-render calls the component function again — React diffs the new JSX against the previous and updates only what changed in the DOM. Re-renders are cheap by design; unnecessary DOM updates are not.
+
+---
 
 ## K — Key Concepts
 
-**The render cycle — 3 phases:**
+```tsx
+// ── What triggers a re-render ─────────────────────────────────────────────
+// 1. State change via setter
+setCount(count + 1)           // this component re-renders
 
-1. **Trigger** — something causes a render (initial mount, `setState`, parent re-render, context change)
-2. **Render** — React calls your component function and gets a new JSX snapshot
-3. **Commit** — React updates only the changed DOM nodes (not the whole page)
-```
-setState() called
-     ↓
-React queues a re-render
-     ↓
-React calls component function (render)
-     ↓
-React gets new JSX snapshot
-     ↓
-React diffs against previous snapshot (reconciliation)
-     ↓
-React updates only changed DOM nodes (commit)
-     ↓
-Browser paints
-```
-
-**What triggers a re-render:**
-
-```jsx
-// 1. State change
-const [count, setCount] = useState(0)
-setCount(1)  // → triggers re-render
-
-// 2. Parent re-renders → all children re-render (by default)
+// 2. Parent re-renders (default behaviour — all children re-render)
 function Parent() {
   const [x, setX] = useState(0)
-  return <Child />   // re-renders every time Parent re-renders
+  return (
+    <>
+      <button onClick={() => setX(x + 1)}>+</button>
+      <Child />   {/* re-renders every time Parent re-renders, even with no props */}
+    </>
+  )
 }
 
-// 3. Context value changes
-// 4. Initial mount
+// 3. Context value changes (Day 3)
 ```
 
-**What does NOT trigger a re-render:**
+```tsx
+// ── Re-render does NOT mean DOM update ────────────────────────────────────
+// React reconciler diffs the new element tree against the previous
+// Only actual DOM changes are applied
 
-- Regular variable changes (`let x = 5; x = 10` — no re-render)
-- Object mutations (`obj.name = "x"` — no re-render)
-- Ref changes (`ref.current = value` — intentionally no re-render)
-
-
-## W — Why It Matters
-
-Knowing what causes re-renders is critical for performance. Unnecessary re-renders are the \#1 React performance issue. Understanding the trigger → render → commit cycle gives you the mental model to use `React.memo`, `useMemo`, and `useCallback` correctly later.
-
-## I — Interview Q&A
-
-**Q: What are the three phases of React's render cycle?**
-**A:** Trigger (what causes the render), Render (React calls the component function and gets a JSX snapshot), and Commit (React updates the DOM to match the snapshot). Only the Commit phase touches the real DOM.
-
-**Q: Does React update the entire DOM on every re-render?**
-**A:** No — React diffs the new JSX snapshot against the previous one (reconciliation) and only updates the DOM nodes that actually changed. This is what makes React efficient.
-
-**Q: Does a parent re-rendering always re-render its children?**
-**A:** By default, yes — all children re-render when a parent re-renders. You can prevent this with `React.memo`, which skips re-render if props haven't changed.
-
-## C — Common Pitfalls
-
-| Pitfall | Fix |
-| :-- | :-- |
-| Mutating variables directly and expecting a re-render | Use `setState` — only state changes trigger re-renders |
-| Putting state too high, causing whole-tree re-renders | Colocate state as close to where it's used as possible |
-| Confusing render (calling the function) with commit (DOM update) | Rendering doesn't touch the DOM — commit does |
-
-## K — Coding Challenge
-
-**Challenge:** Which components re-render when `setCount` is called in `App`?
-
-```jsx
-function App() {
+function Counter() {
   const [count, setCount] = useState(0)
+  // Every click:
+  //   1. setCount called → schedules re-render
+  //   2. React calls Counter() → produces new JSX
+  //   3. Reconciler diffs: only the text in <p> changed
+  //   4. DOM update: only that text node is updated
+  //   The <button> DOM node is untouched ✅
   return (
     <div>
-      <Header />          // no props from App
-      <Counter count={count} />
-      <Footer />          // no props from App
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(c => c + 1)}>+</button>
     </div>
   )
 }
 ```
 
-**Solution:**
-
-```jsx
-// When setCount is called:
-// ✅ App re-renders (state owner)
-// ✅ Header re-renders (child of App — default behavior)
-// ✅ Counter re-renders (child + receives updated prop)
-// ✅ Footer re-renders (child of App — default behavior)
-
-// To prevent Header and Footer from re-rendering unnecessarily:
-const Header = React.memo(function Header() { ... })
-const Footer = React.memo(function Footer() { ... })
-// Now they only re-render if their props change (they have none, so never)
+```tsx
+// ── React skips re-render when state is the same ──────────────────────────
+const [count, setCount] = useState(0)
+setCount(0)   // same value — React bails out, no re-render
+// React uses Object.is() for comparison
+// Object.is(0, 0) = true → skip
+// Object.is({}, {}) = false → re-render (different reference even if same content)
 ```
 
+```tsx
+// ── Visualising the cycle ─────────────────────────────────────────────────
+// 1. Initial render: React calls component → builds DOM
+// 2. User clicks → event handler calls setter
+// 3. React queues state update (may batch with others)
+// 4. React calls component function again with new state
+// 5. New JSX produced
+// 6. React diffs new vs previous JSX (reconciliation)
+// 7. React applies only the diffs to real DOM (commit)
+// 8. Effects run (if any) — Day 3
+// → Component is ready for next interaction
+```
 
-***
+---
+
+## W — Why It Matters
+
+- "Re-render doesn't mean re-paint" is the key insight — React component functions can run hundreds of times per second in interactive UIs, but the DOM update is minimal because of reconciliation. Fear of re-renders leads to premature optimisation.
+- Understanding that children re-render when parents do explains performance complaints — a slow child component will be called on every parent state change. `React.memo` (Day 3) is the tool to break this chain.
+- `Object.is` comparison for primitive state (numbers, strings, booleans) means setting the same value is free — React optimizes it away. For objects/arrays, a new reference always triggers a re-render even if the content is identical.
+
+---
+
+## I — Interview Q&A
+
+### Q: When does a React component re-render and does a re-render always update the DOM?
+
+**A:** A component re-renders when its state changes, when its parent re-renders (passing new props or not), or when a context it subscribes to changes. A re-render calls the component function to produce new JSX — but it does **not** necessarily update the DOM. React's reconciler diffs the new element tree against the previous one and only applies the minimal set of actual DOM changes. If the output is identical, the DOM is untouched entirely. Re-renders are inexpensive (calling a JavaScript function); unnecessary DOM mutations are the expensive part. React also bails out early with `Object.is` comparison — setting state to the same primitive value skips re-rendering.
+
+---
+
+## C — Common Pitfalls + Fix
+
+### ❌ Creating new object/array state inline — triggers unnecessary re-renders
+
+```tsx
+// ❌ New array reference on every render — children always see "new" data
+function Parent() {
+  const [count, setCount] = useState(0)
+  const tags = ['react', 'typescript']  // new array reference every render ❌
+
+  return (
+    <>
+      <button onClick={() => setCount(c => c + 1)}>{count}</button>
+      <MemoizedTagList tags={tags} />  {/* memo is bypassed — always re-renders ❌ */}
+    </>
+  )
+}
+
+// ✅ Move constants outside component or use useMemo (Day 3)
+const TAGS = ['react', 'typescript'] as const   // stable reference ✅
+
+function ParentFixed() {
+  const [count, setCount] = useState(0)
+  return (
+    <>
+      <button onClick={() => setCount(c => c + 1)}>{count}</button>
+      <MemoizedTagList tags={TAGS} />   {/* stable reference → memo works ✅ */}
+    </>
+  )
+}
+```
+
+---
+
+## K — Coding Challenge + Solution
+
+### Challenge
+
+Trace the re-render cascade: clicking a button in `App` updates state. Which components re-render? Show why and how to verify with React DevTools.
+
+### Solution
+
+```tsx
+// Setup — trace which components re-render on button click
+let renderLog: string[] = []
+
+function Header() {
+  renderLog.push('Header rendered')
+  return <header>My App</header>
+}
+
+function Sidebar() {
+  renderLog.push('Sidebar rendered')
+  return <aside>Sidebar</aside>
+}
+
+function Counter({ count }: { count: number }) {
+  renderLog.push(`Counter rendered (count=${count})`)
+  return <p>Count: {count}</p>
+}
+
+function App() {
+  renderLog.push('App rendered')
+  const [count, setCount] = useState(0)
+
+  return (
+    <div>
+      <Header />              {/* re-renders when App re-renders */}
+      <Sidebar />             {/* re-renders when App re-renders */}
+      <Counter count={count} />{/* re-renders when App re-renders */}
+      <button onClick={() => setCount(c => c + 1)}>Click</button>
+    </div>
+  )
+}
+
+// On click: App, Header, Sidebar, Counter ALL re-render
+// React DevTools Profiler → shows highlighted components on each interaction
+
+// ── To prevent unnecessary re-renders (when needed) ──────────────────────
+// React.memo wraps a component — skips re-render if props unchanged
+const MemoHeader  = React.memo(Header)   // Header won't re-render if no props change
+const MemoSidebar = React.memo(Sidebar)  // Sidebar won't re-render
+// Counter must still re-render — count prop changed
+```
+
+---
+
+---

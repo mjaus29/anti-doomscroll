@@ -1,106 +1,186 @@
 # 6 — Batching Mindset
 
+---
+
 ## T — TL;DR
 
-React batches multiple `setState` calls in the same event handler into a single re-render — understand this to predict how many times your component re-renders.
+React **batches** multiple `setState` calls in the same event handler into **one re-render**. In React 18+, even async updates (setTimeout, fetch callbacks, Promises) are batched by default. This means one re-render per interaction, not one per `setState` call — efficient and consistent.
+
+---
 
 ## K — Key Concepts
 
-**Batching in action:**
+```tsx
+// ── Batching in event handlers ────────────────────────────────────────────
+function Form() {
+  const [name,  setName]  = useState('')
+  const [email, setEmail] = useState('')
+  const [saved, setSaved] = useState(false)
 
-```jsx
-function handleClick() {
-  setFirstName("Alice")   // queued
-  setLastName("Smith")    // queued
-  setAge(30)              // queued
-  // React batches all three — ONE re-render, not three
+  function handleSave() {
+    setName('Mark')       // \
+    setEmail('m@ex.com')  //  } batched — ONE re-render after all three
+    setSaved(true)        // /
+    // React does NOT re-render 3 times — it batches and re-renders once ✅
+    console.log('re-renders: 1, not 3')
+  }
+
+  return <button onClick={handleSave}>Save</button>
 }
 ```
 
-**React 18 automatic batching** — batching now works even in `setTimeout`, `Promise.then`, and native event handlers (previously only React synthetic events were batched):
+```tsx
+// ── React 18: automatic batching everywhere ───────────────────────────────
+// Before React 18: only event handlers were batched
+// React 18+: all updates are batched, including async
 
-```jsx
-// React 18+: batched everywhere ✅
-setTimeout(() => {
-  setCount(c => c + 1)   // queued
-  setFlag(f => !f)        // queued
-  // ONE re-render
-}, 1000)
-```
+function DataLoader() {
+  const [data,     setData]     = useState(null)
+  const [loading,  setLoading]  = useState(false)
+  const [error,    setError]    = useState<string | null>(null)
 
-**Opting out of batching** with `flushSync` (rare, use only when needed):
+  async function handleFetch() {
+    setLoading(true)   // \
+    setData(null)      //  } React 18: batched even inside async ✅
+    setError(null)     // /
 
-```jsx
-import { flushSync } from "react-dom"
+    try {
+      const result = await fetchData()
+      setData(result)     // \
+      setLoading(false)   //  } batched in the microtask after await ✅
+    } catch (err) {
+      setError('Failed')  // \
+      setLoading(false)   //  } batched ✅
+    }
+  }
 
-function handleClick() {
-  flushSync(() => setCount(c => c + 1))  // forces immediate re-render
-  flushSync(() => setFlag(f => !f))       // then another re-render
-  // TWO re-renders — use only when you must read DOM between updates
+  return <button onClick={handleFetch}>Fetch</button>
 }
 ```
 
+```tsx
+// ── Opting out of batching: flushSync ────────────────────────────────────
+// Rarely needed — forces synchronous DOM update immediately
+import { flushSync } from 'react-dom'
+
+function SearchWithScroll() {
+  const [results, setResults] = useState<string[]>([])
+  const listRef = useRef<HTMLUListElement>(null)
+
+  function handleSearch() {
+    flushSync(() => {
+      setResults(['a', 'b', 'c'])   // DOM update happens NOW (synchronously)
+    })
+    // Now the DOM reflects new results — we can measure/scroll
+    listRef.current?.scrollTo({ top: 0 })
+  }
+}
+// Use flushSync only when you need to read updated DOM layout immediately
+// It's an escape hatch — almost never needed in normal code
+```
+
+---
 
 ## W — Why It Matters
 
-Batching is why React is fast. Without it, every `setState` call in a complex handler would trigger its own render and DOM update. Misunderstanding batching leads to wrong mental models about how many times your component renders and why performance behaves the way it does.
+- Batching means "number of re-renders = number of distinct interactions, not number of setState calls" — this is why React apps stay fast even with complex state updates.
+- Before React 18, only browser event handlers were batched — `setTimeout`, Promises, and native event listeners triggered one re-render per setter. Understanding this explains why upgrading to React 18 can improve performance.
+- `flushSync` is mentioned so you're not surprised when you encounter it in codebases, but it's a clear signal that someone needed synchronous DOM access — a rare requirement.
+
+---
 
 ## I — Interview Q&A
 
-**Q: What is state batching in React?**
-**A:** React groups multiple `setState` calls that happen in the same event handler into a single re-render. This prevents unnecessary intermediate renders and is a core performance optimization.
+### Q: What is batching in React and what changed in React 18?
 
-**Q: Does React 18 batch state updates in `setTimeout`?**
-**A:** Yes — React 18 introduced automatic batching that works in `setTimeout`, `Promise`, native event handlers, and any other async context. Before React 18, batching only applied to React event handlers.
+**A:** Batching is React's strategy of grouping multiple state updates from the same interaction into one re-render. Before React 18, only updates inside React event handlers were batched — updates in `setTimeout`, `fetch` callbacks, or native event listeners each triggered separate re-renders. React 18 introduced **automatic batching**: all updates are batched regardless of where they originate (async callbacks, Promises, timeouts). This means one re-render per logical interaction instead of one per `setState` call, reducing unnecessary renders. You can opt out with `flushSync` when you specifically need a synchronous DOM update, but this is rarely needed.
 
-**Q: How do you force an immediate state update without batching?**
-**A:** Use `flushSync` from `react-dom`. It forces React to flush state updates synchronously and re-render before continuing. Use it sparingly — typically only when you need to read an updated DOM measurement immediately after a state change.
+---
 
-## C — Common Pitfalls
+## C — Common Pitfalls + Fix
 
-| Pitfall | Fix |
-| :-- | :-- |
-| Expecting multiple `setState` calls to cause multiple renders | React batches them — expect ONE render per event handler |
-| Using `flushSync` by default for "safety" | Avoid it — batching is a feature, not a bug; `flushSync` is a last resort |
-| Assuming state updates happen synchronously | They're scheduled and applied in the next render snapshot |
+### ❌ Calling many separate setters and worrying about re-render count
 
-## K — Coding Challenge
+```tsx
+// ❌ Concern: "I'm calling 4 setters — that's 4 re-renders, right?"
+function handleReset() {
+  setName('')
+  setEmail('')
+  setAge(0)
+  setActive(false)
+  // WRONG concern — React batches these into ONE re-render ✅
+}
 
-**Challenge:** How many times does this component re-render when the button is clicked?
+// ✅ Group related state if updates always happen together
+interface UserFormState {
+  name:   string
+  email:  string
+  age:    number
+  active: boolean
+}
+const [form, setForm] = useState<UserFormState>({ name: '', email: '', age: 0, active: false })
 
-```jsx
-function Form() {
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [valid, setValid] = useState(false)
+function handleResetGrouped() {
+  setForm({ name: '', email: '', age: 0, active: false })  // one setter, cleaner ✅
+}
+// Both approaches produce one re-render — choose based on readability
+```
 
-  console.log("render")   // count the logs
+---
 
-  function handleSubmit() {
-    setName("Alice")
-    setEmail("alice@test.com")
-    setValid(true)
+## K — Coding Challenge + Solution
+
+### Challenge
+
+Build a `NetworkStatus` component that shows loading/error/data states. Call three setters in one async handler and explain how many re-renders happen.
+
+### Solution
+
+```tsx
+interface Post { id: number; title: string }
+
+function NetworkStatus() {
+  const [posts,     setPosts]     = useState<Post[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error,     setError]     = useState<string | null>(null)
+
+  async function handleLoad() {
+    // Re-render 1: three setters batched into one update (React 18)
+    setIsLoading(true)
+    setPosts([])
+    setError(null)
+
+    try {
+      const res  = await fetch('https://jsonplaceholder.typicode.com/posts?_limit=5')
+      const data = await res.json() as Post[]
+
+      // Re-render 2: two setters batched after the await (React 18 automatic batching)
+      setPosts(data)
+      setIsLoading(false)
+    } catch {
+      // Re-render 2 (error path): two setters batched
+      setError('Failed to load posts')
+      setIsLoading(false)
+    }
+    // Total re-renders: 2 (not 5) — batching at work ✅
   }
 
-  return <button onClick={handleSubmit}>Submit</button>
+  if (isLoading) return <p>Loading…</p>
+  if (error)     return <p className="error">{error}</p>
+
+  return (
+    <div>
+      <button onClick={handleLoad} disabled={isLoading}>
+        Load posts
+      </button>
+      <ul>
+        {posts.map(p => <li key={p.id}>{p.title}</li>)}
+      </ul>
+    </div>
+  )
 }
 ```
 
-**Solution:**
+---
 
-```jsx
-// "render" prints ONCE after the button click
-// React batches all three setState calls into one re-render
-
-// Timeline:
-// 1. Button clicked
-// 2. setName, setEmail, setValid are all queued
-// 3. Handler finishes
-// 4. React processes the batch → one re-render
-// 5. console.log("render") fires once
-
-// Total renders: initial mount (1) + button click (1) = 2 logs
-```
-
-
-***
+---

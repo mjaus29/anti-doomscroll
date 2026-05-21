@@ -47,9 +47,9 @@ const GROUP_CATALOG = [
       "14-day backend track covering database access, typed APIs, auth, and structured logging.",
   },
   {
-    id: "vitest-jsm-testing-performance-docker",
+    id: "vitest-performance-docker",
     label: "Group 7",
-    title: "Vitest / JSM Testing / Performance / Docker",
+    title: "Vitest / Performance / Docker",
     description:
       "6-day quality and delivery track for testing, profiling, and containerized workflows.",
   },

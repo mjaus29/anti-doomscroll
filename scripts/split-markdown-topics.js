@@ -153,7 +153,7 @@ function generateIndex(outputBase, sourceName, dayTitleMap) {
       let title = extractTitle(content).replace(/\n/g, " ");
       title = title.replace(/\[\^\d+\]/g, "").replace(/\\&/g, "&");
       // Use a checkbox-style list for topics
-      out += `- [ ] [${title}](${entry.name}/${f})\n`;
+      out += `- [${title}](${entry.name}/${f})\n`;
     }
     out += "\n";
   }

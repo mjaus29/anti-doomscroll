@@ -1,99 +1,196 @@
 # 6 — Sharing State Between Components
 
+---
+
 ## T — TL;DR
 
-Share state between components by lifting it to their nearest common ancestor — never duplicate the same state in multiple places.
+Sharing state means **one component owns it, others consume it via props**. Direct prop-passing works for 2–3 levels. When state needs to reach deeply nested components, **prop drilling** becomes painful — that's the signal to consider Context (Day 4) or a state manager (Zustand, Day 4+).
+
+---
 
 ## K — Key Concepts
 
-**The sharing pattern:**
+```tsx
+// ── Direct sharing: parent → children via props ───────────────────────────
+interface Theme { primary: string; background: string }
 
-```jsx
-// Parent: single source of truth
-function ProductPage() {
-  const [cart, setCart] = useState([])
-
-  function addItem(item) {
-    setCart(prev => [...prev, item])
-  }
-
-  function removeItem(id) {
-    setCart(prev => prev.filter(i => i.id !== id))
-  }
+function App() {
+  const [theme, setTheme] = useState<Theme>({ primary: '#0066cc', background: '#fff' })
 
   return (
-    <>
-      <ProductList onAddToCart={addItem} />
-      <CartSidebar items={cart} onRemove={removeItem} />
-      <CartBadge count={cart.length} />
-    </>
+    <Layout theme={theme}>
+      <Header theme={theme} />
+      <Main theme={theme} onThemeChange={setTheme} />
+    </Layout>
   )
 }
-// ProductList, CartSidebar, CartBadge all receive their slice via props
-// ✅ One state, no duplication, always in sync
+// Works fine for 1–2 levels ✅
 ```
 
-**When to reach for Context instead:**
+```tsx
+// ── Prop drilling — when it gets painful ────────────────────────────────────
+// State lives in App → passed to Page → passed to Section → passed to Widget
+// Widget is the only one that USES it — all intermediate components just forward it
 
+// ❌ Pain point: 3+ levels of prop passing for state used by one deep component
+function App() {
+  const [user, setUser] = useState<User | null>(null)
+  return <Page user={user} onLogout={() => setUser(null)} />
+}
+function Page({ user, onLogout }: { user: User | null; onLogout: () => void }) {
+  return <Section user={user} onLogout={onLogout} />  // just forwarding ❌
+}
+function Section({ user, onLogout }: { user: User | null; onLogout: () => void }) {
+  return <UserMenu user={user} onLogout={onLogout} />  // just forwarding ❌
+}
+function UserMenu({ user, onLogout }: { user: User | null; onLogout: () => void }) {
+  // Only this component actually uses these props
+  return user ? <button onClick={onLogout}>{user.name}</button> : null
+}
+```
 
-| Scenario | Solution |
-| :-- | :-- |
-| 2–3 levels deep, few components | Lift state + props |
-| Many levels deep (prop drilling) | React Context |
-| Global app-wide state | Context + `useReducer`, or Zustand/Redux |
+```tsx
+// ── Signals that suggest Context instead ─────────────────────────────────
+// - Props passed through 3+ levels where intermediate components don't use them
+// - Many unrelated components at different levels need the same data
+// - Auth user, theme, locale, feature flags
+// Examples: user session, color theme, language preference
+// → Context + useContext is covered in Day 4
+
+// ── Component composition as an alternative to deep drilling ─────────────
+// Instead of drilling user through Layout → Header → UserBadge:
+// Pass the already-rendered UserBadge as a prop (children/slot pattern)
+function App() {
+  const [user, setUser] = useState<User | null>(null)
+  return (
+    <Layout
+      headerSlot={user ? <UserBadge user={user} /> : <LoginButton />}  // ✅ no drilling
+    >
+      <MainContent />
+    </Layout>
+  )
+}
+function Layout({ children, headerSlot }: { children: React.ReactNode; headerSlot: React.ReactNode }) {
+  return (
+    <div>
+      <header>{headerSlot}</header>    {/* Layout doesn't know about User ✅ */}
+      <main>{children}</main>
+    </div>
+  )
+}
+```
+
+---
 
 ## W — Why It Matters
 
-Understanding this pattern prevents the most common architecture mistake: storing the same data in multiple components. That always leads to sync bugs. Knowing *when* to lift vs. when to use Context is a senior-level React skill.
+- Understanding when prop drilling becomes a problem (3+ levels, intermediate components that don't use the prop) tells you exactly when to reach for Context or a state manager.
+- The component composition / slot pattern is an underused alternative to Context for UI structure — `Layout` receiving `headerSlot` as a prop is often cleaner than drilling the user through Layout → Header → UserBadge.
+- "Sharing" vs "lifting" — lifting is about moving state up to coordinate siblings; sharing is about passing that state down to the consumers who need it.
+
+---
 
 ## I — Interview Q&A
 
-**Q: How do you share state between two sibling components?**
-**A:** Lift the state to their nearest common parent and pass it down as props. The parent owns the state and provides update callbacks; the siblings receive values and call the callbacks on user interaction.
+### Q: What is prop drilling and when does it become a problem?
 
-**Q: What is prop drilling and when does it become a problem?**
-**A:** Prop drilling is passing props through many intermediate components that don't use the data themselves. It becomes a problem when the component tree is deep (3+ levels), making refactoring painful. The solution is React Context or a state management library.
+**A:** Prop drilling is passing data through intermediate components that don't use it themselves — just forwarding props to deeper children. It becomes a problem when: the chain is 3+ levels deep, many unrelated components at different depths need the same data, or adding a new prop requires modifying multiple intermediate components. Solutions in order of complexity: (1) **Component composition** — pass pre-composed elements as `children` or named slot props, so intermediate components never see the data. (2) **Context** — broadcast state to any depth without prop chains. (3) **External state manager** (Zustand) — state lives outside the tree, any component subscribes directly.
 
-## C — Common Pitfalls
+---
 
-| Pitfall | Fix |
-| :-- | :-- |
-| Copying the same state into two child components | Lift state to parent — one source, passed down |
-| Lifting state to the app root when only two siblings need it | Lift to the *lowest* common ancestor only |
-| Using Context for all shared state regardless of scope | Use Context only for deeply nested or app-wide state |
+## C — Common Pitfalls + Fix
 
-## K — Coding Challenge
+### ❌ Drilling a callback 4 levels deep when composition solves it
 
-**Challenge:** A `SearchBar` and `ResultsList` are siblings. When the user types in `SearchBar`, `ResultsList` should filter. How do you connect them?
+```tsx
+// ❌ onAddToCart drills through Catalog → Category → ProductCard
+function Catalog({ onAddToCart }: { onAddToCart: (id: number) => void }) {
+  return <Category onAddToCart={onAddToCart} />      // just forwarding ❌
+}
+function Category({ onAddToCart }: { onAddToCart: (id: number) => void }) {
+  return products.map(p => <ProductCard key={p.id} product={p} onAddToCart={onAddToCart} />)
+}
 
-**Solution:**
-
-```jsx
-const ITEMS = ["React", "Redux", "TypeScript", "Node", "GraphQL"]
-
+// ✅ Lift the pre-wired button up — Catalog renders it without knowing the handler
 function App() {
-  const [query, setQuery] = useState("")  // ✅ lifted to common parent
-
-  const results = ITEMS.filter(item =>
-    item.toLowerCase().includes(query.toLowerCase())
-  )
-
+  const [cart, setCart] = useState<number[]>([])
   return (
-    <>
-      <SearchBar query={query} onSearch={setQuery} />
-      <ResultsList results={results} />
-    </>
+    <Catalog
+      renderProduct={product => (
+        <ProductCard
+          product={product}
+          onAddToCart={() => setCart(prev => [...prev, product.id])}  // wired here ✅
+        />
+      )}
+    />
   )
 }
-
-function SearchBar({ query, onSearch }) {
-  return <input value={query} onChange={e => onSearch(e.target.value)} />
-}
-
-function ResultsList({ results }) {
-  return <ul>{results.map(r => <li key={r}>{r}</li>)}</ul>
+function Catalog({ renderProduct }: { renderProduct: (p: Product) => React.ReactNode }) {
+  return <div>{products.map(p => renderProduct(p))}</div>  // no cart knowledge ✅
 }
 ```
 
+---
 
-***
+## K — Coding Challenge + Solution
+
+### Challenge
+
+Refactor a three-level prop drilling chain using the slot/children composition pattern.
+
+### Solution
+
+```tsx
+interface User { name: string; avatar: string }
+
+// ❌ Before: user drills through AppShell → Topbar → UserControls
+function AppShellBad({ user, onLogout }: { user: User; onLogout: () => void }) {
+  return (
+    <div>
+      <TopbarBad user={user} onLogout={onLogout} />
+      <main>Content</main>
+    </div>
+  )
+}
+function TopbarBad({ user, onLogout }: { user: User; onLogout: () => void }) {
+  return <header><UserControlsBad user={user} onLogout={onLogout} /></header>
+}
+function UserControlsBad({ user, onLogout }: { user: User; onLogout: () => void }) {
+  return <button onClick={onLogout}>{user.name}</button>
+}
+
+// ✅ After: composition — AppShell and Topbar know nothing about User
+function UserControls({ user, onLogout }: { user: User; onLogout: () => void }) {
+  return <button onClick={onLogout}>{user.name}</button>
+}
+
+function Topbar({ endSlot }: { endSlot: React.ReactNode }) {
+  return <header><nav>My App</nav>{endSlot}</header>  // no user knowledge ✅
+}
+
+function AppShell({ topbarEnd, children }: { topbarEnd: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div>
+      <Topbar endSlot={topbarEnd} />   // no user knowledge ✅
+      <main>{children}</main>
+    </div>
+  )
+}
+
+// Owner of state wires everything at the top
+function App() {
+  const [user, setUser] = useState<User>({ name: 'Mark', avatar: '/avatar.jpg' })
+
+  return (
+    <AppShell
+      topbarEnd={<UserControls user={user} onLogout={() => setUser(null!)} />}  // ✅
+    >
+      <p>Main content</p>
+    </AppShell>
+  )
+}
+```
+
+---
+
+---

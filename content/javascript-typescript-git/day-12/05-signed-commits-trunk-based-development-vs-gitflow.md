@@ -1,140 +1,166 @@
-# 5 — Signed Commits & Trunk-Based Development vs GitFlow
+# 5 — Signed Commits + Trunk-based Development vs GitFlow
+
+---
 
 ## T — TL;DR
 
-Signed commits use GPG/SSH keys to cryptographically verify the commit author's identity; trunk-based development (short-lived branches, continuous merge to `main`) suits high-frequency teams, while GitFlow suits versioned-release products.
+**Signed commits** use GPG or SSH keys to cryptographically prove authorship — GitHub shows a "Verified" badge. **Trunk-based development** keeps everyone committing to `main` via short-lived branches and feature flags — the fastest delivery model. **GitFlow** uses long-lived branches for organized release cycles.
+
+---
 
 ## K — Key Concepts
 
 ```bash
-# ── Signed commits (GPG) ──────────────────────────────────
-# Generate a GPG key:
-gpg --full-generate-key           # RSA 4096, real name, email matching git config
+# ── GPG signed commits ────────────────────────────────────────────────────
+gpg --full-generate-key           # generate GPG key (RSA 4096 or Ed25519)
+gpg --list-secret-keys --keyid-format=long   # get key ID
 
-# List keys:
-gpg --list-secret-keys --keyid-format=long
+# Configure Git to sign with your key
+git config --global user.signingkey ABCD1234EFGH5678
+git config --global commit.gpgsign true    # sign all commits automatically
+git config --global tag.gpgsign true       # sign all tags
 
-# Export public key to GitHub:
-gpg --armor --export YOUR_KEY_ID   # copy output → GitHub Settings → GPG Keys
+# One-off sign
+git commit -S -m "feat: signed commit"
+git tag -s v1.0.0 -m "signed release"
 
-# Configure git to sign with your key:
-git config --global user.signingkey YOUR_KEY_ID
-git config --global commit.gpgsign true   # sign all commits automatically
-git config --global tag.gpgsign true      # sign all tags
-
-# Single signed commit:
-git commit -S -m "feat(auth): add 2FA"   # -S = sign this commit
-
-# Verify signature:
-git log --show-signature
+# Verify signatures
+git log --show-signature -1
 git verify-commit HEAD
+git verify-tag v1.0.0
 
-# ── Signed commits via SSH key (simpler, GitHub 2022+) ────
+# Export public key → paste into GitHub Settings → SSH and GPG Keys
+gpg --armor --export ABCD1234EFGH5678
+
+# ── SSH signed commits (simpler, Git 2.34+) ──────────────────────────────
 git config --global gpg.format ssh
 git config --global user.signingkey ~/.ssh/id_ed25519.pub
 git config --global commit.gpgsign true
-
-# SSH signing is simpler: uses existing SSH key, no GPG setup needed
-# GitHub shows "Verified" badge on signed commits
-
-# ── Trunk-Based Development ───────────────────────────────
-# One long-lived branch: main (the "trunk")
-# Feature branches live for HOURS to DAYS — never weeks
-# Every developer integrates to main at least once per day
-# Feature flags hide incomplete features
-
-# Workflow:
-git switch -c feature/short-lived    # branch lives < 1 day ideally
-# ... small change ...
-git commit -m "feat: add search endpoint"
-git push origin feature/short-lived
-# → open PR → CI passes → merge same day
-# Feature flag disables it in prod until ready:
-if (featureFlags.isEnabled("new-search")) { ... }
-
-# Pros: no long-running divergence, CI always on latest
-# Cons: requires feature flags, discipline, high test coverage
-
-# ── GitFlow ───────────────────────────────────────────────
-# Long-lived branches:
-# main     → production-only (always stable, tagged releases)
-# develop  → integration branch (all features merge here)
-# feature/ → feature branches off develop
-# release/ → release stabilization off develop
-# hotfix/  → emergency fixes off main
-
-# GitFlow commit lifecycle:
-git flow init                         # setup (git-flow tool)
-git flow feature start user-auth      # creates feature/user-auth from develop
-git flow feature finish user-auth     # merges back to develop
-git flow release start 2.1.0          # creates release/2.1.0 from develop
-git flow release finish 2.1.0         # merges to main + develop + tags v2.1.0
-git flow hotfix start critical-bug    # off main directly
-git flow hotfix finish critical-bug   # merges to main + develop
-
-# Pros: explicit release cycles, clear hotfix path
-# Cons: complex, long-lived branches diverge, slower integration
+# Add SSH key to GitHub → Settings → SSH keys → type: Signing Key
 ```
 
 ```
-── Trunk-Based vs GitFlow ────────────────────────────────
+── Trunk-Based Development (TBD) ─────────────────────────────────────────────
 
-| Aspect              | Trunk-Based             | GitFlow                  |
-|---------------------|-------------------------|--------------------------|
-| Long-lived branches | main only               | main + develop + release |
-| Branch lifetime     | Hours to days           | Weeks to months          |
-| Release cadence     | Continuous (daily/hourly) | Scheduled (weekly/monthly) |
-| Feature isolation   | Feature flags           | Long feature branches    |
-| Merge conflicts     | Rare (frequent merges)  | Common (long divergence) |
-| Best for            | SaaS, continuous deploy | Versioned software, apps |
-| Complexity          | Low                     | High                     |
+Branches:  main (trunk) only + very short-lived feature branches (< 2 days)
+Merging:   squash/rebase to main, delete branch immediately
+Feature flags: incomplete features hidden behind flags, code still ships to main
+CI:        every commit to main triggers full CI + deployment
+Goal:      continuous delivery, no integration debt, no merge conflicts
+
+Best for: web apps, SaaS, teams doing continuous deployment
+
+GitFlow ──────────────────────────────────────────────────────────────────────
+
+Branches:  main (releases), develop (integration),
+           feature/* (off develop), release/* (prep),
+           hotfix/* (off main, emergency)
+Merging:   feature → develop → release → main
+Goal:      organized release cycles, clear history
+
+Best for: libraries with versioned releases, mobile apps,
+          teams with scheduled release windows
+
+──────────────────────────────────────────────────────────────────────────────
+              TBD                     GitFlow
+Branch count  2 (main + short-lived)  5+ types
+Merge freq    Multiple per day        Per release cycle
+Conflicts     Rare (small changes)    Common (long-lived branches)
+CI feedback   Immediate               Delayed to develop merge
+Feature flags Required                Optional
+Rollback      Feature flags           Revert or hotfix branch
+──────────────────────────────────────────────────────────────────────────────
 ```
 
+---
 
 ## W — Why It Matters
 
-Signed commits are required by some organizations (financial, government, OSS) for supply chain security — verifying that a commit actually came from the claimed developer. Trunk-based development is the practice behind Google, Facebook, and Netflix's engineering velocity — short-lived branches eliminate the "merge hell" that kills team velocity at scale.
+- Signed commits are required by many security-conscious organizations and increasingly by supply chain security standards — if your commit can be spoofed, an attacker could inject malicious code appearing to be from you.
+- TBD's core insight is that long-lived branches don't prevent broken code — they delay its discovery. Small, frequent integration exposes problems immediately when context is fresh and the change is small.
+- Feature flags (the enabler of TBD) decouple deployment from release — you can ship to 100% of users, but the feature is off for 99%. This eliminates the "we can't deploy because feature X isn't done" blocker.
+
+---
 
 ## I — Interview Q&A
 
-**Q: What does "Verified" on a GitHub commit mean?**
-A: It means the commit was cryptographically signed with a GPG key or SSH key whose public key is registered on GitHub. GitHub verified that the private key holder made the commit — not just that the `git config user.email` matches. Without signing, anyone can `git config user.email "linus@kernel.org"` and impersonate.
+### Q: What is trunk-based development and how does it differ from GitFlow?
 
-**Q: Why does trunk-based development require feature flags?**
-A: Branches in trunk-based are merged to main before features are complete — multiple PRs build a feature incrementally. Feature flags let you merge incomplete code safely, hiding it from users until the whole feature is ready. Without flags, you'd either block merging (creating long branches) or ship half-built features.
+**A:** Trunk-based development has everyone integrating to a single `main` branch (the trunk) continuously — feature branches exist but are short-lived (hours to 2 days max) and merged daily. Incomplete features are hidden behind feature flags. The goal is eliminating integration debt — conflicts discovered immediately when changes are small. GitFlow uses parallel long-lived branches (`develop`, `release/*`, `feature/*`) with periodic merges, designed for teams with scheduled release cycles. TBD delivers faster, has fewer merge conflicts, and forces better decomposition of work. GitFlow provides explicit release boundaries needed for versioned software. Most modern web teams use TBD; library/mobile teams often use GitFlow.
 
-## C — Common Pitfalls
+---
 
-| Pitfall | Fix |
-| :-- | :-- |
-| GitFlow's `develop` diverging far from `main` after a hotfix | GitFlow requires hotfixes to merge to BOTH `main` and `develop` — easy to forget |
-| Trunk-based without feature flags — half-built code in production | Always pair trunk-based with a feature flag system before adoption |
-| GPG signing failing with "secret key not available" | The GPG key's email must match `user.email` exactly in git config |
+## C — Common Pitfalls + Fix
 
-## K — Coding Challenge
+### ❌ TBD without feature flags — half-finished feature ships to users
 
-**Given a team doing weekly versioned releases with a separate QA phase, choose the right workflow and explain the branch structure:**
+```bash
+# ❌ Merging half-done auth to main without a flag → users see broken UI
+git switch main
+git merge feature/new-auth   # incomplete feature visible in production ❌
 
-**Solution:**
+# ✅ Feature flag pattern
+# src/flags.ts
+export const FLAGS = {
+  NEW_AUTH_FLOW: process.env.NEW_AUTH_FLOW === 'true',
+} as const
 
-```
-GitFlow is the right choice for weekly versioned releases with QA:
+# In component:
+if (FLAGS.NEW_AUTH_FLOW) {
+  return <NewAuthForm />   // only shown when flag is on
+}
+return <OldAuthForm />     // default — safe to ship ✅
 
-Branch structure:
-main      → production code, tagged releases (v2.3.0, v2.4.0)
-develop   → integration, always "next release" state
-feature/* → individual features, merge to develop when complete
-release/2.4.0 → QA phase: only bug fixes, no new features
-             → when QA passes: merge to main + develop, tag v2.4.0
-hotfix/*  → production emergencies off main, merge to main + develop
-
-QA phase = release/2.4.0 branch:
-git checkout -b release/2.4.0 develop
-# QA tests, fixes bugs on this branch
-# When approved:
-git checkout main && git merge release/2.4.0 && git tag v2.4.0
-git checkout develop && git merge release/2.4.0
+# Deploy with flag off → test in production with flag on for 10% → full rollout
 ```
 
+---
 
-***
+## K — Coding Challenge + Solution
+
+### Challenge
+
+Configure SSH-signed commits globally, verify a commit's signature, and write a feature flag utility in TypeScript.
+
+### Solution
+
+```bash
+# SSH signing setup
+git config --global gpg.format ssh
+git config --global user.signingkey "$(cat ~/.ssh/id_ed25519.pub)"
+git config --global commit.gpgsign true
+git config --global tag.gpgsign true
+
+# For verification: create allowed_signers file
+echo "mark@example.com $(cat ~/.ssh/id_ed25519.pub)" > ~/.ssh/allowed_signers
+git config --global gpg.ssh.allowedSignersFile ~/.ssh/allowed_signers
+
+# Verify
+git commit -m "feat: test signed commit"
+git log --show-signature -1   # shows "Good git signature for..."
+git verify-commit HEAD
+```
+
+```typescript
+// src/lib/flags.ts — type-safe feature flags
+const FLAGS_CONFIG = {
+  NEW_AUTH_FLOW:     process.env.NEXT_PUBLIC_FLAG_NEW_AUTH     === 'true',
+  DARK_MODE:         process.env.NEXT_PUBLIC_FLAG_DARK_MODE    === 'true',
+  PAYMENT_V2:        process.env.NEXT_PUBLIC_FLAG_PAYMENT_V2   === 'true',
+} as const
+
+type FlagName = keyof typeof FLAGS_CONFIG
+
+export function isEnabled(flag: FlagName): boolean {
+  return FLAGS_CONFIG[flag]
+}
+
+// Usage: gated component
+export function AuthForm() {
+  return isEnabled('NEW_AUTH_FLOW') ? <NewAuth /> : <LegacyAuth />
+}
+```
+
+---
+
+---

@@ -1,119 +1,173 @@
-# 6 — `async`/`await`, `try`/`catch`/`finally` & Unhandled Rejections
+# 6 — async/await — try/catch/finally, Unhandled Rejections
+
+---
 
 ## T — TL;DR
 
-`async/await` is syntactic sugar over Promises — `await` pauses the function until a Promise settles, and `try/catch` handles rejections like synchronous errors.
+`async` functions always return a Promise. `await` pauses the async function (not the thread) until the Promise settles. `try/catch/finally` works exactly like synchronous error handling. Unhandled rejections (no `.catch` or `try/catch`) crash Node.js and emit warnings in browsers — always handle them.
+
+---
 
 ## K — Key Concepts
 
-```js
-// async function always returns a Promise
+```javascript
+// ── async function always returns a Promise ────────────────────────────────
 async function getUser(id) {
-  return { id, name: "Alice" }  // auto-wrapped in Promise.resolve()
+  return { id, name: 'Mark' }   // auto-wrapped in Promise.resolve()
 }
-getUser(1) instanceof Promise  // true
+getUser(1)   // Promise<{ id:1, name:'Mark' }>
+getUser(1).then(u => console.log(u))   // { id:1, name:'Mark' }
 
-// await — pauses async function, unwraps Promise
-async function fetchUser(id) {
-  const res = await fetch(`/api/users/${id}`)  // pauses here
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  const user = await res.json()                 // pauses here
-  return user
+// Throwing inside async → rejected Promise
+async function fail() {
+  throw new Error('async error')
 }
+fail().catch(err => console.error(err.message))   // 'async error'
+```
 
-// try/catch/finally — error handling
-async function loadDashboard() {
+```javascript
+// ── await — pause until Promise settles ───────────────────────────────────
+async function loadData() {
+  const user  = await fetchUser(1)       // pauses here until fetchUser resolves
+  const posts = await fetchPosts(user.id) // then pauses here
+  return { user, posts }
+}
+// Equivalent to:
+// fetchUser(1).then(user => fetchPosts(user.id)).then(posts => ({ user, posts }))
+```
+
+```javascript
+// ── try/catch/finally for error handling ──────────────────────────────────
+async function processOrder(orderId) {
   try {
-    const [user, orders] = await Promise.all([
-      fetchUser(1),
-      fetchOrders(1)
-    ])
-    return { user, orders }
+    const order    = await fetchOrder(orderId)
+    const payment  = await processPayment(order)
+    const shipment = await scheduleShipment(payment)
+    return shipment
   } catch (err) {
-    console.error("Dashboard failed:", err.message)
-    return { user: null, orders: [] }  // graceful fallback
+    // Catches rejection from ANY await in the try block
+    console.error('Order processing failed:', err.message)
+    await logError(err, orderId)   // can await in catch ✅
+    throw err                       // re-throw to propagate ✅
   } finally {
-    hideLoadingSpinner()  // always runs
+    await releaseOrderLock(orderId)  // always runs ✅
+    // If finally returns a value, it overrides try/catch return ⚠️
   }
 }
+```
 
-// Async IIFE for top-level await (before top-level await support)
-;(async () => {
-  const data = await fetchUser(1)
-  console.log(data)
-})()
+```javascript
+// ── Unhandled promise rejections ──────────────────────────────────────────
+// ❌ No .catch and no try/catch — rejection is unhandled
+async function broken() { throw new Error('unhandled') }
+broken()   // UnhandledPromiseRejection — crashes Node.js in newer versions!
 
-// Top-level await (ES2022, in ESM modules)
-const config = await fetch("/config.json").then(r => r.json())
+// ✅ Always handle rejections
+broken().catch(console.error)
 
-// Unhandled rejection — crashes Node.js, silent in older browsers
-async function broken() {
-  throw new Error("unhandled")
-}
-broken()  // ❌ No .catch(), no try/catch — UnhandledPromiseRejection
-
-// Handle globally
-process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unhandled rejection:", reason)
-  process.exit(1)  // fail fast in production
+// Global handler for truly unexpected rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled rejection:', reason)
+  process.exit(1)   // fail loudly in production ✅
 })
 
 // Browser equivalent
-window.addEventListener("unhandledrejection", e => {
-  console.error("Unhandled:", e.reason)
+window.addEventListener('unhandledrejection', event => {
+  console.error('Unhandled:', event.reason)
+  event.preventDefault()  // suppress default console error
 })
 ```
 
+```javascript
+// ── async IIFE for top-level await without module ─────────────────────────
+// Without "type": "module" in package.json:
+;(async () => {
+  const data = await fetchSomething()
+  console.log(data)
+})()
+
+// With "type": "module" (Node.js 14+):
+const data = await fetchSomething()   // top-level await ✅
+```
+
+---
 
 ## W — Why It Matters
 
-`async/await` is the dominant async pattern in all modern JavaScript — Node.js backends, React components, browser scripts. The `unhandledRejection` event matters for production reliability: in Node 15+, unhandled Promise rejections crash the process by default.
+- `async/await` reads like synchronous code but is non-blocking — this is the biggest readability win in modern JavaScript. Complex multi-step async flows become straightforward to read and debug.
+- Unhandled rejections crash Node.js processes in production — every async function call must either be awaited inside a try/catch, have a `.catch()`, or be explicitly fire-and-forget with a logged `.catch`.
+- `finally` with `await` for resource cleanup (releasing locks, closing connections, removing loading states) is more reliable than putting cleanup in both `try` and `catch` — it runs on any path.
+
+---
 
 ## I — Interview Q&A
 
-**Q: What does `async` before a function do?**
-A: It makes the function always return a Promise. Inside it, you can use `await`. Non-Promise return values are automatically wrapped in `Promise.resolve()`. Thrown errors become rejected Promises.
+### Q: What does `async` do to a function's return value?
 
-**Q: What happens if you `await` a non-Promise?**
-A: It's equivalent to `await Promise.resolve(value)` — it resolves immediately. It's valid but unnecessary for non-async values.
+**A:** An `async` function always returns a Promise, regardless of what the `return` statement says. If the function returns a non-Promise value, it's wrapped in `Promise.resolve(value)`. If the function throws, the Promise is rejected with the thrown error. If it returns a Promise, that Promise is adopted (the async function's Promise follows the returned Promise). This means you can `await` an async function and get the returned value directly, or chain `.then()` on it — both work.
 
-## C — Common Pitfalls
+---
 
-| Pitfall | Fix |
-| :-- | :-- |
-| `async` function without `try/catch` causing unhandled rejection | Always wrap `await` calls in `try/catch` or chain `.catch()` |
-| Forgetting `await` — using a Promise instead of its value | Add `await`: `const data = await fetch(...)` |
-| `return await fn()` vs `return fn()` inside try/catch | Use `return await fn()` — without `await`, the rejection escapes the `try/catch` |
-| Top-level `await` outside ESM | Only works in ES modules (`.mjs` or `"type":"module"` in package.json) |
+## C — Common Pitfalls + Fix
 
-## K — Coding Challenge
+### ❌ Returning in `finally` — overrides the try block's return value
 
-**What's the bug and how do you fix it?**
-
-```js
-async function getData() {
+```javascript
+// ❌ finally return value overrides try's return
+async function getUser() {
   try {
-    return fetchData()  // fetchData() returns a Promise
-  } catch (err) {
-    console.error("caught:", err)
+    return await fetchUser()   // would return the user
+  } finally {
+    return null   // ❌ overrides! function always returns null
+  }
+}
+
+// ✅ Don't return values from finally — only use for cleanup
+async function getUser2() {
+  try {
+    return await fetchUser()
+  } finally {
+    cleanup()   // no return statement ✅
   }
 }
 ```
 
-**Solution:**
+---
 
-```js
-// Bug: `return fetchData()` without `await` — if fetchData() rejects,
-// the rejection escapes the try/catch block (it was already returned).
+## K — Coding Challenge + Solution
 
-async function getData() {
+### Challenge
+
+Write `withErrorBoundary(asyncFn, fallback)` — a wrapper that catches any error from an async function and returns `[null, error]` on failure or `[result, null]` on success (Go-style error handling). Use it to safely call three dependent APIs.
+
+### Solution
+
+```javascript
+async function withErrorBoundary(asyncFn, ...args) {
   try {
-    return await fetchData()  // ✅ await here so rejection is caught
+    const result = await asyncFn(...args)
+    return [result, null]
   } catch (err) {
-    console.error("caught:", err)
+    return [null, err]
+  }
+}
+
+// Usage
+async function loadUserDashboard(userId) {
+  const [user, userErr] = await withErrorBoundary(fetchUser, userId)
+  if (userErr) return { error: 'Could not load user' }
+
+  const [posts, postsErr] = await withErrorBoundary(fetchPosts, user.id)
+  const [stats, _] = await withErrorBoundary(fetchStats, user.id)
+
+  return {
+    user,
+    posts:  postsErr ? []   : posts,
+    stats:  stats    ?? {},
   }
 }
 ```
 
+---
 
-***
+---

@@ -1,164 +1,231 @@
 # 8 — Structural Sharing
 
+---
+
 ## T — TL;DR
 
-TanStack Query uses structural sharing to preserve identical object references between fetches — preventing unnecessary re-renders in components that haven't received actually changed data.
+**Structural sharing** means TanStack Query reuses the same JavaScript object references for unchanged parts of the response. If a refetch returns the same data, the component does NOT re-render. Only changed parts get new references — React's `===` comparison catches unchanged props and bails out.
+
+---
 
 ## K — Key Concepts
 
-**The problem structural sharing solves:**
+```tsx
+// ── What structural sharing does ──────────────────────────────────────────
+// Without structural sharing:
+//   Every fetch → new objects → new references → everything re-renders
 
-```jsx
-// Without structural sharing:
-// Fetch 1 returns: [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }]
-// Fetch 2 returns: [{ id: 1, name: "Alice" }, { id: 2, name: "Bobby" }]  (only Bob changed)
-//
-// Without structural sharing:
-// → data is a completely new array
-// → ALL consumers re-render, even those only using Alice
-//
 // With structural sharing (TanStack Query default):
-// → data.users is the SAME reference as before (Alice didn't change)
-// → data.users is a NEW reference (Bobby changed)
-// → Only components subscribed to Bob's data re-render
+//   Fetch returns same data → same references kept → no re-renders
+//   Fetch returns partially changed data → only changed subtrees get new refs
+
+// Example:
+const users = [
+  { id: 1, name: 'Alice', active: true },
+  { id: 2, name: 'Bob',   active: false },
+]
+
+// Refetch returns: only Bob's active changed to true
+const newUsers = [
+  { id: 1, name: 'Alice', active: true },   // identical to previous
+  { id: 2, name: 'Bob',   active: true },   // changed
+]
+
+// With structural sharing:
+//   newUsers[0] === users[0]   → true  (same reference ✅ — Alice's component doesn't re-render)
+//   newUsers[1] === users[1]   → false (new reference — Bob's component re-renders ✅)
 ```
 
-**How it works:**
-
-```jsx
-// TanStack Query deep-compares old and new data after every fetch
-// For each value:
-// - If old === new (deep equal): KEEP the old reference (same object pointer)
-// - If changed: create new reference
-
-const result1 = { user: { id: 1, name: "Alice" }, stats: { posts: 10 } }
-const result2 = { user: { id: 1, name: "Alice" }, stats: { posts: 11 } }
-
-// After fetch 2 with structural sharing:
-// result2.user === result1.user        ✅ SAME reference (Alice unchanged)
-// result2.stats !== result1.stats      ✅ NEW reference (posts changed)
-// result2 !== result1                  ✅ NEW reference (container changed)
-```
-
-**Real-world benefit with `select`:**
-
-```jsx
-// Both components use the same ["users"] query
-// UserList subscribes to all users
-// AdminBadge subscribes to just the admin count
-
-const { data: users } = useQuery({ queryKey: ["users"], queryFn: fetchUsers })
-
-const { data: adminCount } = useQuery({
-  queryKey: ["users"],
-  queryFn: fetchUsers,
-  select: (users) => users.filter(u => u.role === "admin").length,
-})
-// Background refetch fires, one non-admin user's email changes
-// → adminCount's select returns the same number
-// → AdminBadge does NOT re-render ✅ (structural sharing + select)
-```
-
-**Opting out:**
-
-```jsx
-// Rare case: you want a fresh object reference every time (e.g., you mutate data locally)
-useQuery({
-  queryKey: ["data"],
-  queryFn: fetchData,
-  structuralSharing: false,   // new object reference every fetch
+```tsx
+// ── Structural sharing + React.memo ──────────────────────────────────────
+const UserRow = memo(function UserRow({ user }: { user: User }) {
+  console.log('UserRow render:', user.id)
+  return <tr><td>{user.name}</td><td>{user.active ? 'Active' : 'Inactive'}</td></tr>
 })
 
-// Or pass a custom comparison function
+function UserTable() {
+  const { data: users = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn:  ({ signal }) => getUsers(signal),
+  })
+  // Background refetch runs — only Bob changed
+  // UserRow for Alice: memo receives same reference → skips render ✅
+  // UserRow for Bob: memo receives new reference → re-renders ✅
+  return (
+    <table>
+      <tbody>{users.map(u => <UserRow key={u.id} user={u} />)}</tbody>
+    </table>
+  )
+}
+```
+
+```tsx
+// ── select + structural sharing: precision subscriptions ─────────────────
+// Component A: only cares about active user count
+function ActiveCount() {
+  const { data: count } = useQuery({
+    queryKey: ['users'],
+    queryFn:  ({ signal }) => getUsers(signal),
+    select: users => users.filter(u => u.active).length,
+    // Structural sharing on SELECT result:
+    // If count hasn't changed → same primitive → no re-render ✅
+  })
+  return <p>Active: {count}</p>
+}
+
+// Component B: only cares about admin names
+function AdminNames() {
+  const { data: adminNames } = useQuery({
+    queryKey: ['users'],
+    queryFn:  ({ signal }) => getUsers(signal),
+    select: users => users
+      .filter(u => u.role === 'admin')
+      .map(u => u.name),
+    // Both components subscribe to ['users'] — ONE network request
+    // But each gets its own select transformation ✅
+  })
+  return <ul>{adminNames?.map(n => <li key={n}>{n}</li>)}</ul>
+}
+```
+
+```tsx
+// ── Disabling structural sharing ──────────────────────────────────────────
+// Rare use case: when you intentionally need a new reference on every fetch
 useQuery({
-  queryKey: ["data"],
-  queryFn: fetchData,
+  queryKey: ['stream-data'],
+  queryFn:  getStreamData,
+  structuralSharing: false,   // every fetch = new references = re-render everything
+})
+
+// Also accept a custom comparison function (advanced):
+useQuery({
+  queryKey: ['data'],
+  queryFn:  getData,
   structuralSharing: (oldData, newData) => {
-    // Return oldData to keep reference, newData to replace it
-    return deepEqual(oldData, newData) ? oldData : newData
+    // Return oldData if logically equal, newData if different
+    return JSON.stringify(oldData) === JSON.stringify(newData) ? oldData : newData
   },
 })
 ```
 
+---
 
 ## W — Why It Matters
 
-Structural sharing is the invisible performance feature that makes TanStack Query's caching model compose cleanly with `React.memo` and `useMemo`. Without it, every background refetch would cause every subscribed component to re-render, even if their data slice didn't change. It's how TanStack Query achieves both freshness and rendering efficiency simultaneously.
+- Structural sharing is the reason background refetches don't cause the entire UI to flash — only the components whose data actually changed re-render.
+- Combined with `React.memo` and `select`, structural sharing creates surgically precise re-renders: a list of 100 users where only one changed produces exactly one row re-render.
+- When a background refetch returns identical data (common when `staleTime` is short and the data doesn't change often), zero re-renders happen. The network request fires but the UI is completely undisturbed.
+
+---
 
 ## I — Interview Q&A
 
-**Q: What is structural sharing in TanStack Query?**
-**A:** A deep comparison algorithm that runs after every fetch. For each nested value in the new data, if it's deeply equal to the old value, TanStack Query returns the old reference instead of the new one. This means unchanged parts of the data tree keep stable object references, preventing unnecessary re-renders in subscribed components.
+### Q: What is structural sharing in TanStack Query and why does it improve performance?
 
-**Q: How does structural sharing interact with `React.memo`?**
-**A:** `React.memo` skips re-renders when props haven't changed (by reference). With structural sharing, if a component receives a sub-object from query data that didn't actually change, its reference stays the same → `React.memo` skips the re-render. Without structural sharing, every refetch creates new references → every memo'd child re-renders.
+**A:** After a query refetch, TanStack Query deeply compares the new response against the cached data. For any part of the response that is identical (deep equality), it reuses the existing JavaScript object reference instead of using the new one. For parts that changed, it creates new references. This matters because React uses reference equality (`===`) for change detection — `React.memo` and `useMemo` dependencies check if a reference changed. With structural sharing: a background refetch that returns unchanged data produces zero re-renders. A refetch that changes one item in a 100-item list produces one re-render for that item's component, not 100. Without structural sharing, every refetch would produce all-new references, causing every subscriber to re-render regardless of whether their data changed.
 
-**Q: When would you disable structural sharing?**
-**A:** When you're directly mutating the returned data objects (anti-pattern but it exists in some codebases), or when using data types that can't be deep-compared — like `Map`, `Set`, or class instances that override equality.
+---
 
-## C — Common Pitfalls
+## C — Common Pitfalls + Fix
 
-| Pitfall | Fix |
-| :-- | :-- |
-| Mutating data returned from `useQuery` directly | Never mutate query data — it breaks structural sharing and causes subtle bugs. Create new objects instead |
-| Expecting structural sharing with non-serializable types (Map, Set) | TanStack Query can't deep-compare non-plain objects — use plain arrays/objects or disable structural sharing |
-| Not using `select` to narrow subscriptions | Components subscribing to large objects re-render on any sub-field change — use `select` to subscribe only to what you need |
-| Disabling structural sharing globally as a "simple fix" | You lose render optimization on every query — diagnose the specific issue instead |
+### ❌ Expecting structural sharing to work through a select that creates a new array
 
-## K — Coding Challenge
+```tsx
+// ❌ select creates a new array reference on every call — even if contents are same
+function ActiveUsersBad() {
+  const { data: activeUsers } = useQuery({
+    queryKey: ['users'],
+    queryFn:  ({ signal }) => getUsers(signal),
+    select: users => users.filter(u => u.active),
+    // [].filter() ALWAYS returns a new array reference ❌
+    // Even if the active users haven't changed → new reference → re-render
+  })
+  // Passes activeUsers to a memo'd child → memo always sees "new" prop → always re-renders ❌
+}
 
-**Challenge:** Explain what re-renders happen in each case when a background refetch returns new data:
+// ✅ Structural sharing DOES work on the select result for objects inside the array
+// The array itself is new, but the objects inside are stable if unchanged ✅
+// For the array reference stability: use a custom selector or useMemo
 
-```jsx
-// Query data shape:
-// { users: [{ id: 1, name: "Alice", online: true }, { id: 2, name: "Bob", online: false }],
-//   meta: { total: 2, page: 1 } }
+function ActiveUsersFixed() {
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn:  ({ signal }) => getUsers(signal),
+    // No select — keep full data, structural sharing works for objects ✅
+  })
+  // Filter outside — memo'd child receives stable user objects ✅
+  const activeUsers = useMemo(() => allUsers.filter(u => u.active), [allUsers])
+  // allUsers reference only changes when TQ detects data changed
+  // So activeUsers only recomputes when actual data changes ✅
+}
+```
 
-// After refetch, only Bob's online status changes:
-// { users: [{ id: 1, name: "Alice", online: true }, { id: 2, name: "Bob", online: true }],
-//   meta: { total: 2, page: 1 } }
+---
 
-const UserList = React.memo(({ users }) => <ul>...</ul>)
-const MetaInfo = React.memo(({ meta }) => <p>Total: {meta.total}</p>)
-const AliceCard = React.memo(({ user }) => <div>{user.name}</div>)
-const BobCard = React.memo(({ user }) => <div>{user.name}: {user.online ? "🟢" : "🔴"}</div>)
+## K — Coding Challenge + Solution
 
-function Dashboard() {
-  const { data } = useQuery({ queryKey: ["dashboard"], queryFn: fetchDashboard })
+### Challenge
+
+Demonstrate structural sharing with a `memo`'d list row: show that only the changed row re-renders after a background refetch that modifies one item.
+
+### Solution
+
+```tsx
+interface Product { id: number; name: string; price: number; stock: number }
+
+// Memo'd row — only re-renders when its product reference changes
+const ProductRow = memo(function ProductRow({ product }: { product: Product }) {
+  const renderCount = useRef(0)
+  renderCount.current++
+
+  return (
+    <tr style={{ background: renderCount.current > 1 ? '#fffbcd' : 'white' }}>
+      <td>{product.name}</td>
+      <td>${product.price}</td>
+      <td>{product.stock}</td>
+      <td style={{ fontSize: 11, color: '#888' }}>
+        Renders: {renderCount.current}
+      </td>
+    </tr>
+  )
+})
+// After a background refetch where only product id=2's stock changed:
+// → ProductRow for id=1: same object reference → memo bails out → 1 render total ✅
+// → ProductRow for id=2: new object reference  → re-renders                    → ✅
+
+function ProductInventoryTable() {
+  const qc = useQueryClient()
+  const { data: products = [], isFetching } = useQuery({
+    queryKey: ['products'],
+    queryFn:  ({ signal }) => getProducts(signal),
+    staleTime: 0,
+  })
+
+  // Simulate a change to product id=2 only
+  function simulateStockUpdate() {
+    qc.setQueryData<Product[]>(['products'], old => old?.map(p =>
+      p.id === 2 ? { ...p, stock: p.stock - 1 } : p   // only product 2 changes
+    ) ?? [])
+  }
+
   return (
     <div>
-      <UserList users={data?.users} />
-      <MetaInfo meta={data?.meta} />
-      <AliceCard user={data?.users} />
-      <BobCard user={data?.users} />
+      {isFetching && <p>🔄 Refreshing…</p>}
+      <button onClick={simulateStockUpdate}>Sell one of product #2</button>
+      <table>
+        <thead><tr><th>Name</th><th>Price</th><th>Stock</th><th>Debug</th></tr></thead>
+        <tbody>
+          {products.map(p => <ProductRow key={p.id} product={p} />)}
+        </tbody>
+      </table>
+      <p style={{ fontSize: 12 }}>
+        Only the row for product #2 should increment its render count ✅
+      </p>
     </div>
   )
 }
 ```
 
-**Solution:**
+---
 
-```
-With structural sharing after Bob's online status changes:
-
-data              → NEW reference (container changed — child changed)
-data.users        → NEW reference (array changed — Bob changed)
-data.users     → SAME reference ✅ (Alice unchanged — deep equal)
-data.users     → NEW reference (Bob changed)
-data.meta         → SAME reference ✅ (meta unchanged — deep equal)
-
-Re-render analysis:
-✅ Dashboard        → re-renders (data reference changed)
-✅ UserList         → RE-RENDERS (users array is a new reference)
-❌ MetaInfo         → SKIPS (meta is same reference → React.memo holds) ✅
-❌ AliceCard        → SKIPS (data.users is same reference → React.memo holds) ✅
-✅ BobCard          → RE-RENDERS (data.users is new reference, online changed)
-
-Without structural sharing:
-ALL four memo'd children would re-render, even MetaInfo and AliceCard,
-because every refetch produces entirely new object references.
-Structural sharing gives surgical re-render precision. ✅
-```
-
-
-***
+---

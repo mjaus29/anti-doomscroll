@@ -1,118 +1,182 @@
 # 1 — Event Handling
 
+---
+
 ## T — TL;DR
 
-React events use camelCase names and receive a synthetic event object — attach handlers directly in JSX, never as strings.
+React events are **synthetic wrappers** around native browser events — same properties, same names, but camelCased (`onClick`, `onChange`). You pass a **function reference** as a prop — not a call. React calls it when the event fires.
+
+---
 
 ## K — Key Concepts
 
-**Attaching event handlers:**
+```tsx
+// ── Pass a reference, never a call ───────────────────────────────────────
+// ❌ Calling the function immediately (runs on every render)
+<button onClick={handleClick()}>Click</button>
 
-```jsx
-// ✅ Pass a function reference
-<button onClick={handleClick}>Click me</button>
+// ✅ Passing the reference (React calls it on click)
+<button onClick={handleClick}>Click</button>
 
-// ✅ Inline arrow function
-<button onClick={() => alert("clicked!")}>Click me</button>
-
-// ❌ Calling the function immediately (common mistake)
-<button onClick={handleClick()}>Click me</button>
-// This runs handleClick on render, not on click
+// ✅ Inline arrow function — when you need to pass arguments
+<button onClick={() => handleDelete(item.id)}>Delete</button>
 ```
 
-**The Synthetic Event object:**
+```tsx
+// ── Event handler anatomy ────────────────────────────────────────────────
+function Form() {
+  // Named handler — preferred for readability
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()               // stop default form submission
+    console.log('submitted')
+  }
 
-React wraps native browser events in a `SyntheticEvent` — it has the same API cross-browser and is passed automatically as the first argument:
+  // Arrow function handler — equivalent
+  const handleReset = () => {
+    console.log('reset')
+  }
 
-```jsx
-function handleChange(e) {
-  console.log(e.target.value)   // input's current value
-  console.log(e.target.name)    // input's name attribute
-  console.log(e.type)           // "change"
+  return (
+    <form onSubmit={handleSubmit}>
+      <button type="reset" onClick={handleReset}>Reset</button>
+      <button type="submit">Submit</button>
+    </form>
+  )
 }
 ```
 
-**Preventing default browser behavior:**
+```tsx
+// ── Common event types ────────────────────────────────────────────────────
+// Mouse events
+onClick:       React.MouseEvent<HTMLButtonElement>
+onDoubleClick: React.MouseEvent<HTMLDivElement>
+onMouseEnter:  React.MouseEvent<HTMLDivElement>
+onMouseLeave:  React.MouseEvent<HTMLDivElement>
 
-```jsx
-function handleSubmit(e) {
-  e.preventDefault()  // stops page reload on form submit
-  // handle your logic
+// Form events
+onChange:      React.ChangeEvent<HTMLInputElement>
+onSubmit:      React.FormEvent<HTMLFormElement>
+onFocus:       React.FocusEvent<HTMLInputElement>
+onBlur:        React.FocusEvent<HTMLInputElement>
+
+// Keyboard events
+onKeyDown:     React.KeyboardEvent<HTMLInputElement>
+onKeyUp:       React.KeyboardEvent<HTMLInputElement>
+
+// Accessing event properties
+function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+  const value   = e.target.value        // typed value
+  const name    = e.target.name         // input name attribute
+  const checked = e.target.checked      // for checkboxes
+  const files   = e.target.files        // for file inputs
+}
+
+function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+  if (e.key === 'Enter') { /* submit */ }
+  if (e.key === 'Escape') { /* cancel */ }
+  if (e.ctrlKey && e.key === 's') { /* save shortcut */ }
 }
 ```
 
-**Common React event names:**
+```tsx
+// ── Event propagation ────────────────────────────────────────────────────
+// React events bubble up the tree — same as native events
 
+function Card({ onClick }: { onClick: () => void }) {
+  return (
+    <div onClick={onClick} className="card">
+      <button
+        onClick={e => {
+          e.stopPropagation()   // prevent click from bubbling to card ✅
+          console.log('button clicked — card onClick NOT fired')
+        }}
+      >
+        Inner button
+      </button>
+    </div>
+  )
+}
+```
 
-| DOM Event | React Prop |
-| :-- | :-- |
-| `onclick` | `onClick` |
-| `onchange` | `onChange` |
-| `onsubmit` | `onSubmit` |
-| `onkeydown` | `onKeyDown` |
-| `onmouseenter` | `onMouseEnter` |
-| `onfocus` | `onFocus` |
+---
 
 ## W — Why It Matters
 
-Event handling is the entry point for all user interaction in React. Misunderstanding the difference between passing a reference vs. calling a function is one of the most common Day 1 bugs. Every form, button, and interactive UI element depends on this.
+- The "reference vs call" distinction (`onClick={fn}` vs `onClick={fn()}`) is the first gotcha every React developer hits — the call version runs the function immediately on render, not on click.
+- TypeScript's event types (`React.ChangeEvent<HTMLInputElement>`) give you autocomplete on `e.target.value` and catch mistakes like accessing `.value` on a `<select>` vs `<input>`.
+- `e.preventDefault()` is required for form submit, link navigation, and drag-drop — without it, the browser's default behaviour fires in addition to your handler.
+
+---
 
 ## I — Interview Q&A
 
-**Q: How do React events differ from native DOM events?**
-**A:** React uses `SyntheticEvent` — a cross-browser wrapper with the same API as native events. Event names are camelCase (`onClick` not `onclick`), and handlers are passed as functions in JSX, not strings.
+### Q: What is the difference between `onClick={handleClick}` and `onClick={handleClick()}`?
 
-**Q: What is the difference between `onClick={handleClick}` and `onClick={handleClick()}`?**
-**A:** `onClick={handleClick}` passes a function reference — it runs when the button is clicked. `onClick={handleClick()}` *calls* the function immediately during render, which is almost always a bug.
+**A:** `onClick={handleClick}` passes a function **reference** — React stores it and calls it when the user clicks. `onClick={handleClick()}` **calls** the function immediately during render and passes its return value (likely `undefined`) as the onClick prop. The first is correct, the second runs the function on every render and registers nothing for the click. The inline arrow pattern `onClick={() => handleDelete(id)}` creates a new function reference on each render that, when called, invokes `handleDelete(id)` — this is the correct way to pass arguments to a handler.
 
-**Q: How do you stop a form from refreshing the page in React?**
-**A:** Call `e.preventDefault()` inside the `onSubmit` handler. This prevents the browser's default form submission behavior.
+---
 
-## C — Common Pitfalls
+## C — Common Pitfalls + Fix
 
-| Pitfall | Fix |
-| :-- | :-- |
-| `onClick={doSomething()}` calls on render | Use `onClick={doSomething}` or `onClick={() => doSomething()}` |
-| Forgetting `e.preventDefault()` on forms | Always add it in `onSubmit` handlers |
-| Trying to read `e.target.value` asynchronously | Store `e.target.value` in a variable first — SyntheticEvent is pooled (older React) |
+### ❌ Forgetting `e.preventDefault()` on form submit
 
-## K — Coding Challenge
-
-**Challenge:** Fix all event handling bugs:
-
-```jsx
-function LoginForm() {
+```tsx
+// ❌ Page refreshes on submit — browser default behaviour
+function SearchForm() {
   function handleSubmit() {
-    console.log("submitted")
+    console.log('search!')   // runs, then page reloads ❌
+  }
+  return <form onSubmit={handleSubmit}><button type="submit">Search</button></form>
+}
+
+// ✅ Prevent default — stop browser navigation
+function SearchForm() {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()       // stops reload ✅
+    console.log('search!')
+  }
+  return <form onSubmit={handleSubmit}><button type="submit">Search</button></form>
+}
+```
+
+---
+
+## K — Coding Challenge + Solution
+
+### Challenge
+
+Build an `InteractiveCard` that: logs a click on the card, has an inner "Like" button that stops propagation and tracks its own click count (as a console.log for now), and a link that prevents default navigation.
+
+### Solution
+
+```tsx
+function InteractiveCard({ title, href }: { title: string; href: string }) {
+  function handleCardClick() {
+    console.log('card clicked')
+  }
+
+  function handleLikeClick(e: React.MouseEvent<HTMLButtonElement>) {
+    e.stopPropagation()   // card onClick won't fire ✅
+    console.log('liked!')
+  }
+
+  function handleLinkClick(e: React.MouseEvent<HTMLAnchorElement>) {
+    e.preventDefault()    // no navigation ✅
+    console.log('link clicked — no navigation')
   }
 
   return (
-    <form onSubmit={handleSubmit()}>
-      <input type="text" />
-      <button onclick={() => console.log("clicked")}>Login</button>
-    </form>
+    <div onClick={handleCardClick} className="card">
+      <h3>{title}</h3>
+      <a href={href} onClick={handleLinkClick}>
+        Read more
+      </a>
+      <button onClick={handleLikeClick}>👍 Like</button>
+    </div>
   )
 }
 ```
 
-**Solution:**
+---
 
-```jsx
-function LoginForm() {
-  function handleSubmit(e) {
-    e.preventDefault()           // ✅ prevent page reload
-    console.log("submitted")
-  }
-
-  return (
-    <form onSubmit={handleSubmit}>     {/* ✅ reference, not call */}
-      <input type="text" />
-      <button onClick={() => console.log("clicked")}>Login</button>
-                                        {/* ✅ camelCase onClick */}
-    </form>
-  )
-}
-```
-
-
-***
+---

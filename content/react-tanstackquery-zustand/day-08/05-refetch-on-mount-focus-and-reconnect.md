@@ -1,173 +1,229 @@
 # 5 — Refetch on Mount, Focus, and Reconnect
 
+---
+
 ## T — TL;DR
 
-TanStack Query automatically refetches stale queries when a component mounts, when the browser window is focused, and when the network reconnects — each trigger is individually configurable.
+TanStack Query has three automatic refetch triggers: **mount** (component mounts), **focus** (window regains focus), and **reconnect** (network comes back online). All are enabled by default and only fire when the query is **stale**. Together they keep data fresh passively without any polling.
+
+---
 
 ## K — Key Concepts
 
-**The three automatic refetch triggers:**
-
-```jsx
-useQuery({
-  queryKey: ["data"],
-  queryFn: fetchData,
-
-  refetchOnMount: true,       // DEFAULT: true
-  refetchOnWindowFocus: true, // DEFAULT: true
-  refetchOnReconnect: true,   // DEFAULT: true
-})
-```
-
-**`refetchOnMount`** — refetch when a component using this query mounts:
-
-```jsx
-// true (default): refetch if data is stale when component mounts
-// false: never refetch on mount — always use cached data
-// "always": always refetch on mount, even if data is fresh
-
-refetchOnMount: true        // user returns to a tab → stale? background refetch
-refetchOnMount: false       // never re-fetch just because the component mounted
-refetchOnMount: "always"    // force fresh data every time the component appears
-```
-
-**`refetchOnWindowFocus`** — refetch when user returns to the browser tab:
-
-```jsx
-// This is the most visible default behavior
-// User opens a different tab for 5 minutes → returns → stale queries refetch
-
-refetchOnWindowFocus: true     // default — "feels live" when returning to app
-refetchOnWindowFocus: false    // disable for: rate-limited APIs, slow queries, better UX control
-refetchOnWindowFocus: "always" // even fresh queries refetch on focus
-```
-
-**`refetchOnReconnect`** — refetch when network connection restores:
-
-```jsx
-// User's laptop goes offline → comes back online → stale queries refetch
-refetchOnReconnect: true       // default — catch up on missed updates
-refetchOnReconnect: false      // disable for expensive calls or offline-first apps
-```
-
-**Combining triggers with `staleTime`:**
-
-```jsx
-// Key insight: refetch triggers only fire for STALE data (unless "always")
-// staleTime: 5min + refetchOnWindowFocus: true
-// → Switch tabs within 5 min: NO refetch (still fresh)
-// → Switch tabs after 5 min: background refetch fires ✅
-
-// Strategy table:
-// High-frequency live data:    staleTime: 0, all refetches: true
-// Dashboard analytics:         staleTime: 5min, refetchOnWindowFocus: true
-// Static reference data:       staleTime: Infinity, all refetches: false
-// Cost-sensitive API:          staleTime: 10min, refetchOnWindowFocus: false
-```
-
-**Global vs per-query configuration:**
-
-```jsx
-// Global (QueryClient) — applies to all queries
+```tsx
+// ── Three refetch triggers and their defaults ─────────────────────────────
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false,   // disable globally for better control
-      staleTime: 1000 * 60 * 5,
-    },
-  },
+      refetchOnMount:        true,    // refetch stale query when component mounts
+      refetchOnWindowFocus:  true,    // refetch stale queries when tab regains focus
+      refetchOnReconnect:    true,    // refetch stale queries when network reconnects
+    }
+  }
 })
 
-// Per-query override
+// Each can be overridden per query:
 useQuery({
-  queryKey: ["notifications"],
-  queryFn: fetchNotifications,
-  refetchOnWindowFocus: true,       // ✅ override for this specific query only
-  staleTime: 0,
+  queryKey: ['user', userId],
+  queryFn:  ({ signal }) => getUser(userId, signal),
+  refetchOnMount:       true,    // 'always' | true | false
+  refetchOnWindowFocus: true,    // 'always' | true | false
+  refetchOnReconnect:   true,    // 'always' | true | false
 })
 ```
 
+```tsx
+// ── refetchOnMount: three modes ───────────────────────────────────────────
+// true (default):
+//   Refetch if stale on mount. If fresh → serve cache, no network request.
+useQuery({ queryKey: ['posts'], queryFn: getPosts, refetchOnMount: true })
+
+// 'always':
+//   Always refetch on mount, even if fresh. Use for critical real-time data.
+useQuery({
+  queryKey: ['notifications'],
+  queryFn: getNotifications,
+  refetchOnMount: 'always',   // fetch every time the component appears ✅
+})
+
+// false:
+//   Never trigger a refetch on mount. Only fetch the first time.
+useQuery({
+  queryKey: ['config'],
+  queryFn: getAppConfig,
+  refetchOnMount: false,      // fetch once, never auto-refetch on mount
+  staleTime: Infinity,
+})
+```
+
+```tsx
+// ── refetchOnWindowFocus: the "user returns to tab" pattern ───────────────
+// Scenario: user switches tabs, does something elsewhere, returns
+// With refetchOnWindowFocus: true + staleTime: 0
+//   → immediately background-refetches all stale queries
+//   → new data shown without user doing anything
+//   → feels like near-real-time without WebSockets
+
+// Disable globally in development (reduces noise when debugging):
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: process.env.NODE_ENV !== 'development',
+    }
+  }
+})
+
+// Disable per query for data that focus-refetch would be annoying for:
+useQuery({
+  queryKey: ['draft', draftId],
+  queryFn:  ({ signal }) => getDraft(draftId, signal),
+  refetchOnWindowFocus: false,  // editing a draft — don't overwrite local changes
+})
+```
+
+```tsx
+// ── refetchOnReconnect: offline recovery ──────────────────────────────────
+// User loses network → reconnects
+// All stale queries background-refetch automatically
+// Component shows cached data during offline, refreshes on reconnect ✅
+
+// Pair with online status for UX
+function useOnlineStatus() {
+  return useSyncExternalStore(
+    cb => { window.addEventListener('online', cb); window.addEventListener('offline', cb)
+             return () => { window.removeEventListener('online', cb)
+                            window.removeEventListener('offline', cb) } },
+    () => navigator.onLine, () => true
+  )
+}
+
+function OfflineBanner() {
+  const isOnline = useOnlineStatus()
+  if (isOnline) return null
+  return <div className="offline-banner">You're offline — showing cached data</div>
+}
+```
+
+---
 
 ## W — Why It Matters
 
-These three triggers are why TanStack Query apps feel "alive" compared to apps with manual `useEffect` fetching. Users coming back to a tab always see fresh data. Network interruptions auto-recover. But each trigger also means network activity — understanding and tuning them prevents unnecessary requests and reduces API costs for production apps.
+- `refetchOnWindowFocus` simulates real-time data without WebSockets for most apps — a user spending 10 minutes in another tab comes back to see current data, not 10-minute-old snapshots.
+- `refetchOnMount: 'always'` is the escape hatch for components where you must guarantee fresh data (payment confirmation, order status) regardless of staleTime.
+- Disabling `refetchOnWindowFocus` in development is a quality-of-life setting — every time you Alt+Tab from your IDE to the browser, the dev tools trigger refetches that clutter your network panel.
+
+---
 
 ## I — Interview Q&A
 
-**Q: What are the three automatic refetch triggers in TanStack Query?**
-**A:** `refetchOnMount` (fires when a component using the query mounts), `refetchOnWindowFocus` (fires when the user focuses the browser window/tab), and `refetchOnReconnect` (fires when the device reconnects to the internet). All default to `true` and only trigger for stale data unless set to `"always"`.
+### Q: When does TanStack Query automatically refetch and how can you control it?
 
-**Q: When would you disable `refetchOnWindowFocus`?**
-**A:** For cost-sensitive APIs where every refetch has a cost, slow queries that would disrupt the UX when the user returns to the tab, or when using `staleTime` long enough that focus-triggered refetches add no value. Disable globally in the `QueryClient` and selectively enable for high-priority live data queries.
+**A:** TanStack Query refetches stale queries on three triggers: (1) **Mount** — when a component using a stale query mounts, a background refetch starts. (2) **Window focus** — when the browser tab/window regains focus, all stale queries refetch. (3) **Network reconnect** — when the network comes back online after being offline. All three are enabled by default. Each trigger has three possible values: `true` (refetch if stale), `'always'` (always refetch), or `false` (never). They can be set globally on the `QueryClient` or per query. The key condition: **these only fire if the query is currently stale** — if `staleTime` hasn't expired yet, the trigger is ignored and cached data is served without any network request.
 
-**Q: What is the difference between `refetchOnMount: true` and `refetchOnMount: "always"`?**
-**A:** `true` only refetches if the data is stale (past `staleTime`). `"always"` refetches every time the component mounts, regardless of staleness — including when data is still fresh. Use `"always"` for data that must be current every time the view appears, like a checkout total.
+---
 
-## C — Common Pitfalls
+## C — Common Pitfalls + Fix
 
-| Pitfall | Fix |
-| :-- | :-- |
-| Surprised by refetch every tab switch | It's `refetchOnWindowFocus: true` with `staleTime: 0` — set staleTime or disable the trigger |
-| Disabling all refetch triggers globally | Selectively disable — keep `refetchOnReconnect: true` for network recovery |
-| Not realizing focus fires even when switching app windows (not just browser tabs) | `refetchOnWindowFocus` fires on `visibilitychange` and `focus` events — browser + OS level |
-| Using `refetchInterval` without setting a `staleTime` | Without staleTime, both interval AND focus/mount trigger simultaneously |
+### ❌ Infinite refetch loop from refetchOnWindowFocus during form editing
 
-## K — Coding Challenge
+```tsx
+// ❌ User is editing a form. Focus trigger refetches, overwrites local form state
+function EditProfile({ userId }: { userId: number }) {
+  const { data: user } = useQuery({
+    queryKey: ['user', userId],
+    queryFn:  ({ signal }) => getUser(userId, signal),
+    // refetchOnWindowFocus: true (default)
+  })
+  const [name, setName] = useState(user?.name ?? '')
+  // User types in an external app, returns → refetch fires → user.name updates
+  // → name state doesn't re-init (it's in state) but the data beneath it changes
+  // confusing inconsistency between form and server data ❌
+}
 
-**Challenge:** A financial dashboard has these requirements — configure each query's refetch behavior:
+// ✅ Disable focus refetch for editing screens + invalidate on save
+function EditProfileFixed({ userId }: { userId: number }) {
+  const { data: user } = useQuery({
+    queryKey: ['user', userId],
+    queryFn:  ({ signal }) => getUser(userId, signal),
+    refetchOnWindowFocus: false,   // ✅ user is actively editing — don't disrupt
+    staleTime: 1000 * 60 * 5,
+  })
+  const [name, setName] = useState(user?.name ?? '')
 
-```
-1. Stock prices panel — must be as fresh as possible at all times
-2. Company profile (name, logo, description) — never changes during a session
-3. User's watchlist — updates when user adds/removes; background sync OK
-4. News feed — updates every few minutes; shouldn't flash on every tab switch
-```
-
-**Solution:**
-
-```jsx
-// 1. Stock prices — maximum freshness
-const { data: prices } = useQuery({
-  queryKey: ["stocks", "prices"],
-  queryFn: fetchStockPrices,
-  staleTime: 0,                      // always stale = always ready to refetch
-  refetchOnMount: true,
-  refetchOnWindowFocus: "always",    // even fresh data → refetch on focus
-  refetchOnReconnect: true,
-  refetchInterval: 15_000,           // poll every 15 seconds
-})
-
-// 2. Company profile — static during session
-const { data: company } = useQuery({
-  queryKey: ["company", ticker],
-  queryFn: () => fetchCompanyProfile(ticker),
-  staleTime: Infinity,               // never stale
-  refetchOnMount: false,             // don't refetch on remount
-  refetchOnWindowFocus: false,       // don't refetch on focus
-  refetchOnReconnect: false,         // don't refetch on reconnect
-})
-
-// 3. Watchlist — background sync OK, but respond to user changes
-const { data: watchlist } = useQuery({
-  queryKey: ["watchlist", userId],
-  queryFn: () => fetchWatchlist(userId),
-  staleTime: 1000 * 60 * 2,         // 2 min freshness
-  refetchOnMount: true,              // catch updates from other sessions on mount
-  refetchOnWindowFocus: true,        // catch edits from other tabs
-  refetchOnReconnect: true,          // recover from offline
-})
-
-// 4. News feed — no tab switch flash, but poll periodically
-const { data: news } = useQuery({
-  queryKey: ["news"],
-  queryFn: fetchNews,
-  staleTime: 1000 * 60 * 3,         // 3 min — match polling interval
-  refetchOnMount: true,
-  refetchOnWindowFocus: false,       // no flash on tab return
-  refetchOnReconnect: true,
-  refetchInterval: 1000 * 60 * 3,   // poll every 3 min
-})
+  const qc = useQueryClient()
+  async function handleSave() {
+    await updateUser(userId, { name })
+    qc.invalidateQueries({ queryKey: ['user', userId] })   // explicit refresh on save ✅
+  }
+}
 ```
 
+---
 
-***
+## K — Coding Challenge + Solution
+
+### Challenge
+
+Build a `LiveOrderStatus` component: always refetch on mount, refetch every 10 seconds, and show an offline banner when disconnected.
+
+### Solution
+
+```tsx
+type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
+interface Order { id: number; status: OrderStatus; updatedAt: string }
+
+function useOrderStatus(orderId: number) {
+  return useQuery({
+    queryKey:  ['order', orderId, 'status'],
+    queryFn:   ({ signal }) => fetchOrderStatus(orderId, signal),
+    refetchOnMount:       'always',     // always fresh on mount ✅
+    refetchOnWindowFocus: true,
+    refetchOnReconnect:   true,
+    refetchInterval:      1000 * 10,    // poll every 10 seconds ✅
+    staleTime:            0,            // always stale — real-time status
+  })
+}
+
+function LiveOrderStatus({ orderId }: { orderId: number }) {
+  const isOnline = useOnlineStatus()
+  const { data: order, isLoading, isFetching, error } = useOrderStatus(orderId)
+
+  const STATUS_COLORS: Record<OrderStatus, string> = {
+    pending:    '#f59e0b',
+    processing: '#3b82f6',
+    shipped:    '#8b5cf6',
+    delivered:  '#10b981',
+    cancelled:  '#ef4444',
+  }
+
+  return (
+    <div className="order-status-card">
+      {!isOnline && (
+        <div className="offline-banner" role="status">
+          📴 Offline — showing last known status
+        </div>
+      )}
+      {isLoading ? (
+        <div className="skeleton" style={{ height: 60 }} />
+      ) : error ? (
+        <p role="alert">Failed to load order status</p>
+      ) : order ? (
+        <div>
+          <span
+            className="status-badge"
+            style={{ background: STATUS_COLORS[order.status] }}
+          >
+            {order.status.toUpperCase()}
+          </span>
+          <p>Last updated: {new Date(order.updatedAt).toLocaleTimeString()}</p>
+          {isFetching && <span className="pulse-dot" aria-label="Refreshing" />}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+```
+
+---
+
+---

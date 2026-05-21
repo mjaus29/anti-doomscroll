@@ -1,151 +1,171 @@
-# 4 — Direct Cache Updates with `setQueryData`
+# 4 — Direct Cache Updates with setQueryData
+
+---
 
 ## T — TL;DR
 
-`setQueryData` writes directly into the cache without a network request — use it when the server's mutation response already contains the updated data, eliminating a redundant refetch.
+`queryClient.setQueryData(key, newData)` writes directly to the cache — no network request. Use it after a mutation response to instantly update the UI when you already have the fresh value, rather than triggering a new fetch via invalidation.
+
+---
 
 ## K — Key Concepts
 
-**`setQueryData` — write directly to the cache:**
+```tsx
+// ── setQueryData: write to cache directly ─────────────────────────────────
+const qc = useQueryClient()
 
-```jsx
-queryClient.setQueryData(queryKey, newData)
+// Set completely new value
+qc.setQueryData<User>(userKeys.detail(42), {
+  id: 42, name: 'Alice Updated', email: 'alice@example.com', role: 'admin'
+})
 
-// Updater function (like useState's functional update)
-queryClient.setQueryData(["user", userId], (previousUser) => ({
-  ...previousUser,
-  name: "New Name",
-  updatedAt: Date.now(),
-}))
+// Updater function: read current, return new
+qc.setQueryData<User[]>(userKeys.lists(), old =>
+  old?.map(u => u.id === 42 ? { ...u, name: 'Alice Updated' } : u) ?? []
+)
 ```
 
-**When to use `setQueryData` vs `invalidateQueries`:**
-
-
-|  | `setQueryData` | `invalidateQueries` |
-| :-- | :-- | :-- |
-| Network request | ❌ None — uses mutation response | ✅ Triggers a refetch |
-| Use when | Server returns the updated entity | Server returns only `{ success: true }` |
-| Data accuracy | Only as accurate as the mutation response | Always server truth |
-| Speed | ⚡ Instant — no round trip | 🕐 Requires a refetch |
-
-**Pattern — update cache from mutation response:**
-
-```jsx
-function useUpdateUser() {
-  const queryClient = useQueryClient()
-
+```tsx
+// ── After create: seed detail cache from creation response ────────────────
+function useCreatePost() {
+  const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, ...updates }) =>
-      fetch(`/api/users/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(updates),
-      }).then(r => r.json()),
+    mutationFn: createPost,
+    onSuccess: (newPost) => {
+      // Seed detail cache — navigating to the new post is instant ✅
+      qc.setQueryData(postKeys.detail(newPost.id), newPost)
+      // Still invalidate the list — it needs to include the new post
+      qc.invalidateQueries({ queryKey: postKeys.lists() })
+    },
+  })
+}
 
-    onSuccess: (updatedUser) => {
-      // Server returned the full updated user → write directly to cache
-      queryClient.setQueryData(["user", updatedUser.id], updatedUser)
+// ── After update: set detail + update item in lists ───────────────────────
+function useUpdatePost() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<Post> }) =>
+      patchPost(id, data),
+    onSuccess: (updatedPost) => {
+      // Update detail cache immediately
+      qc.setQueryData<Post>(postKeys.detail(updatedPost.id), updatedPost)
 
-      // Also update the user in any list caches
-      queryClient.setQueryData(["users"], (previousUsers) =>
-        previousUsers?.map(u => u.id === updatedUser.id ? updatedUser : u)
+      // Update the item in all list caches
+      qc.setQueriesData<Post[]>(
+        { queryKey: postKeys.lists() },
+        old => old?.map(p => p.id === updatedPost.id ? updatedPost : p) ?? []
       )
+      // No invalidation needed if mutation response is authoritative ✅
     },
   })
 }
 ```
 
-**Combining `setQueryData` + `invalidateQueries`:**
-
-```jsx
-onSuccess: async (updatedUser) => {
-  // 1. Immediate cache update — instant UI (no spinner)
-  queryClient.setQueryData(["user", updatedUser.id], updatedUser)
-
-  // 2. Invalidate related queries that weren't directly updated
-  await queryClient.invalidateQueries({ queryKey: ["users", "list"] })
-  await queryClient.invalidateQueries({ queryKey: ["user", updatedUser.id, "stats"] })
-}
+```tsx
+// ── setQueriesData: update multiple matching caches at once ───────────────
+// Updates ALL query entries whose key matches the filter
+qc.setQueriesData<Post[]>(
+  { queryKey: postKeys.lists() },   // matches all list variants
+  old => old?.filter(p => p.id !== deletedId) ?? []
+)
+// Removes the deleted post from EVERY cached page/filter variant ✅
 ```
 
+---
 
 ## W — Why It Matters
 
-`setQueryData` eliminates the "update → invalidate → refetch" round trip for resources where the mutation response is the complete updated entity. This is common in REST APIs that return the full resource on PATCH/PUT. Knowing when to use direct cache writes vs. invalidation is the difference between snappy instant updates and a loading flash after every save.
+- `setQueryData` after a mutation response eliminates a round-trip for the most common case: the API returns the updated resource, and you can write it to cache directly instead of invalidating and re-fetching it.
+- `setQueriesData` handles the "update this item everywhere it appears" problem — product price updates, user name changes — across every cached list variant without knowing which pages are cached.
+- Direct cache writes are synchronous and instant — the UI updates in the same frame as the mutation success, before any network request. Combined with structural sharing, only affected components re-render.
+
+---
 
 ## I — Interview Q&A
 
-**Q: What is the difference between `setQueryData` and `invalidateQueries`?**
-**A:** `setQueryData` writes data directly into the cache from a local value (like the mutation response) — no network request. `invalidateQueries` marks the cache as stale and triggers a server refetch. Use `setQueryData` when the mutation response contains the full updated entity; use `invalidateQueries` when it doesn't.
+### Q: When should you use `setQueryData` instead of `invalidateQueries` after a mutation?
 
-**Q: How do you update a specific item inside a cached list with `setQueryData`?**
-**A:** Use the updater function form: `queryClient.setQueryData(["items"], (prev) => prev?.map(item => item.id === updatedItem.id ? updatedItem : item))`. Always use optional chaining on `prev` — the list may not be in the cache yet.
+**A:** Use `setQueryData` when the mutation response contains the full, authoritative updated value — you already have what the refetch would return, so the extra request is waste. Example: `PATCH /users/42` returns the updated user object — write it to cache directly. Use `invalidateQueries` when: (1) the mutation response doesn't include all changed data, (2) the change affects derived values that your API computes (counts, aggregates), (3) multiple queries are affected and updating each manually is error-prone. Often both are used together: `setQueryData` for the direct mutation target + `invalidateQueries` for related aggregate queries.
 
-**Q: Does `setQueryData` reset the `staleTime` timer?**
-**A:** Yes — `setQueryData` counts as a successful data update. The `dataUpdatedAt` timestamp is set to `Date.now()`, and the freshness window restarts from that point. Use `queryClient.setQueryData` with `updatedAt` option to control the exact freshness timestamp if needed.
+---
 
-## C — Common Pitfalls
+## C — Common Pitfalls + Fix
 
-| Pitfall | Fix |
-| :-- | :-- |
-| `setQueryData` with a partial object — overwriting instead of merging | Use the updater function form with spread: `(old) => ({ ...old, ...updates })` |
-| Not handling `undefined` in the updater — cache might be empty | `(old) => old ? { ...old, name } : old` — guard against undefined cache |
-| Using `setQueryData` when the response doesn't include the full entity | Use `invalidateQueries` — a partial update is worse than a full refetch |
-| Forgetting to also update list caches when updating a detail | Update both `["user", id]` AND `["users"]` list entry |
+### ❌ setQueryData with wrong key type — silently writes to wrong entry
 
-## K — Coding Challenge
+```tsx
+// ❌ Key mismatch — writes to a non-existent cache entry (no error thrown)
+qc.setQueryData(['user', '42'], updatedUser)    // string '42'
+// But the query used:
+useQuery({ queryKey: ['user', 42] })             // number 42
+// Result: the update goes to a ghost entry. Component still shows old data. ❌
 
-**Challenge:** An `EditProfileForm` saves user profile changes — the API returns the full updated user. Use `setQueryData` to update the detail cache AND the user in any list caches:
+// ✅ Always use the key factory — ensures consistent types
+qc.setQueryData(userKeys.detail(42), updatedUser)    // same type as useQuery ✅
 
-**Solution:**
+// ❌ Forgetting the updater is an immutable operation
+qc.setQueryData<User[]>(userKeys.lists(), old => {
+  old?.push(newUser)   // ❌ mutates the old array directly
+  return old           // same reference — React won't detect change
+})
 
-```jsx
-function useUpdateProfile() {
-  const queryClient = useQueryClient()
+// ✅ Return a new array/object
+qc.setQueryData<User[]>(userKeys.lists(), old =>
+  old ? [...old, newUser] : [newUser]   // ✅ new reference
+)
+```
 
+---
+
+## K — Coding Challenge + Solution
+
+### Challenge
+
+Build `useUpdateUserName`: patch the name, immediately update the detail cache and all user list caches, and fall back to `invalidateQueries` only if `setQueryData` encounters missing cache entries.
+
+### Solution
+
+```tsx
+async function patchUserName(userId: number, name: string): Promise<User> {
+  const res = await fetch(`/api/users/${userId}`, {
+    method:  'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ name }),
+  })
+  if (!res.ok) throw new Error(`patchUserName: ${res.status}`)
+  return res.json()
+}
+
+function useUpdateUserName() {
+  const qc = useQueryClient()
   return useMutation({
-    mutationFn: (profileData) =>
-      fetch(`/api/users/${profileData.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profileData),
-      }).then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`)
-        return r.json()  // returns full updated user
-      }),
+    mutationFn: ({ userId, name }: { userId: number; name: string }) =>
+      patchUserName(userId, name),
 
     onSuccess: (updatedUser) => {
-      // 1. Update the detail cache instantly — no refetch needed ✅
-      queryClient.setQueryData(
-        ["user", updatedUser.id],
-        updatedUser
+      // 1. Update the detail cache — instant if query is cached
+      const wasDetailCached = !!qc.getQueryData(userKeys.detail(updatedUser.id))
+      if (wasDetailCached) {
+        qc.setQueryData<User>(userKeys.detail(updatedUser.id), updatedUser)
+      } else {
+        qc.invalidateQueries({ queryKey: userKeys.detail(updatedUser.id) })
+      }
+
+      // 2. Update the user in all list caches
+      const listsUpdated = qc.setQueriesData<User[]>(
+        { queryKey: userKeys.lists() },
+        old => old?.map(u => u.id === updatedUser.id ? updatedUser : u)
       )
 
-      // 2. Update this user inside any cached list ✅
-      queryClient.setQueriesData(
-        { queryKey: ["users"] },           // matches all "users" queries
-        (previousList) => {
-          if (!previousList) return previousList
-          return previousList.map(u =>
-            u.id === updatedUser.id ? updatedUser : u
-          )
-        }
-      )
-
-      // 3. Invalidate related queries that can't be directly updated
-      queryClient.invalidateQueries({
-        queryKey: ["user", updatedUser.id, "activity"]
-      })
-
-      toast.success("Profile updated!")
-    },
-
-    onError: (error) => {
-      toast.error(`Save failed: ${error.message}`)
+      // 3. If no lists were in cache, just invalidate to be safe
+      if (listsUpdated.length === 0) {
+        qc.invalidateQueries({ queryKey: userKeys.lists() })
+      }
     },
   })
 }
 ```
 
+---
 
-***
+---

@@ -1,149 +1,221 @@
 # 1 — Dependent Queries
 
+---
+
 ## T — TL;DR
 
-Dependent queries run in serial — the second query waits for the first to finish before firing, achieved by setting `enabled` to a condition derived from the first query's data.
+A **dependent query** waits for the result of another query before it runs. Use `enabled: !!prerequisite` to gate the second query on the first. This replaces sequential `useEffect` chains with a clean declarative dependency graph.
+
+---
 
 ## K — Key Concepts
 
-**The pattern — `enabled` as the bridge:**
-
-```jsx
-function UserDashboard({ userId }) {
-  // Query 1: fetch the user
+```tsx
+// ── Basic dependent query pattern ─────────────────────────────────────────
+function UserDashboard({ userId }: { userId: number }) {
+  // Step 1: fetch user
   const { data: user } = useQuery({
-    queryKey: ["user", userId],
-    queryFn: () => fetchUser(userId),
-    enabled: !!userId,
+    queryKey: ['user', userId],
+    queryFn:  ({ signal }) => getUser(userId, signal),
   })
 
-  // Query 2: depends on user.projectId from Query 1
-  const { data: project } = useQuery({
-    queryKey: ["project", user?.projectId],
-    queryFn: () => fetchProject(user.projectId),
-    enabled: !!user?.projectId,     // ← paused until user.projectId exists
+  // Step 2: fetch org — only when user.orgId is available
+  const { data: org, isLoading: orgLoading } = useQuery({
+    queryKey: ['org', user?.orgId],
+    queryFn:  ({ signal }) => getOrg(user!.orgId, signal),
+    enabled:  !!user?.orgId,   // ← dependency gate ✅
   })
 
-  // Query 3: depends on project from Query 2
-  const { data: tasks } = useQuery({
-    queryKey: ["tasks", project?.id],
-    queryFn: () => fetchTasks(project.id),
-    enabled: !!project?.id,          // ← paused until project.id exists
+  // Step 3: fetch billing — depends on org
+  const { data: billing } = useQuery({
+    queryKey: ['billing', org?.id],
+    queryFn:  ({ signal }) => getBilling(org!.id, signal),
+    enabled:  !!org?.id,       // ← depends on step 2 ✅
   })
-}
-```
-
-**Loading state management for a chain:**
-
-```jsx
-function UserDashboard({ userId }) {
-  const userQuery = useQuery({
-    queryKey: ["user", userId],
-    queryFn: () => fetchUser(userId),
-    enabled: !!userId,
-  })
-
-  const projectQuery = useQuery({
-    queryKey: ["project", userQuery.data?.projectId],
-    queryFn: () => fetchProject(userQuery.data.projectId),
-    enabled: !!userQuery.data?.projectId,
-  })
-
-  // Combined loading state — true until both are done
-  const isLoading = userQuery.isPending || projectQuery.isPending
-  const isError = userQuery.isError || projectQuery.isError
-  const error = userQuery.error ?? projectQuery.error
-
-  if (isLoading) return <Skeleton />
-  if (isError) return <ErrorMessage error={error} />
-
-  return <Dashboard user={userQuery.data} project={projectQuery.data} />
-}
-```
-
-**Timeline visualization:**
-
-```
-t=0    useQuery #1 fires (userId available)
-t=200  Query #1 resolves → user.projectId = 42
-       enabled on Query #2 becomes true
-t=200  useQuery #2 fires (projectId now available)
-t=400  Query #2 resolves → project.id = 99
-       enabled on Query #3 becomes true
-t=400  useQuery #3 fires
-t=500  Query #3 resolves → all data available
-```
-
-
-## W — Why It Matters
-
-Dependent queries replace the anti-pattern of nesting `useEffect` calls or awaiting fetches sequentially inside a single effect. The `enabled` API makes the dependency explicit, declarative, and debuggable — and each query independently benefits from caching, retries, and background refetching.
-
-## I — Interview Q&A
-
-**Q: How do you implement a dependent query in TanStack Query?**
-**A:** Use the `enabled` option on the downstream query, setting it to a truthy check on the data returned by the upstream query. The downstream query stays paused (`isPending: true`, no network activity) until `enabled` becomes truthy.
-
-**Q: What is `isPending` for a query with `enabled: false`?**
-**A:** `isPending` is `true` — the query has no data and is not actively fetching. This correctly represents "waiting for the condition" without showing a fetch error. It's indistinguishable from a loading state to the UI, which is intentional.
-
-**Q: Can you have more than two queries in a dependent chain?**
-**A:** Yes — any length chain works. Each query's `enabled` checks the previous query's data. The tradeoff is serial latency — 3 sequential fetches take 3× the RTT. If queries can be parallelized, prefer `useQueries` instead.
-
-## C — Common Pitfalls
-
-| Pitfall | Fix |
-| :-- | :-- |
-| Not using optional chaining on upstream data in `queryFn` | `queryFn: () => fetchProject(user.projectId)` crashes if `user` is undefined — use `enabled: !!user?.projectId` |
-| Chaining 4+ dependent queries when some could be parallel | Audit the chain — if query 2 and 3 both only need query 1's result, run them in parallel with `useQueries` |
-| Not showing combined loading state | Merge `isPending` from all queries in the chain — one spinner covers the whole chain |
-| Using `useEffect` to fire the second query after first completes | Use `enabled` — it's declarative, cacheable, and survives component remounts |
-
-## K — Coding Challenge
-
-**Challenge:** A blog app needs to: (1) fetch the current user, (2) fetch their preferred topics, (3) fetch recommended posts matching those topics. Build the three-query chain with proper combined loading/error states:
-
-**Solution:**
-
-```jsx
-function PersonalizedFeed() {
-  // Chain: user → topics → recommended posts
-
-  const userQuery = useQuery({
-    queryKey: ["user", "me"],
-    queryFn: fetchCurrentUser,
-  })
-
-  const topicsQuery = useQuery({
-    queryKey: ["topics", userQuery.data?.id],
-    queryFn: () => fetchUserTopics(userQuery.data.id),
-    enabled: !!userQuery.data?.id,           // waits for user
-  })
-
-  const postsQuery = useQuery({
-    queryKey: ["posts", "recommended", topicsQuery.data],
-    queryFn: () => fetchRecommendedPosts(topicsQuery.data),
-    enabled: !!topicsQuery.data?.length,     // waits for non-empty topics
-    staleTime: 1000 * 60 * 5,               // recommendations: 5 min freshness
-  })
-
-  // Combined states
-  const isPending = userQuery.isPending || topicsQuery.isPending || postsQuery.isPending
-  const isError = userQuery.isError || topicsQuery.isError || postsQuery.isError
-  const error = userQuery.error ?? topicsQuery.error ?? postsQuery.error
-
-  if (isPending) return <FeedSkeleton />
-  if (isError) return <ErrorBanner message={error.message} />
 
   return (
     <div>
-      <h2>Recommended for {userQuery.data.name}</h2>
-      <TopicTags topics={topicsQuery.data} />
-      <PostGrid posts={postsQuery.data} />
+      <p>{user?.name}</p>
+      {orgLoading ? <Spinner /> : <p>{org?.name}</p>}
+      <p>{billing?.plan}</p>
     </div>
   )
 }
 ```
 
+```tsx
+// ── Loading state across a dependency chain ───────────────────────────────
+function ProfilePage({ userId }: { userId: number }) {
+  const userQuery = useQuery({
+    queryKey: ['user', userId],
+    queryFn:  ({ signal }) => getUser(userId, signal),
+  })
 
-***
+  const postsQuery = useQuery({
+    queryKey: ['posts', { authorId: userQuery.data?.id }],
+    queryFn:  ({ signal }) => getPostsByAuthor(userQuery.data!.id, signal),
+    enabled:  !!userQuery.data?.id,
+  })
+
+  // Aggregate loading: show skeleton until the full chain resolves
+  const isFullyLoaded = userQuery.isSuccess && postsQuery.isSuccess
+
+  if (!isFullyLoaded) return <ProfileSkeleton />
+  if (userQuery.isError) return <ErrorCard error={userQuery.error as Error} />
+
+  return (
+    <div>
+      <UserCard user={userQuery.data!} />
+      <PostList posts={postsQuery.data ?? []} />
+    </div>
+  )
+}
+```
+
+```tsx
+// ── Dependent query with data transformation at each step ─────────────────
+function TeamBillingPanel({ teamId }: { teamId: number }) {
+  // Fetch team to get adminUserId
+  const { data: team } = useQuery({
+    queryKey: ['team', teamId],
+    queryFn:  ({ signal }) => getTeam(teamId, signal),
+    select:   t => ({ adminId: t.adminUserId, name: t.name }),
+  })
+
+  // Fetch admin user — depends on team.adminId
+  const { data: admin } = useQuery({
+    queryKey: ['user', team?.adminId],
+    queryFn:  ({ signal }) => getUser(team!.adminId, signal),
+    enabled:  !!team?.adminId,
+    select:   u => ({ email: u.email, name: u.name }),
+  })
+
+  // Fetch billing — depends on teamId directly but show admin info too
+  const { data: billing } = useQuery({
+    queryKey: ['billing', teamId],
+    queryFn:  ({ signal }) => getBilling(teamId, signal),
+    enabled:  !!team,  // only fetch billing once team is confirmed to exist
+  })
+
+  return (
+    <div>
+      <h2>{team?.name}</h2>
+      <p>Admin: {admin?.name} ({admin?.email})</p>
+      <p>Plan: {billing?.plan} · ${billing?.monthlyAmount}/mo</p>
+    </div>
+  )
+}
+```
+
+---
+
+## W — Why It Matters
+
+- Sequential `useEffect` chains for dependent data are fragile — a missed cleanup or stale closure corrupts the chain. Dependent queries are declarative: each query simply states what it needs to exist before running.
+- The `enabled` gate prevents queries from firing with `undefined` arguments — which would either crash the query function or return wrong data.
+- Each query in the chain is independently cached — if the user navigates away and back, each step serves from cache (if fresh) rather than re-running the entire chain.
+
+---
+
+## I — Interview Q&A
+
+### Q: How do you implement a dependent query in TanStack Query?
+
+**A:** Use `enabled` to gate the second query on a value from the first. Pattern: fetch A, then `enabled: !!a.data?.id` on query B, which passes `a.data.id` into the `queryFn`. TanStack Query won't start B until `enabled` becomes truthy. Each query is independently cached — if A's result is already fresh in cache, B starts immediately without waiting for A to re-fetch. The loading state is cumulative: A's `isLoading` covers its fetch, and B's `isLoading` covers its fetch. For a final "everything ready" signal, check both `isSuccess` flags together.
+
+---
+
+## C — Common Pitfalls + Fix
+
+### ❌ Non-null assertion without `enabled` guard — crashes on undefined
+
+```tsx
+// ❌ user?.id could be undefined on first render — queryFn crashes
+function PostsByUser({ userId }: { userId: number }) {
+  const { data: user } = useQuery({
+    queryKey: ['user', userId],
+    queryFn:  ({ signal }) => getUser(userId, signal),
+  })
+
+  const { data: posts } = useQuery({
+    queryKey: ['posts', user?.id],
+    queryFn:  ({ signal }) => getPosts(user!.id, signal), // ❌ user is undefined on first render
+    // No enabled guard — fires immediately with user=undefined
+  })
+}
+
+// ✅ enabled guard prevents premature execution
+function PostsByUserFixed({ userId }: { userId: number }) {
+  const { data: user } = useQuery({
+    queryKey: ['user', userId],
+    queryFn:  ({ signal }) => getUser(userId, signal),
+  })
+
+  const { data: posts } = useQuery({
+    queryKey: ['posts', user?.id],
+    queryFn:  ({ signal }) => getPosts(user!.id, signal),
+    enabled:  !!user?.id,   // ✅ waits for user to resolve
+  })
+}
+```
+
+---
+
+## K — Coding Challenge + Solution
+
+### Challenge
+
+Build a 3-step dependent chain: fetch `Project` → fetch project's `Owner` (user) → fetch owner's `Team`. Show aggregate loading state and individual error states.
+
+### Solution
+
+```tsx
+interface Project { id: number; name: string; ownerId: number }
+interface Owner   { id: number; name: string; teamId: number }
+interface Team    { id: number; name: string; memberCount: number }
+
+function ProjectDetailPanel({ projectId }: { projectId: number }) {
+  const projectQuery = useQuery({
+    queryKey: ['project', projectId],
+    queryFn:  ({ signal }) => fetchProject(projectId, signal),
+  })
+
+  const ownerQuery = useQuery({
+    queryKey: ['user', projectQuery.data?.ownerId],
+    queryFn:  ({ signal }) => fetchUser(projectQuery.data!.ownerId, signal),
+    enabled:  !!projectQuery.data?.ownerId,
+  })
+
+  const teamQuery = useQuery({
+    queryKey: ['team', ownerQuery.data?.teamId],
+    queryFn:  ({ signal }) => fetchTeam(ownerQuery.data!.teamId, signal),
+    enabled:  !!ownerQuery.data?.teamId,
+  })
+
+  const isLoading = projectQuery.isLoading || ownerQuery.isLoading || teamQuery.isLoading
+  if (isLoading) return <PanelSkeleton />
+
+  return (
+    <div className="project-panel">
+      {projectQuery.isError && (
+        <ErrorCard error={projectQuery.error as Error} label="Project" />
+      )}
+      {ownerQuery.isError && (
+        <ErrorCard error={ownerQuery.error as Error} label="Owner" />
+      )}
+      {teamQuery.isError && (
+        <ErrorCard error={teamQuery.error as Error} label="Team" />
+      )}
+      {projectQuery.data && <h2>{projectQuery.data.name}</h2>}
+      {ownerQuery.data   && <p>Owner: {ownerQuery.data.name}</p>}
+      {teamQuery.data    && (
+        <p>Team: {teamQuery.data.name} · {teamQuery.data.memberCount} members</p>
+      )}
+    </div>
+  )
+}
+```
+
+---
+
+---
