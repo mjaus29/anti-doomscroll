@@ -101,6 +101,9 @@ export function TopicView({
   const [lessonQueryRequest, setLessonQueryRequest] =
     useState<LessonQueryRequest | null>(null);
   const articleRef = useRef<HTMLElement | null>(null);
+  const selectionTooltipTimeoutRef = useRef<ReturnType<
+    typeof globalThis.setTimeout
+  > | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -206,34 +209,6 @@ export function TopicView({
     };
   }, []);
 
-  useEffect(() => {
-    const clearSelectionTooltip = () => {
-      const selection = window.getSelection();
-      const article = articleRef.current;
-
-      if (
-        !selection ||
-        !article ||
-        selection.isCollapsed ||
-        !selectionBelongsToElement(selection, article)
-      ) {
-        setSelectionTooltip(null);
-      }
-    };
-
-    const hideTooltip = () => setSelectionTooltip(null);
-
-    document.addEventListener("selectionchange", clearSelectionTooltip);
-    window.addEventListener("resize", hideTooltip);
-    window.addEventListener("scroll", hideTooltip, { passive: true });
-
-    return () => {
-      document.removeEventListener("selectionchange", clearSelectionTooltip);
-      window.removeEventListener("resize", hideTooltip);
-      window.removeEventListener("scroll", hideTooltip);
-    };
-  }, []);
-
   const updateSelectionTooltip = () => {
     if (!topicChallenge) {
       setSelectionTooltip(null);
@@ -284,6 +259,39 @@ export function TopicView({
       ),
     });
   };
+
+  const scheduleSelectionTooltipUpdate = (delayMs = 0) => {
+    if (selectionTooltipTimeoutRef.current) {
+      globalThis.clearTimeout(selectionTooltipTimeoutRef.current);
+    }
+
+    selectionTooltipTimeoutRef.current = globalThis.setTimeout(() => {
+      selectionTooltipTimeoutRef.current = null;
+      updateSelectionTooltip();
+    }, delayMs);
+  };
+
+  useEffect(() => {
+    const syncSelectionTooltip = () => {
+      scheduleSelectionTooltipUpdate(40);
+    };
+
+    const hideTooltip = () => setSelectionTooltip(null);
+
+    document.addEventListener("selectionchange", syncSelectionTooltip);
+    window.addEventListener("resize", hideTooltip);
+    window.addEventListener("scroll", hideTooltip, { passive: true });
+
+    return () => {
+      document.removeEventListener("selectionchange", syncSelectionTooltip);
+      window.removeEventListener("resize", hideTooltip);
+      window.removeEventListener("scroll", hideTooltip);
+
+      if (selectionTooltipTimeoutRef.current) {
+        globalThis.clearTimeout(selectionTooltipTimeoutRef.current);
+      }
+    };
+  }, [topicChallenge]);
 
   const requestLessonQuery = () => {
     if (!selectionTooltip) {
@@ -381,6 +389,7 @@ export function TopicView({
             {...swipeHandlers}
             onMouseUp={updateSelectionTooltip}
             onKeyUp={updateSelectionTooltip}
+            onTouchEnd={() => scheduleSelectionTooltipUpdate(40)}
             onPointerDown={() => setSelectionTooltip(null)}
             className="relative rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-6 sm:p-8 lg:p-10"
           >
