@@ -27,7 +27,7 @@ import {
   readReviewStream,
 } from "@/lib/challenge-lab-stream";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChallengePreview } from "./ChallengePreview";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { MonacoCodeEditor } from "./MonacoCodeEditor";
@@ -753,6 +753,37 @@ function ChallengeEditorCard({
   onReview,
   onGenerateAnother,
 }: ChallengeEditorCardProps) {
+  const [isReferenceCopied, setIsReferenceCopied] = useState(false);
+  const copyFeedbackTimeoutRef = useRef<ReturnType<
+    typeof globalThis.setTimeout
+  > | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyFeedbackTimeoutRef.current) {
+        globalThis.clearTimeout(copyFeedbackTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const copyReferenceSolution = async () => {
+    if (typeof navigator === "undefined" || !navigator.clipboard) {
+      return;
+    }
+
+    await navigator.clipboard.writeText(challenge.referenceSolution);
+    setIsReferenceCopied(true);
+
+    if (copyFeedbackTimeoutRef.current) {
+      globalThis.clearTimeout(copyFeedbackTimeoutRef.current);
+    }
+
+    copyFeedbackTimeoutRef.current = globalThis.setTimeout(() => {
+      setIsReferenceCopied(false);
+      copyFeedbackTimeoutRef.current = null;
+    }, 2000);
+  };
+
   return (
     <section className="rounded-2xl border border-(--border) bg-(--bg-card) p-6 sm:p-7">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -806,8 +837,36 @@ function ChallengeEditorCard({
       </div>
 
       <details className="mt-5 rounded-2xl border border-(--border) bg-black/20 p-4">
-        <summary className="cursor-pointer select-none text-sm font-medium text-(--text-muted)">
-          Reveal reference solution
+        <summary className="cursor-pointer select-none flex items-center justify-between gap-3 text-sm font-medium text-(--text-muted)">
+          <span>Reveal reference solution</span>
+          <span className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                void copyReferenceSolution();
+              }}
+              className="inline-flex items-center gap-2 rounded-lg border border-(--border) px-3 py-1.5 text-xs font-medium text-(--text-muted) transition-colors hover:border-(--accent-dim) hover:text-white"
+              aria-label="Copy reference solution"
+              title="Copy reference solution"
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 7V5a2 2 0 012-2h7a2 2 0 012 2v7a2 2 0 01-2 2h-2M8 7H7a2 2 0 00-2 2v10a2 2 0 002 2h7a2 2 0 002-2v-1M8 7h7a2 2 0 012 2v7a2 2 0 01-2 2H8a2 2 0 01-2-2V9a2 2 0 012-2z"
+                />
+              </svg>
+              <span>{isReferenceCopied ? "Copied" : "Copy"}</span>
+            </button>
+          </span>
         </summary>
         <MonacoCodeEditor
           className="mt-4"
