@@ -1,15 +1,18 @@
 "use client";
 
+import { useSwipe } from "@/hooks/useSwipe";
 import { LAST_VISITED_STATE_KEY } from "@/lib/app-state";
 import { writeAppState } from "@/lib/app-state-client";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useSwipe } from "@/hooks/useSwipe";
-import Link from "next/link";
 import type { TopicChallenge } from "@/lib/content";
-import { Sidebar } from "./Sidebar";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import {
+  ChallengeAssistant,
+  type LessonQueryRequest,
+} from "./ChallengeAssistant";
 import { MarkdownRenderer } from "./MarkdownRenderer";
-import { ChallengeAssistant } from "./ChallengeAssistant";
+import { Sidebar } from "./Sidebar";
 
 function ignorePersistenceError(task: Promise<unknown>) {
   void task.catch(() => undefined);
@@ -27,6 +30,32 @@ interface SidebarDay {
   label: string;
   title: string;
   topics: { id: string; title: string }[];
+}
+
+interface SelectionTooltipState {
+  selectedText: string;
+  top: number;
+  left: number;
+}
+
+function normalizeSelectionText(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+function selectionBelongsToElement(
+  selection: Selection,
+  element: HTMLElement
+): boolean {
+  return Boolean(
+    selection.anchorNode &&
+    selection.focusNode &&
+    element.contains(selection.anchorNode) &&
+    element.contains(selection.focusNode)
+  );
 }
 
 type TopicViewProps = Readonly<{
@@ -67,6 +96,11 @@ export function TopicView({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
   const [showBreadcrumb, setShowBreadcrumb] = useState(true);
+  const [selectionTooltip, setSelectionTooltip] =
+    useState<SelectionTooltipState | null>(null);
+  const [lessonQueryRequest, setLessonQueryRequest] =
+    useState<LessonQueryRequest | null>(null);
+  const articleRef = useRef<HTMLElement | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -172,6 +206,98 @@ export function TopicView({
     };
   }, []);
 
+  useEffect(() => {
+    const clearSelectionTooltip = () => {
+      const selection = window.getSelection();
+      const article = articleRef.current;
+
+      if (
+        !selection ||
+        !article ||
+        selection.isCollapsed ||
+        !selectionBelongsToElement(selection, article)
+      ) {
+        setSelectionTooltip(null);
+      }
+    };
+
+    const hideTooltip = () => setSelectionTooltip(null);
+
+    document.addEventListener("selectionchange", clearSelectionTooltip);
+    window.addEventListener("resize", hideTooltip);
+    window.addEventListener("scroll", hideTooltip, { passive: true });
+
+    return () => {
+      document.removeEventListener("selectionchange", clearSelectionTooltip);
+      window.removeEventListener("resize", hideTooltip);
+      window.removeEventListener("scroll", hideTooltip);
+    };
+  }, []);
+
+  const updateSelectionTooltip = () => {
+    if (!topicChallenge) {
+      setSelectionTooltip(null);
+      return;
+    }
+
+    const selection = window.getSelection();
+    const article = articleRef.current;
+
+    if (
+      !selection ||
+      !article ||
+      selection.rangeCount === 0 ||
+      selection.isCollapsed ||
+      !selectionBelongsToElement(selection, article)
+    ) {
+      setSelectionTooltip(null);
+      return;
+    }
+
+    const selectedText = normalizeSelectionText(selection.toString()).slice(
+      0,
+      600
+    );
+
+    if (selectedText.length < 2) {
+      setSelectionTooltip(null);
+      return;
+    }
+
+    const rangeRect = selection.getRangeAt(0).getBoundingClientRect();
+    const articleRect = article.getBoundingClientRect();
+
+    if (!rangeRect.width && !rangeRect.height) {
+      setSelectionTooltip(null);
+      return;
+    }
+
+    const maxLeft = Math.max(72, articleRect.width - 72);
+
+    setSelectionTooltip({
+      selectedText,
+      top: Math.max(12, rangeRect.bottom - articleRect.top + 12),
+      left: clamp(
+        rangeRect.left + rangeRect.width / 2 - articleRect.left,
+        72,
+        maxLeft
+      ),
+    });
+  };
+
+  const requestLessonQuery = () => {
+    if (!selectionTooltip) {
+      return;
+    }
+
+    setLessonQueryRequest({
+      id: `${Date.now()}`,
+      selectedText: selectionTooltip.selectedText,
+    });
+    setSelectionTooltip(null);
+    window.getSelection()?.removeAllRanges();
+  };
+
   return (
     <div className="min-h-screen flex">
       {/* Sidebar */}
@@ -251,20 +377,43 @@ export function TopicView({
         {/* Card content */}
         <main className="max-w-7xl mx-auto p-6 sm:p-8 lg:p-10">
           <article
+            ref={articleRef}
             {...swipeHandlers}
-            className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-6 sm:p-8 lg:p-10"
+            onMouseUp={updateSelectionTooltip}
+            onKeyUp={updateSelectionTooltip}
+            onPointerDown={() => setSelectionTooltip(null)}
+            className="relative rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-6 sm:p-8 lg:p-10"
           >
             <div className="markdown-body">
               <MarkdownRenderer content={topicContent} />
             </div>
+
+            {selectionTooltip ? (
+              <button
+                type="button"
+                style={{
+                  top: `${selectionTooltip.top}px`,
+                  left: `${selectionTooltip.left}px`,
+                }}
+                onMouseDown={(event) => event.preventDefault()}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={requestLessonQuery}
+                className="absolute z-20 -translate-x-1/2 rounded-full border border-[var(--accent-dim)] bg-[var(--bg)]/95 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-white shadow-lg backdrop-blur transition-colors hover:bg-[var(--accent-dim)]/20"
+              >
+                Ask AI
+              </button>
+            ) : null}
           </article>
 
           {topicChallenge ? (
             <ChallengeAssistant
               dayId={dayId}
+              dayTitle={dayTitle}
               topicId={topicId}
               topicTitle={topicTitle}
+              topicContent={topicContent}
               challenge={topicChallenge}
+              lessonQueryRequest={lessonQueryRequest}
             />
           ) : null}
 

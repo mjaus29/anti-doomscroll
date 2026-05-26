@@ -1,7 +1,7 @@
 "use client";
 
-import type { AppStateEntry } from "@/lib/app-state";
 import { useDebouncedEffect } from "@/hooks/useDebouncedEffect";
+import type { AppStateEntry } from "@/lib/app-state";
 import {
   deleteAppState,
   readAppState,
@@ -13,14 +13,22 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { MonacoCodeEditor } from "./MonacoCodeEditor";
 
-type AssistantMode = "review" | "hint";
+type AssistantMode = "review" | "hint" | "lesson-query";
 type LearnerLevel = "beginner" | "intermediate" | "advanced";
+
+export type LessonQueryRequest = Readonly<{
+  id: string;
+  selectedText: string;
+}>;
 
 type ChallengeAssistantProps = Readonly<{
   dayId: string;
+  dayTitle: string;
   topicId: string;
   topicTitle: string;
+  topicContent: string;
   challenge: TopicChallenge;
+  lessonQueryRequest: LessonQueryRequest | null;
 }>;
 
 interface ChallengeAssistantResponse {
@@ -34,10 +42,13 @@ interface ChallengeAssistantResponse {
 interface ChallengeRequestPayload {
   mode: AssistantMode;
   dayId: string;
+  dayTitle?: string;
   topicId: string;
   topicTitle: string;
-  challengeMarkdown: string;
-  solutionMarkdown: string;
+  challengeMarkdown?: string;
+  solutionMarkdown?: string;
+  lessonContent?: string;
+  selectedText?: string;
   userCode: string;
   learnerLevel: LearnerLevel;
 }
@@ -98,6 +109,10 @@ function ignorePersistenceError(task: Promise<unknown>) {
   void task.catch(() => undefined);
 }
 
+function isAssistantMode(value: unknown): value is AssistantMode {
+  return value === "review" || value === "hint" || value === "lesson-query";
+}
+
 function isLearnerLevel(value: unknown): value is LearnerLevel {
   return (
     value === "beginner" || value === "intermediate" || value === "advanced"
@@ -116,12 +131,42 @@ function isChallengeAssistantResponse(
   return (
     typeof candidate.feedback === "string" &&
     typeof candidate.model === "string" &&
-    (candidate.mode === "review" || candidate.mode === "hint") &&
+    isAssistantMode(candidate.mode) &&
     (candidate.learnerLevel === "beginner" ||
       candidate.learnerLevel === "intermediate" ||
       candidate.learnerLevel === "advanced") &&
     typeof candidate.updatedAt === "string"
   );
+}
+
+function getModeLabel(mode: AssistantMode): string {
+  switch (mode) {
+    case "review":
+      return "Review";
+    case "hint":
+      return "Hint";
+    default:
+      return "Ask AI";
+  }
+}
+
+function extractAuthUrl(message: string): {
+  authUrl: string | null;
+  message: string;
+} {
+  const authMatch = /\[AUTH_URL=(.+?)\]$/.exec(message);
+
+  if (!authMatch?.[1]) {
+    return {
+      authUrl: null,
+      message,
+    };
+  }
+
+  return {
+    authUrl: authMatch[1],
+    message: message.replace(/\s*\[AUTH_URL=.+?\]$/, ""),
+  };
 }
 
 function isDeltaEvent(event: ChallengeStreamEvent): event is DeltaEvent {
@@ -343,18 +388,18 @@ async function readChallengeStream({
   };
 }
 
-async function runChallengeSubmission({
+async function runCopilotSubmission({
   requestPayload,
   controller,
   model,
   updatedAt,
-  setAssistantReply,
+  setReply,
 }: {
   requestPayload: ChallengeRequestPayload;
   controller: AbortController;
   model: string;
   updatedAt: string;
-  setAssistantReply: React.Dispatch<
+  setReply: React.Dispatch<
     React.SetStateAction<ChallengeAssistantResponse | null>
   >;
 }) {
@@ -365,7 +410,7 @@ async function runChallengeSubmission({
     signal: controller.signal,
     model,
     onDelta: (feedback) => {
-      setAssistantReply(
+      setReply(
         createInProgressReply({
           feedback,
           model,
@@ -380,9 +425,12 @@ async function runChallengeSubmission({
 
 export function ChallengeAssistant({
   dayId,
+  dayTitle,
   topicId,
   topicTitle,
+  topicContent,
   challenge,
+  lessonQueryRequest,
 }: ChallengeAssistantProps) {
   const storageKey = useMemo(
     () => `challenge-draft:${dayId}:${topicId}`,
@@ -404,12 +452,23 @@ export function ChallengeAssistant({
   const [userCode, setUserCode] = useState("");
   const [assistantReply, setAssistantReply] =
     useState<ChallengeAssistantResponse | null>(null);
+  const [lessonReply, setLessonReply] =
+    useState<ChallengeAssistantResponse | null>(null);
+  const [lessonQueryInput, setLessonQueryInput] = useState("");
   const [learnerLevel, setLearnerLevel] = useState<LearnerLevel>("beginner");
   const [error, setError] = useState<string | null>(null);
+  const [lessonError, setLessonError] = useState<string | null>(null);
   const [authUrl, setAuthUrl] = useState<string | null>(null);
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [lessonAuthUrl, setLessonAuthUrl] = useState<string | null>(null);
+  const [isChallengeStreaming, setIsChallengeStreaming] = useState(false);
+  const [isLessonStreaming, setIsLessonStreaming] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const challengeAbortControllerRef = useRef<AbortController | null>(null);
+  const lessonAbortControllerRef = useRef<AbortController | null>(null);
+  const lessonSectionRef = useRef<HTMLElement | null>(null);
+  const lastLessonQueryIdRef = useRef<string | null>(null);
+
+  const lessonQueryInputId = `lesson-query-${dayId}-${topicId}`;
 
   useEffect(() => {
     let isCancelled = false;
@@ -573,7 +632,7 @@ export function ChallengeAssistant({
   }, [isHydrated, learnerLevel, levelStorageKey]);
 
   useEffect(() => {
-    if (!isHydrated || isStreaming) {
+    if (!isHydrated || isChallengeStreaming) {
       return;
     }
 
@@ -590,11 +649,12 @@ export function ChallengeAssistant({
         },
       ])
     );
-  }, [assistantReply, isHydrated, isStreaming, responseStorageKey]);
+  }, [assistantReply, isChallengeStreaming, isHydrated, responseStorageKey]);
 
   useEffect(() => {
     return () => {
-      abortControllerRef.current?.abort();
+      challengeAbortControllerRef.current?.abort();
+      lessonAbortControllerRef.current?.abort();
     };
   }, []);
 
@@ -605,14 +665,14 @@ export function ChallengeAssistant({
     }
 
     void (async () => {
-      abortControllerRef.current?.abort();
+      challengeAbortControllerRef.current?.abort();
 
       const controller = new AbortController();
-      abortControllerRef.current = controller;
+      challengeAbortControllerRef.current = controller;
 
       setError(null);
       setAuthUrl(null);
-      setIsStreaming(true);
+      setIsChallengeStreaming(true);
 
       const updatedAt = new Date().toISOString();
       const requestPayload: ChallengeRequestPayload = {
@@ -638,12 +698,12 @@ export function ChallengeAssistant({
       );
 
       try {
-        const completedReply = await runChallengeSubmission({
+        const completedReply = await runCopilotSubmission({
           requestPayload,
           controller,
           model,
           updatedAt,
-          setAssistantReply,
+          setReply: setAssistantReply,
         });
 
         setAssistantReply(completedReply);
@@ -663,215 +723,430 @@ export function ChallengeAssistant({
           requestError instanceof Error
             ? requestError.message
             : "Copilot could not process this challenge.";
-        const authMatch = /\[AUTH_URL=(.+?)\]$/.exec(message);
-        if (authMatch?.[1]) {
-          setAuthUrl(authMatch[1]);
-          setError(message.replace(/\s*\[AUTH_URL=.+?\]$/, ""));
+        const authDetails = extractAuthUrl(message);
+        if (authDetails.authUrl) {
+          setAuthUrl(authDetails.authUrl);
+          setError(authDetails.message);
         } else {
-          setError(message);
+          setError(authDetails.message);
         }
       } finally {
-        if (abortControllerRef.current === controller) {
-          abortControllerRef.current = null;
+        if (challengeAbortControllerRef.current === controller) {
+          challengeAbortControllerRef.current = null;
         }
-        setIsStreaming(false);
+        setIsChallengeStreaming(false);
       }
     })();
   };
 
+  const submitLessonQuery = (query: string) => {
+    const trimmedQuery = query.trim();
+
+    if (!trimmedQuery) {
+      setLessonError("Ask a question or highlight text first.");
+      return;
+    }
+
+    globalThis.requestAnimationFrame(() => {
+      lessonSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+
+    void (async () => {
+      lessonAbortControllerRef.current?.abort();
+
+      const controller = new AbortController();
+      lessonAbortControllerRef.current = controller;
+
+      setLessonQueryInput(trimmedQuery);
+      setLessonError(null);
+      setLessonAuthUrl(null);
+      setIsLessonStreaming(true);
+
+      const updatedAt = new Date().toISOString();
+      const model =
+        lessonReply?.model || assistantReply?.model || DEFAULT_MODEL;
+      const requestPayload: ChallengeRequestPayload = {
+        mode: "lesson-query",
+        dayId,
+        dayTitle,
+        topicId,
+        topicTitle,
+        lessonContent: topicContent,
+        selectedText: trimmedQuery,
+        userCode: "",
+        learnerLevel,
+      };
+
+      setLessonReply(
+        createInProgressReply({
+          feedback: "",
+          model,
+          mode: "lesson-query",
+          learnerLevel,
+          updatedAt,
+        })
+      );
+
+      try {
+        const completedReply = await runCopilotSubmission({
+          requestPayload,
+          controller,
+          model,
+          updatedAt,
+          setReply: setLessonReply,
+        });
+
+        setLessonReply(completedReply);
+      } catch (requestError) {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        setLessonReply((currentReply) => {
+          if (!currentReply?.feedback.trim()) {
+            return null;
+          }
+
+          return currentReply;
+        });
+
+        const message =
+          requestError instanceof Error
+            ? requestError.message
+            : "Copilot could not answer that question.";
+        const authDetails = extractAuthUrl(message);
+
+        if (authDetails.authUrl) {
+          setLessonAuthUrl(authDetails.authUrl);
+          setLessonError(authDetails.message);
+        } else {
+          setLessonError(authDetails.message);
+        }
+      } finally {
+        if (lessonAbortControllerRef.current === controller) {
+          lessonAbortControllerRef.current = null;
+        }
+
+        setIsLessonStreaming(false);
+      }
+    })();
+  };
+
+  useEffect(() => {
+    if (!lessonQueryRequest) {
+      return;
+    }
+
+    if (lessonQueryRequest.id === lastLessonQueryIdRef.current) {
+      return;
+    }
+
+    lastLessonQueryIdRef.current = lessonQueryRequest.id;
+    setLessonQueryInput(lessonQueryRequest.selectedText);
+    submitLessonQuery(lessonQueryRequest.selectedText);
+  }, [lessonQueryRequest]);
+
   return (
-    <section className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5 sm:p-8">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-mono uppercase tracking-[0.2em] text-[var(--accent)]">
-            {challenge.heading}
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold text-white">
-            Practice With Copilot
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-muted)]">
-            Paste your attempt, ask Copilot to check it, or get a guided hint
-            without switching away from the lesson.
-          </p>
-        </div>
-        <span className="rounded-full border border-[var(--border)] px-3 py-1 text-xs text-[var(--text-muted)]">
-          Model: {assistantReply?.model || DEFAULT_MODEL}
-        </span>
-      </div>
-
-      <div className="mt-6 rounded-xl border border-[var(--border)] bg-black/20 p-4">
-        <div className="markdown-body">
-          <MarkdownRenderer content={challenge.challengeMarkdown} />
-        </div>
-      </div>
-
-      <label className="mt-6 block text-sm font-medium text-white">
-        Your code
-      </label>
-      <MonacoCodeEditor
-        height="20rem"
-        language={editorLanguage}
-        path={`assistant-${dayId}-${topicId}-draft.${editorLanguage}`}
-        value={userCode}
-        onChange={setUserCode}
-      />
-
-      <div className="mt-4 rounded-xl border border-[var(--border)] bg-black/20 p-4">
-        <p className="text-sm font-medium text-white">Feedback style</p>
-        <p className="mt-1 text-sm text-[var(--text-muted)]">
-          Choose how strict or explanatory Copilot should be when reviewing your
-          answer.
-        </p>
-        <div className="mt-3 grid gap-3 sm:grid-cols-3">
-          {(
-            Object.entries(learnerLevelCopy) as Array<
-              [LearnerLevel, (typeof learnerLevelCopy)[LearnerLevel]]
-            >
-          ).map(([value, copy]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setLearnerLevel(value)}
-              className={`rounded-xl border px-4 py-3 text-left transition-colors ${
-                learnerLevel === value
-                  ? "border-[var(--accent-dim)] bg-[var(--accent-dim)]/10"
-                  : "border-[var(--border)] hover:border-[var(--accent-dim)]"
-              }`}
-            >
-              <div className="text-sm font-medium text-white">{copy.label}</div>
-              <div className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
-                {copy.description}
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-4 flex flex-col gap-3">
-        <div className="flex gap-3 w-full">
-          <button
-            type="button"
-            onClick={() => submit("review")}
-            disabled={isStreaming}
-            className="flex-1 rounded-lg bg-[var(--accent-dim)] px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isStreaming ? "Checking..." : "Check my solution"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => submit("hint")}
-            disabled={isStreaming}
-            className="rounded-lg border border-[var(--border)] px-4 py-3 text-sm font-medium text-[var(--text)] transition-colors hover:border-[var(--accent-dim)] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isStreaming ? "Thinking..." : "Give me a hint"}
-          </button>
-        </div>
-
-        {isStreaming ? (
+    <>
+      <section className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5 sm:p-8">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
+            <p className="text-xs font-mono uppercase tracking-[0.2em] text-[var(--accent)]">
+              {challenge.heading}
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold text-white">
+              Practice With Copilot
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-muted)]">
+              Paste your attempt, ask Copilot to check it, or get a guided hint
+              without switching away from the lesson.
+            </p>
+          </div>
+          <span className="rounded-full border border-[var(--border)] px-3 py-1 text-xs text-[var(--text-muted)]">
+            Model: {assistantReply?.model || DEFAULT_MODEL}
+          </span>
+        </div>
+
+        <div className="mt-6 rounded-xl border border-[var(--border)] bg-black/20 p-4">
+          <div className="markdown-body">
+            <MarkdownRenderer content={challenge.challengeMarkdown} />
+          </div>
+        </div>
+
+        <label className="mt-6 block text-sm font-medium text-white">
+          Your code
+        </label>
+        <MonacoCodeEditor
+          height="20rem"
+          language={editorLanguage}
+          path={`assistant-${dayId}-${topicId}-draft.${editorLanguage}`}
+          value={userCode}
+          onChange={setUserCode}
+        />
+
+        <div className="mt-4 rounded-xl border border-[var(--border)] bg-black/20 p-4">
+          <p className="text-sm font-medium text-white">Feedback style</p>
+          <p className="mt-1 text-sm text-[var(--text-muted)]">
+            Choose how strict or explanatory Copilot should be when reviewing
+            your answer.
+          </p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            {(
+              Object.entries(learnerLevelCopy) as Array<
+                [LearnerLevel, (typeof learnerLevelCopy)[LearnerLevel]]
+              >
+            ).map(([value, copy]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setLearnerLevel(value)}
+                className={`rounded-xl border px-4 py-3 text-left transition-colors ${
+                  learnerLevel === value
+                    ? "border-[var(--accent-dim)] bg-[var(--accent-dim)]/10"
+                    : "border-[var(--border)] hover:border-[var(--accent-dim)]"
+                }`}
+              >
+                <div className="text-sm font-medium text-white">
+                  {copy.label}
+                </div>
+                <div className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
+                  {copy.description}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-col gap-3">
+          <div className="flex gap-3 w-full">
             <button
               type="button"
-              onClick={() => abortControllerRef.current?.abort()}
-              className="mt-2 rounded-lg border border-red-500/30 px-4 py-2 text-sm font-medium text-red-200 transition-colors hover:border-red-400/40 hover:text-red-100 w-full"
+              onClick={() => submit("review")}
+              disabled={isChallengeStreaming}
+              className="flex-1 rounded-lg bg-[var(--accent-dim)] px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isChallengeStreaming ? "Checking..." : "Check my solution"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => submit("hint")}
+              disabled={isChallengeStreaming}
+              className="rounded-lg border border-[var(--border)] px-4 py-3 text-sm font-medium text-[var(--text)] transition-colors hover:border-[var(--accent-dim)] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isChallengeStreaming ? "Thinking..." : "Give me a hint"}
+            </button>
+          </div>
+
+          {isChallengeStreaming ? (
+            <div>
+              <button
+                type="button"
+                onClick={() => challengeAbortControllerRef.current?.abort()}
+                className="mt-2 rounded-lg border border-red-500/30 px-4 py-2 text-sm font-medium text-red-200 transition-colors hover:border-red-400/40 hover:text-red-100 w-full"
+              >
+                Stop
+              </button>
+            </div>
+          ) : null}
+
+          <details className="group open:shadow-lg p-0">
+            <summary className="cursor-pointer select-none flex items-center justify-between gap-3 px-3 py-2">
+              <span className="text-sm font-medium text-[var(--text-muted)]">
+                Reveal reference solution
+              </span>
+              <svg
+                className="w-4 h-4 text-[var(--text-muted)]"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </summary>
+
+            {extractedSolutionCode ? (
+              <div className="mt-3 space-y-3">
+                {extractedSolutionCode.leadingMarkdown ? (
+                  <div className="markdown-body [&_pre]:mb-0 [&_hr]:hidden">
+                    <MarkdownRenderer
+                      content={extractedSolutionCode.leadingMarkdown}
+                    />
+                  </div>
+                ) : null}
+
+                <MonacoCodeEditor
+                  className=""
+                  height="20rem"
+                  language={extractedSolutionCode.language}
+                  path={`assistant-${dayId}-${topicId}-reference.${extractedSolutionCode.language}`}
+                  readOnly
+                  value={extractedSolutionCode.code}
+                />
+
+                {extractedSolutionCode.trailingMarkdown ? (
+                  <div className="markdown-body [&_pre]:mb-0 [&_hr]:hidden">
+                    <MarkdownRenderer
+                      content={extractedSolutionCode.trailingMarkdown}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <div className="markdown-body mt-3 max-h-72 overflow-auto p-0 [&_pre]:mb-0 [&_hr]:hidden">
+                <MarkdownRenderer content={challenge.solutionMarkdown} />
+              </div>
+            )}
+          </details>
+        </div>
+
+        {error ? (
+          <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+            {error}
+          </p>
+        ) : null}
+
+        {authUrl ? (
+          <a
+            href={authUrl}
+            className="mt-3 inline-flex rounded-lg border border-[var(--accent-dim)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--accent-dim)]/20"
+          >
+            Connect GitHub To Use Copilot
+          </a>
+        ) : null}
+
+        {assistantReply ? (
+          <div className="mt-6 rounded-xl border border-[var(--border)] bg-black/20 p-4">
+            <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.18em] text-[var(--accent)]">
+              <span>Copilot</span>
+              <span className="text-[var(--text-muted)]">
+                {getModeLabel(assistantReply.mode)}
+              </span>
+              <span className="text-[var(--text-muted)]">
+                {learnerLevelCopy[assistantReply.learnerLevel].label}
+              </span>
+              <span className="text-[var(--text-muted)]">
+                {new Date(assistantReply.updatedAt).toLocaleString()}
+              </span>
+              {isChallengeStreaming ? (
+                <span className="text-[var(--text-muted)]">Streaming…</span>
+              ) : null}
+            </div>
+            <div className="markdown-body mt-4">
+              <MarkdownRenderer content={assistantReply.feedback} />
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section
+        ref={lessonSectionRef}
+        className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5 sm:p-8"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-mono uppercase tracking-[0.2em] text-[var(--accent)]">
+              Lesson context
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold text-white">Ask AI</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-muted)]">
+              Ask about today&apos;s lesson directly, or highlight text above to
+              send it here.
+            </p>
+          </div>
+          <span className="rounded-full border border-[var(--border)] px-3 py-1 text-xs text-[var(--text-muted)]">
+            Model:{" "}
+            {lessonReply?.model || assistantReply?.model || DEFAULT_MODEL}
+          </span>
+        </div>
+
+        <div className="mt-6 rounded-xl border border-[var(--border)] bg-black/20 p-4">
+          <label
+            htmlFor={lessonQueryInputId}
+            className="block text-sm font-medium text-white"
+          >
+            Question or highlighted text
+          </label>
+          <textarea
+            id={lessonQueryInputId}
+            value={lessonQueryInput}
+            onChange={(event) => setLessonQueryInput(event.target.value)}
+            rows={4}
+            placeholder="Ask about this lesson, or highlight text above to send it here."
+            className="mt-3 w-full resize-y rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3 text-sm leading-7 text-white outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-[var(--accent-dim)]"
+          />
+          <p className="mt-3 text-sm text-[var(--text-muted)]">
+            Copilot answers using the current lesson content as context.
+          </p>
+        </div>
+
+        <div className="mt-4 flex flex-col gap-3">
+          <button
+            type="button"
+            onClick={() => submitLessonQuery(lessonQueryInput)}
+            disabled={isLessonStreaming}
+            className="rounded-lg bg-[var(--accent-dim)] px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isLessonStreaming ? "Thinking..." : "Ask Copilot"}
+          </button>
+
+          {isLessonStreaming ? (
+            <button
+              type="button"
+              onClick={() => lessonAbortControllerRef.current?.abort()}
+              className="rounded-lg border border-red-500/30 px-4 py-2 text-sm font-medium text-red-200 transition-colors hover:border-red-400/40 hover:text-red-100 w-full"
             >
               Stop
             </button>
-          </div>
+          ) : null}
+        </div>
+
+        {lessonError ? (
+          <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+            {lessonError}
+          </p>
         ) : null}
 
-        <details className="group open:shadow-lg p-0">
-          <summary className="cursor-pointer select-none flex items-center justify-between gap-3 px-3 py-2">
-            <span className="text-sm font-medium text-[var(--text-muted)]">
-              Reveal reference solution
-            </span>
-            <svg
-              className="w-4 h-4 text-[var(--text-muted)]"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </summary>
+        {lessonAuthUrl ? (
+          <a
+            href={lessonAuthUrl}
+            className="mt-3 inline-flex rounded-lg border border-[var(--accent-dim)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--accent-dim)]/20"
+          >
+            Connect GitHub To Use Copilot
+          </a>
+        ) : null}
 
-          {extractedSolutionCode ? (
-            <div className="mt-3 space-y-3">
-              {extractedSolutionCode.leadingMarkdown ? (
-                <div className="markdown-body [&_pre]:mb-0 [&_hr]:hidden">
-                  <MarkdownRenderer
-                    content={extractedSolutionCode.leadingMarkdown}
-                  />
-                </div>
-              ) : null}
-
-              <MonacoCodeEditor
-                className=""
-                height="20rem"
-                language={extractedSolutionCode.language}
-                path={`assistant-${dayId}-${topicId}-reference.${extractedSolutionCode.language}`}
-                readOnly
-                value={extractedSolutionCode.code}
-              />
-
-              {extractedSolutionCode.trailingMarkdown ? (
-                <div className="markdown-body [&_pre]:mb-0 [&_hr]:hidden">
-                  <MarkdownRenderer
-                    content={extractedSolutionCode.trailingMarkdown}
-                  />
-                </div>
+        {lessonReply ? (
+          <div className="mt-6 rounded-xl border border-[var(--border)] bg-black/20 p-4">
+            <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.18em] text-[var(--accent)]">
+              <span>Copilot</span>
+              <span className="text-[var(--text-muted)]">
+                {getModeLabel(lessonReply.mode)}
+              </span>
+              <span className="text-[var(--text-muted)]">
+                {learnerLevelCopy[lessonReply.learnerLevel].label}
+              </span>
+              <span className="text-[var(--text-muted)]">
+                {new Date(lessonReply.updatedAt).toLocaleString()}
+              </span>
+              {isLessonStreaming ? (
+                <span className="text-[var(--text-muted)]">Streaming…</span>
               ) : null}
             </div>
-          ) : (
-            <div className="markdown-body mt-3 max-h-72 overflow-auto p-0 [&_pre]:mb-0 [&_hr]:hidden">
-              <MarkdownRenderer content={challenge.solutionMarkdown} />
+            <div className="markdown-body mt-4">
+              <MarkdownRenderer content={lessonReply.feedback} />
             </div>
-          )}
-        </details>
-      </div>
-
-      {error ? (
-        <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-          {error}
-        </p>
-      ) : null}
-
-      {authUrl ? (
-        <a
-          href={authUrl}
-          className="mt-3 inline-flex rounded-lg border border-[var(--accent-dim)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--accent-dim)]/20"
-        >
-          Connect GitHub To Use Copilot
-        </a>
-      ) : null}
-
-      {assistantReply ? (
-        <div className="mt-6 rounded-xl border border-[var(--border)] bg-black/20 p-4">
-          <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.18em] text-[var(--accent)]">
-            <span>Copilot</span>
-            <span className="text-[var(--text-muted)]">
-              {assistantReply.mode === "review" ? "Review" : "Hint"}
-            </span>
-            <span className="text-[var(--text-muted)]">
-              {learnerLevelCopy[assistantReply.learnerLevel].label}
-            </span>
-            <span className="text-[var(--text-muted)]">
-              {new Date(assistantReply.updatedAt).toLocaleString()}
-            </span>
-            {isStreaming ? (
-              <span className="text-[var(--text-muted)]">Streaming…</span>
-            ) : null}
           </div>
-          <div className="markdown-body mt-4">
-            <MarkdownRenderer content={assistantReply.feedback} />
-          </div>
-        </div>
-      ) : null}
-    </section>
+        ) : null}
+      </section>
+    </>
   );
 }

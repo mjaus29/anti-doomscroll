@@ -8,23 +8,27 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 
 const MAX_INPUT_LENGTH = 12000;
+const MAX_SELECTION_LENGTH = 1200;
 
-type AssistantMode = "review" | "hint";
+type AssistantMode = "review" | "hint" | "lesson-query";
 type LearnerLevel = "beginner" | "intermediate" | "advanced";
 
 interface ChallengeRequestBody {
   mode?: AssistantMode;
   dayId?: string;
+  dayTitle?: string;
   topicId?: string;
   topicTitle?: string;
   challengeMarkdown?: string;
   solutionMarkdown?: string;
+  lessonContent?: string;
+  selectedText?: string;
   userCode?: string;
   learnerLevel?: LearnerLevel;
 }
 
 function isValidMode(value: string | undefined): value is AssistantMode {
-  return value === "review" || value === "hint";
+  return value === "review" || value === "hint" || value === "lesson-query";
 }
 
 function isValidLearnerLevel(value: string | undefined): value is LearnerLevel {
@@ -33,23 +37,32 @@ function isValidLearnerLevel(value: string | undefined): value is LearnerLevel {
   );
 }
 
-function truncate(value: string | undefined): string {
-  return (value || "").trim().slice(0, MAX_INPUT_LENGTH);
+function truncate(
+  value: string | undefined,
+  maxLength = MAX_INPUT_LENGTH
+): string {
+  return (value || "").trim().slice(0, maxLength);
 }
 
 function buildPrompt({
   mode,
+  dayTitle,
   learnerLevel,
   topicTitle,
   challengeMarkdown,
   solutionMarkdown,
+  lessonContent,
+  selectedText,
   userCode,
 }: {
   mode: AssistantMode;
+  dayTitle: string;
   learnerLevel: LearnerLevel;
   topicTitle: string;
   challengeMarkdown: string;
   solutionMarkdown: string;
+  lessonContent: string;
+  selectedText: string;
   userCode: string;
 }) {
   const learnerLevelInstructions: Record<LearnerLevel, string[]> = {
@@ -69,6 +82,31 @@ function buildPrompt({
       "Focus on correctness, completeness, and robustness over encouragement.",
     ],
   };
+
+  if (mode === "lesson-query") {
+    return [
+      "You are a JavaScript and TypeScript mentor embedded in a lesson app.",
+      "Use the user's question or selected text and the lesson content as the primary context.",
+      "If the query is a direct question, answer it directly.",
+      "If it is a concept, code snippet, or phrase, elaborate on what it means in the lesson.",
+      "Keep the explanation grounded in the provided lesson instead of drifting into unrelated topics.",
+      ...learnerLevelInstructions[learnerLevel],
+      "Respond in concise Markdown.",
+      "Use this structure:",
+      "## Summary",
+      "## Explanation",
+      "## Next Step",
+      "",
+      `Day: ${dayTitle || "Current lesson"}`,
+      `Topic: ${topicTitle}`,
+      "",
+      "User query:",
+      selectedText,
+      "",
+      "Lesson content:",
+      lessonContent,
+    ].join("\n");
+  }
 
   const reviewInstructions =
     mode === "review"
@@ -94,6 +132,8 @@ function buildPrompt({
     "## Summary",
     "## Feedback",
     "## Next Step",
+    "",
+    `Day: ${dayTitle || "Current lesson"}`,
     "",
     `Topic: ${topicTitle}`,
     "",
@@ -123,9 +163,12 @@ export async function POST(request: NextRequest) {
 
     const body = (await request.json()) as ChallengeRequestBody;
     const mode = body.mode;
+    const dayTitle = truncate(body.dayTitle, 200);
     const learnerLevel = body.learnerLevel;
     const challengeMarkdown = truncate(body.challengeMarkdown);
     const solutionMarkdown = truncate(body.solutionMarkdown);
+    const lessonContent = truncate(body.lessonContent);
+    const selectedText = truncate(body.selectedText, MAX_SELECTION_LENGTH);
     const userCode = truncate(body.userCode);
     const topicTitle = truncate(body.topicTitle);
 
@@ -143,7 +186,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!challengeMarkdown || !solutionMarkdown || !topicTitle) {
+    if (mode === "lesson-query") {
+      if (!lessonContent || !selectedText || !topicTitle) {
+        return NextResponse.json(
+          { error: "Lesson context is incomplete." },
+          { status: 400 }
+        );
+      }
+    } else if (!challengeMarkdown || !solutionMarkdown || !topicTitle) {
       return NextResponse.json(
         { error: "Challenge context is incomplete." },
         { status: 400 }
@@ -170,10 +220,13 @@ export async function POST(request: NextRequest) {
         try {
           const promptText = buildPrompt({
             mode,
+            dayTitle,
             learnerLevel,
             topicTitle,
             challengeMarkdown,
             solutionMarkdown,
+            lessonContent,
+            selectedText,
             userCode,
           });
 
@@ -182,11 +235,18 @@ export async function POST(request: NextRequest) {
             model: DEFAULT_COPILOT_MODEL,
             prompt: promptText,
             timeoutMs: 45000,
-            systemMessage: [
-              "You are evaluating learner-submitted JavaScript and TypeScript challenge answers.",
-              "Never execute code, modify files, browse the web, or rely on tools.",
-              "Prefer short, corrective feedback over long explanations.",
-            ].join("\n"),
+            systemMessage:
+              mode === "lesson-query"
+                ? [
+                    "You answer learner questions about a lesson using the provided context.",
+                    "Never execute code, modify files, browse the web, or rely on tools.",
+                    "Prefer short, clear explanations over long tangents.",
+                  ].join("\n")
+                : [
+                    "You are evaluating learner-submitted JavaScript and TypeScript challenge answers.",
+                    "Never execute code, modify files, browse the web, or rely on tools.",
+                    "Prefer short, corrective feedback over long explanations.",
+                  ].join("\n"),
             onDelta(delta) {
               sendEvent({
                 type: "delta",
