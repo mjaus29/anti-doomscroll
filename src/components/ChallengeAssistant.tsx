@@ -169,6 +169,18 @@ function extractAuthUrl(message: string): {
   };
 }
 
+async function copyToClipboard(value: string) {
+  if (!value) {
+    return;
+  }
+
+  if (typeof navigator === "undefined" || !navigator.clipboard) {
+    throw new Error("Clipboard API unavailable.");
+  }
+
+  await navigator.clipboard.writeText(value);
+}
+
 function isDeltaEvent(event: ChallengeStreamEvent): event is DeltaEvent {
   return event.type === "delta";
 }
@@ -456,6 +468,7 @@ export function ChallengeAssistant({
     useState<ChallengeAssistantResponse | null>(null);
   const [lessonQueryInput, setLessonQueryInput] = useState("");
   const [learnerLevel, setLearnerLevel] = useState<LearnerLevel>("beginner");
+  const [isReferenceCopied, setIsReferenceCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lessonError, setLessonError] = useState<string | null>(null);
   const [authUrl, setAuthUrl] = useState<string | null>(null);
@@ -467,6 +480,9 @@ export function ChallengeAssistant({
   const lessonAbortControllerRef = useRef<AbortController | null>(null);
   const lessonSectionRef = useRef<HTMLElement | null>(null);
   const lastLessonQueryIdRef = useRef<string | null>(null);
+  const copyFeedbackTimeoutRef = useRef<ReturnType<
+    typeof globalThis.setTimeout
+  > | null>(null);
 
   const lessonQueryInputId = `lesson-query-${dayId}-${topicId}`;
 
@@ -655,8 +671,33 @@ export function ChallengeAssistant({
     return () => {
       challengeAbortControllerRef.current?.abort();
       lessonAbortControllerRef.current?.abort();
+
+      if (copyFeedbackTimeoutRef.current) {
+        globalThis.clearTimeout(copyFeedbackTimeoutRef.current);
+      }
     };
   }, []);
+
+  const copyReferenceSolution = async () => {
+    const valueToCopy =
+      extractedSolutionCode?.code || challenge.solutionMarkdown;
+
+    try {
+      await copyToClipboard(valueToCopy);
+      setIsReferenceCopied(true);
+
+      if (copyFeedbackTimeoutRef.current) {
+        globalThis.clearTimeout(copyFeedbackTimeoutRef.current);
+      }
+
+      copyFeedbackTimeoutRef.current = globalThis.setTimeout(() => {
+        setIsReferenceCopied(false);
+        copyFeedbackTimeoutRef.current = null;
+      }, 2000);
+    } catch {
+      setError("Copy failed. Your browser blocked clipboard access.");
+    }
+  };
 
   const submit = (mode: AssistantMode) => {
     if (mode === "review" && !userCode.trim()) {
@@ -958,19 +999,47 @@ export function ChallengeAssistant({
               <span className="text-sm font-medium text-[var(--text-muted)]">
                 Reveal reference solution
               </span>
-              <svg
-                className="w-4 h-4 text-[var(--text-muted)]"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
+              <span className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    void copyReferenceSolution();
+                  }}
+                  className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--text-muted)] transition-colors hover:border-[var(--accent-dim)] hover:text-white"
+                  aria-label="Copy reference solution"
+                  title="Copy reference solution"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 7V5a2 2 0 012-2h7a2 2 0 012 2v7a2 2 0 01-2 2h-2M8 7H7a2 2 0 00-2 2v10a2 2 0 002 2h7a2 2 0 002-2v-1M8 7h7a2 2 0 012 2v7a2 2 0 01-2 2H8a2 2 0 01-2-2V9a2 2 0 012-2z"
+                    />
+                  </svg>
+                  <span>{isReferenceCopied ? "Copied" : "Copy"}</span>
+                </button>
+                <svg
+                  className="w-4 h-4 text-[var(--text-muted)]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </span>
             </summary>
 
             {extractedSolutionCode ? (

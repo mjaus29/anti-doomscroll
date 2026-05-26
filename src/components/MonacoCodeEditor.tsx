@@ -169,9 +169,16 @@ export function MonacoCodeEditor({
           readOnly,
           domReadOnly: readOnly,
           renderLineHighlight: readOnly ? "none" : "line",
+          scrollbar: {
+            alwaysConsumeMouseWheel: false,
+            horizontal: "visible",
+            horizontalScrollbarSize: 10,
+            verticalScrollbarSize: 10,
+          },
           scrollBeyondLastLine: false,
+          scrollBeyondLastColumn: 6,
           tabSize: 2,
-          wordWrap: "on",
+          wordWrap: "off",
         }}
       />
     </div>

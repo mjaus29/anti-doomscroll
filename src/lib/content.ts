@@ -59,6 +59,8 @@ const GROUP_META: ReadonlyMap<string, (typeof GROUP_CATALOG)[number]> = new Map(
   GROUP_CATALOG.map((group) => [group.id, group])
 );
 
+let cachedGroups: TechGroup[] | null = null;
+
 function titleCase(value: string): string {
   return value
     .split(/[-\s]+/)
@@ -354,7 +356,7 @@ function loadDays(contentDir: string): Day[] {
   );
 }
 
-export function getAllGroups(): TechGroup[] {
+function loadAllGroups(): TechGroup[] {
   if (!fs.existsSync(CONTENT_ROOT)) {
     return [];
   }
@@ -385,6 +387,18 @@ export function getAllGroups(): TechGroup[] {
     if (orderDiff !== 0) return orderDiff;
     return left.title.localeCompare(right.title);
   });
+}
+
+export function getAllGroups(): TechGroup[] {
+  if (process.env.NODE_ENV !== "production") {
+    return loadAllGroups();
+  }
+
+  if (!cachedGroups) {
+    cachedGroups = loadAllGroups();
+  }
+
+  return cachedGroups;
 }
 
 export function getChallengeCatalog(
