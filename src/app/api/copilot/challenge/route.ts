@@ -95,6 +95,7 @@ function buildPrompt({
       "Use this structure:",
       "## Summary",
       "## Explanation",
+      "## Mental Model",
       "## Next Step",
       "",
       `Day: ${dayTitle || "Current lesson"}`,
