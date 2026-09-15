@@ -20,17 +20,58 @@ For `([{}])`, push `(`, then `[`, then `{`. Read `}` and pop `{`; read `]` and p
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Design a stack that supports push, pop, top, and retrieving the minimum value in constant time. This is **Min Stack**.
+
+**Best interview-ready solution:**
+
+1. **Recognize the extra query:** the stack needs its normal top plus the minimum of everything below it.
+2. **Choose the state:** store each value with the minimum seen through that entry, or keep a second minimum stack.
+3. **Update together:** push the new minimum with each value; pop both structures together.
+4. **Preserve LIFO:** the auxiliary minimum history must follow the same pushes and pops.
+5. **Complexity:** O(1) time per operation and O(n) space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: push each value with the minimum so far; pop both stacks and read the top minimum.
+class MinStack {
+	private readonly values: number[] = [];
+	private readonly minimums: number[] = [];
+
+	push(value: number): void {
+		this.values.push(value);
+		const previous = this.minimums[this.minimums.length - 1] ?? value;
+		this.minimums.push(Math.min(value, previous));
+	}
+
+	pop(): number | undefined {
+		this.minimums.pop();
+		return this.values.pop();
+	}
+
+	getMin(): number | undefined {
+		return this.minimums[this.minimums.length - 1];
+	}
+}
+```
+
 For delimiters, the stack contains exactly the unmatched opening symbols in order. A closing symbol is valid only if it matches the most recent opening symbol.
 
 ```ts
 function isBalanced(text: string): boolean {
-  const expected = new Map([[')', '('], [']', '['], ['}', '{']]);
-  const stack: string[] = [];
-  for (const character of text) {
-    if ("([{".includes(character)) stack.push(character);
-    else if (expected.has(character) && stack.pop() !== expected.get(character)) return false;
-  }
-  return stack.length === 0;
+	const expected = new Map([
+		[')', '('],
+		[']', '['],
+		['}', '{'],
+	]);
+	const stack: string[] = [];
+	for (const character of text) {
+		if ('([{'.includes(character)) stack.push(character);
+		else if (expected.has(character) && stack.pop() !== expected.get(character)) return false;
+	}
+	return stack.length === 0;
 }
 ```
 
@@ -72,14 +113,18 @@ Return whether a string containing `()[]{}` is balanced. Ignore no characters; a
 
 ```ts
 function isBalanced(text: string): boolean {
-  const pairs = new Map([[')', '('], [']', '['], ['}', '{']]);
-  const stack: string[] = [];
+	const pairs = new Map([
+		[')', '('],
+		[']', '['],
+		['}', '{'],
+	]);
+	const stack: string[] = [];
 
-  for (const character of text) {
-    if ("([{".includes(character)) stack.push(character);
-    else if (pairs.get(character) !== stack.pop()) return false;
-  }
-  return stack.length === 0;
+	for (const character of text) {
+		if ('([{'.includes(character)) stack.push(character);
+		else if (pairs.get(character) !== stack.pop()) return false;
+	}
+	return stack.length === 0;
 }
 ```
 

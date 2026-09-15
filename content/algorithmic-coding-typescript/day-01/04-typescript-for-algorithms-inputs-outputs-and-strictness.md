@@ -23,6 +23,37 @@ Think of types as labels and guardrails on a toolbox. `readonly number[]` labels
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Given a string containing parentheses and brackets, determine whether the brackets are valid. This is the classic **Valid Parentheses** problem.
+
+**Best interview-ready solution:**
+
+1. **Recognize the model:** the newest unmatched opening bracket must be resolved first, so use a stack.
+2. **Store the contract:** map each closing bracket to its expected opener.
+3. **Process left to right:** push openers; for a closer, pop and compare or return false.
+4. **Finish the proof:** a valid string must leave the stack empty after all characters are processed.
+5. **Complexity:** O(n) time and O(n) space; TypeScript types make the result and map values explicit.
+
+**Code solution:**
+
+```ts
+// Pseudocode: push opening brackets, match closing brackets with the stack top, then require an empty stack.
+function isValidBrackets(text: string): boolean {
+	const pairs = new Map([
+		[')', '('],
+		[']', '['],
+		['}', '{'],
+	]);
+	const stack: string[] = [];
+	for (const character of text) {
+		if ('([{'.includes(character)) stack.push(character);
+		else if (pairs.get(character) !== stack.pop()) return false;
+	}
+	return stack.length === 0;
+}
+```
+
 ```ts
 type Edge = readonly [from: number, to: number, weight: number];
 

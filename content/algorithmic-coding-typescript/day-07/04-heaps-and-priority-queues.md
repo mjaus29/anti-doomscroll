@@ -20,39 +20,96 @@ Start with heap `[5]`. Push `2`, place it at the end, then swap it with `5` to g
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Return the kth largest value in an unsorted array. This is **Kth Largest Element in an Array**.
+
+**Best interview-ready solution:**
+
+1. **Recognize the order statistic:** fully sorting is valid but may do more work than needed.
+2. **Choose a min-heap of size k:** the root is the kth largest boundary among values seen.
+3. **Push values and remove the smallest when the heap grows beyond k.**
+4. **At the end, the root is the kth largest value.**
+5. **Complexity:** O(n log k) time and O(k) space; quickselect can reach expected O(n) but has more edge-case complexity.
+
+**Code solution:**
+
+```ts
+// Pseudocode: keep a min-heap of the k largest values and remove the smallest overflow.
+function kthLargest(values: readonly number[], k: number): number {
+	const heap: number[] = [];
+	const push = (value: number): void => {
+		heap.push(value);
+		let index = heap.length - 1;
+		while (index > 0) {
+			const parent = Math.floor((index - 1) / 2);
+			if (heap[parent] <= heap[index]) break;
+			[heap[parent], heap[index]] = [heap[index], heap[parent]];
+			index = parent;
+		}
+	};
+	const pop = (): void => {
+		heap[0] = heap.pop() as number;
+		let index = 0;
+		while (true) {
+			const left = index * 2 + 1;
+			const right = left + 1;
+			let smallest = index;
+			if (left < heap.length && heap[left] < heap[smallest]) smallest = left;
+			if (right < heap.length && heap[right] < heap[smallest]) smallest = right;
+			if (smallest === index) break;
+			[heap[index], heap[smallest]] = [heap[smallest], heap[index]];
+			index = smallest;
+		}
+	};
+	for (const value of values) {
+		push(value);
+		if (heap.length > k) pop();
+	}
+	return heap[0];
+}
+```
+
 For a zero-based array heap, children are `2 * i + 1` and `2 * i + 2`; the parent is `Math.floor((i - 1) / 2)`. After insertion, sift up; after removing the root, move the last item to the root and sift down.
 
 ```ts
 class MinHeap {
-  private readonly values: number[] = [];
-  push(value: number): void { this.values.push(value); this.up(this.values.length - 1); }
-  pop(): number | undefined {
-    if (this.values.length === 0) return undefined;
-    const result = this.values[0];
-    const last = this.values.pop() as number;
-    if (this.values.length > 0) { this.values[0] = last; this.down(0); }
-    return result;
-  }
-  private up(index: number): void {
-    while (index > 0) {
-      const parent = Math.floor((index - 1) / 2);
-      if (this.values[parent] <= this.values[index]) break;
-      [this.values[parent], this.values[index]] = [this.values[index], this.values[parent]];
-      index = parent;
-    }
-  }
-  private down(index: number): void {
-    while (true) {
-      const left = index * 2 + 1;
-      const right = left + 1;
-      let smallest = index;
-      if (left < this.values.length && this.values[left] < this.values[smallest]) smallest = left;
-      if (right < this.values.length && this.values[right] < this.values[smallest]) smallest = right;
-      if (smallest === index) break;
-      [this.values[index], this.values[smallest]] = [this.values[smallest], this.values[index]];
-      index = smallest;
-    }
-  }
+	private readonly values: number[] = [];
+	push(value: number): void {
+		this.values.push(value);
+		this.up(this.values.length - 1);
+	}
+	pop(): number | undefined {
+		if (this.values.length === 0) return undefined;
+		const result = this.values[0];
+		const last = this.values.pop() as number;
+		if (this.values.length > 0) {
+			this.values[0] = last;
+			this.down(0);
+		}
+		return result;
+	}
+	private up(index: number): void {
+		while (index > 0) {
+			const parent = Math.floor((index - 1) / 2);
+			if (this.values[parent] <= this.values[index]) break;
+			[this.values[parent], this.values[index]] = [this.values[index], this.values[parent]];
+			index = parent;
+		}
+	}
+	private down(index: number): void {
+		while (true) {
+			const left = index * 2 + 1;
+			const right = left + 1;
+			let smallest = index;
+			if (left < this.values.length && this.values[left] < this.values[smallest]) smallest = left;
+			if (right < this.values.length && this.values[right] < this.values[smallest])
+				smallest = right;
+			if (smallest === index) break;
+			[this.values[index], this.values[smallest]] = [this.values[smallest], this.values[index]];
+			index = smallest;
+		}
+	}
 }
 ```
 
@@ -92,11 +149,11 @@ Write a function that verifies the min-heap order of a number array. Ignore whet
 
 ```ts
 function isMinHeap(values: readonly number[]): boolean {
-  for (let index = 1; index < values.length; index += 1) {
-    const parent = Math.floor((index - 1) / 2);
-    if (values[parent] > values[index]) return false;
-  }
-  return true;
+	for (let index = 1; index < values.length; index += 1) {
+		const parent = Math.floor((index - 1) / 2);
+		if (values[parent] > values[index]) return false;
+	}
+	return true;
 }
 ```
 

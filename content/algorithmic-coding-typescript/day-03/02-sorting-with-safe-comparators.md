@@ -20,13 +20,41 @@ JavaScript's default sort treats numbers like words, so `[10, 2, 1]` can be surp
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Merge a collection of overlapping intervals. This is the classic **Merge Intervals** problem.
+
+**Best interview-ready solution:**
+
+1. **Recognize why sorting helps:** start order means only the current merged interval can overlap the next one.
+2. **Sort safely:** use a numeric comparator and copy the input if mutation is not allowed.
+3. **Scan once:** extend the current interval when it overlaps; otherwise start a new output interval.
+4. **Make endpoint rules explicit:** decide whether touching endpoints merge.
+5. **Complexity:** O(n log n) time for sorting and O(n) output space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: sort by start, extend the current merged interval, or start a new interval.
+function mergeIntervals(
+	intervals: readonly (readonly [number, number])[]
+): Array<[number, number]> {
+	const ordered = [...intervals].sort((left, right) => left[0] - right[0]);
+	const merged: Array<[number, number]> = [];
+	for (const [start, end] of ordered) {
+		const current = merged[merged.length - 1];
+		if (current === undefined || start > current[1]) merged.push([start, end]);
+		else current[1] = Math.max(current[1], end);
+	}
+	return merged;
+}
+```
+
 JavaScript's default sort compares strings, so numbers need `left - right`. Copy first when input must stay unchanged.
 
 ```ts
 const ordered = [...values].sort((left, right) => left - right);
-const intervals = [...input].sort(
-  (left, right) => left[0] - right[0] || left[1] - right[1]
-);
+const intervals = [...input].sort((left, right) => left[0] - right[0] || left[1] - right[1]);
 ```
 
 A comparator returns negative, zero, or positive, not a boolean. Tie order can encode the problem rule, such as ending an interval before starting another at the same time.
@@ -67,7 +95,7 @@ Return a new ascending numeric array without mutating the input.
 
 ```ts
 function sortedCopy(values: readonly number[]): number[] {
-  return [...values].sort((left, right) => left - right);
+	return [...values].sort((left, right) => left - right);
 }
 ```
 

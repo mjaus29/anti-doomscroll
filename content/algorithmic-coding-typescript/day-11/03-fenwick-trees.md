@@ -20,6 +20,47 @@ For a point update at external index `2`, start at internal position `3`, add th
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Count smaller values to the right of every array element. This is **Count of Smaller Numbers After Self**.
+
+**Best interview-ready solution:**
+
+1. **Recognize dynamic prefix counts:** process from right to left so the already processed values are exactly the values to the right.
+2. **Compress values to ranks** because original values may be large or negative.
+3. **Use a Fenwick tree:** query the count of ranks below the current rank.
+4. **Update the tree with the current rank after querying.**
+5. **Complexity:** O(n log n) time and O(n) space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: compress ranks, scan right-to-left, and use Fenwick prefix counts.
+function countSmaller(values: readonly number[]): number[] {
+	const ordered = [...new Set(values)].sort((a, b) => a - b);
+	const ranks = new Map(ordered.map((value, index) => [value, index]));
+	const tree = new Array<number>(ordered.length + 1).fill(0);
+	const add = (rank: number): void => {
+		for (let position = rank + 1; position < tree.length; position += position & -position) {
+			tree[position] += 1;
+		}
+	};
+	const prefixCount = (rank: number): number => {
+		let total = 0;
+		for (let position = rank; position > 0; position -= position & -position)
+			total += tree[position];
+		return total;
+	};
+	const result = new Array<number>(values.length);
+	for (let index = values.length - 1; index >= 0; index -= 1) {
+		const rank = ranks.get(values[index]) as number;
+		result[index] = prefixCount(rank);
+		add(rank);
+	}
+	return result;
+}
+```
+
 ```ts
 class FenwickTree {
 	private readonly tree: number[];

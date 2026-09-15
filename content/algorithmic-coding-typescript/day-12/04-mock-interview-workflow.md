@@ -1,4 +1,4 @@
-# Mock Contest Workflow
+# Mock Interview Workflow
 
 ## T — TL;DR
 
@@ -8,7 +8,7 @@ A useful timed session trains model selection, implementation, testing, and revi
 
 ### Purpose
 
-A mock contest is practice for the whole decision loop: understand, choose, implement, test, and review. It is not meant to be a long heroic study session.
+An interview practice session trains the whole decision loop: understand, choose, implement, test, and review. It is not meant to be a long heroic study session.
 
 ### Mental Model
 
@@ -19,6 +19,46 @@ Think of a gym circuit with small stations. Each station trains one behavior, an
 In a 10-minute session, spend two minutes writing the contract and pattern, five minutes implementing, two minutes testing an edge case, and one minute recording the first uncertainty. The timer protects the learning action from expanding into an overwhelming task.
 
 ## K — Key Concepts
+
+### 1. Most Common Coding Interview Question
+
+**Question:** Design a data structure supporting get and put in O(1) time while evicting the least recently used item. This is **LRU Cache**.
+
+**Best interview-ready solution:**
+
+1. **Recognize the two requirements:** Map gives lookup; a doubly linked list gives recency order and O(1) removal.
+2. **Move every accessed or inserted node to the front.**
+3. **When capacity is exceeded, remove the node at the back.**
+4. **Keep Map and list synchronized on every operation; sentinel nodes simplify edge cases.**
+5. **Complexity:** O(1) get/put and O(capacity) space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: Map order tracks recency; delete and reinsert on access, then evict the oldest key.
+class LruCache {
+	private readonly values = new Map<number, number>();
+
+	constructor(private readonly capacity: number) {}
+
+	get(key: number): number {
+		const value = this.values.get(key);
+		if (value === undefined) return -1;
+		this.values.delete(key);
+		this.values.set(key, value);
+		return value;
+	}
+
+	put(key: number, value: number): void {
+		this.values.delete(key);
+		this.values.set(key, value);
+		if (this.values.size > this.capacity) {
+			const leastRecent = this.values.keys().next().value as number;
+			this.values.delete(leastRecent);
+		}
+	}
+}
+```
 
 Use one fixed loop:
 

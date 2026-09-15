@@ -20,19 +20,48 @@ For maximum non-adjacent sum `[2, 7, 9]`, after `2` the best states are skip `0`
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Return the maximum amount of money that can be robbed without robbing adjacent houses. This is **House Robber**.
+
+**Best interview-ready solution:**
+
+1. **Recognize the take/skip choice:** robbing the current house forbids the previous one.
+2. **Track two states:** best if the current house is skipped and best if it is taken.
+3. **Transition:** next skip is max of old skip and take; next take is old skip plus current money.
+4. **Shift states after computing both next values.**
+5. **Complexity:** O(n) time and O(1) space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: for each house, compute the best result if skipped and if taken.
+function rob(values: readonly number[]): number {
+	let skip = 0;
+	let take = 0;
+	for (const value of values) {
+		const nextSkip = Math.max(skip, take);
+		const nextTake = skip + value;
+		skip = nextSkip;
+		take = nextTake;
+	}
+	return Math.max(skip, take);
+}
+```
+
 For climbing costs, `dp[i]` is the minimum cost to reach position `i`. If the transition reads only `i - 1` and `i - 2`, retain two variables and update them in dependency order.
 
 ```ts
 function minCostToClimb(cost: readonly number[]): number {
-  if (cost.length === 0) return 0;
-  let twoBack = 0;
-  let oneBack = 0;
-  for (const value of cost) {
-    const current = value + Math.min(oneBack, twoBack);
-    twoBack = oneBack;
-    oneBack = current;
-  }
-  return Math.min(oneBack, twoBack);
+	if (cost.length === 0) return 0;
+	let twoBack = 0;
+	let oneBack = 0;
+	for (const value of cost) {
+		const current = value + Math.min(oneBack, twoBack);
+		twoBack = oneBack;
+		oneBack = current;
+	}
+	return Math.min(oneBack, twoBack);
 }
 ```
 
@@ -74,15 +103,15 @@ Return the maximum sum of values with no adjacent values selected.
 
 ```ts
 function maxNonAdjacent(values: readonly number[]): number {
-  let skip = 0;
-  let take = 0;
-  for (const value of values) {
-    const nextSkip = Math.max(skip, take);
-    const nextTake = skip + value;
-    skip = nextSkip;
-    take = nextTake;
-  }
-  return Math.max(skip, take);
+	let skip = 0;
+	let take = 0;
+	for (const value of values) {
+		const nextSkip = Math.max(skip, take);
+		const nextTake = skip + value;
+		skip = nextSkip;
+		take = nextTake;
+	}
+	return Math.max(skip, take);
 }
 ```
 

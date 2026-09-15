@@ -20,6 +20,53 @@ For values `[2, 1, 3, 4]`, the root stores sum `10`; its children store sums `3`
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Support mutable point updates and range-sum queries. This is **Range Sum Query - Mutable**.
+
+**Best interview-ready solution:**
+
+1. **Recognize the operation shape:** values change and queries cover arbitrary ranges, so one static prefix array is insufficient.
+2. **Store each interval aggregate in a segment tree.**
+3. **For an update, change one leaf and recompute ancestors.**
+4. **For a query, combine fully covered nodes and return the sum identity for disjoint nodes.**
+5. **Complexity:** O(log n) per update/query and O(n) storage; a Fenwick tree is simpler for sums with point updates.
+
+**Code solution:**
+
+```ts
+// Pseudocode: store interval aggregates, update a leaf and parents, and combine query segments.
+class RangeSum {
+	private readonly size: number;
+	private readonly tree: number[];
+
+	constructor(values: readonly number[]) {
+		this.size = values.length;
+		this.tree = new Array<number>(Math.max(1, values.length * 2)).fill(0);
+		for (let index = 0; index < values.length; index += 1)
+			this.tree[this.size + index] = values[index];
+		for (let node = this.size - 1; node > 0; node -= 1) {
+			this.tree[node] = this.tree[node * 2] + this.tree[node * 2 + 1];
+		}
+	}
+
+	update(index: number, value: number): void {
+		let node = this.size + index;
+		this.tree[node] = value;
+		while ((node >>= 1) > 0) this.tree[node] = this.tree[node * 2] + this.tree[node * 2 + 1];
+	}
+
+	query(left: number, right: number): number {
+		let total = 0;
+		for (left += this.size, right += this.size; left <= right; left >>= 1, right >>= 1) {
+			if (left % 2 === 1) total += this.tree[left++];
+			if (right % 2 === 0) total += this.tree[right--];
+		}
+		return total;
+	}
+}
+```
+
 Each node represents an interval and stores the merge of its children. For sums, the identity for a disjoint query is zero; for minimum, it is positive infinity. Point updates recompute ancestors. Lazy propagation defers range updates.
 
 ```ts
@@ -30,7 +77,7 @@ The aggregate must be associative enough for the tree's merge order. The chosen 
 
 ## W — Why It Matters
 
-Segment trees solve mutable range minimum, maximum, sum, and count queries when a prefix structure is not expressive enough. They appear in scheduling, game scoring, and competitive programming interviews.
+Segment trees solve mutable range minimum, maximum, sum, and count queries when a prefix structure is not expressive enough. They appear in scheduling, game scoring, and advanced coding interviews.
 
 ## I — Interview Q&A
 

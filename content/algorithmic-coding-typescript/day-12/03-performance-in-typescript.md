@@ -20,6 +20,38 @@ With a queue of `n` items, repeated `shift()` may move the remaining items after
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Return the k most frequent elements in an array. This is **Top K Frequent Elements**.
+
+**Best interview-ready solution:**
+
+1. **Count frequencies in one pass with a Map.**
+2. **Keep only k candidates with a min-heap, where the root is the weakest retained frequency.**
+3. **When the heap exceeds k, remove the root.**
+4. **Explain alternatives:** bucket sort can reach O(n) when frequency bounds are useful; a full sort does unnecessary work.
+5. **Complexity:** heap approach is O(n log k) time and O(n) space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: count frequencies, bucket values by count, and read the highest buckets first.
+function topKFrequent(values: readonly number[], k: number): number[] {
+	const counts = new Map<number, number>();
+	for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1);
+	const buckets = Array.from({ length: values.length + 1 }, () => [] as number[]);
+	for (const [value, count] of counts) buckets[count].push(value);
+	const result: number[] = [];
+	for (let count = buckets.length - 1; count >= 0 && result.length < k; count -= 1) {
+		for (const value of buckets[count]) {
+			result.push(value);
+			if (result.length === k) break;
+		}
+	}
+	return result;
+}
+```
+
 - `shift()` can make queue processing quadratic; use a head index or deque.
 - Dense bounded integer keys may favor arrays over `Map`.
 - Deep recursion can exhaust the call stack; use an explicit stack.

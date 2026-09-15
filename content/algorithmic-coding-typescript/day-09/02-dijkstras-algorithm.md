@@ -66,6 +66,72 @@ Start at `A` with distance `0`. If `A -> B` costs `4` and `A -> C` costs `1`, th
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Find the time needed for a signal to reach every node in a weighted directed graph, or minus one if some node is unreachable. This is **Network Delay Time**.
+
+**Best interview-ready solution:**
+
+1. **Check the precondition:** all travel times must be non-negative.
+2. **Use Dijkstra with a min-heap of distance and node entries.**
+3. **Relax outgoing edges whenever a cheaper distance is found.**
+4. **Skip stale queue entries and take the maximum finalized distance at the end.**
+5. **Complexity:** O((V + E) log V) with a binary heap and O(V + E) graph space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: take the smallest known distance, relax neighbors, and skip stale heap entries.
+type WeightedEdge = readonly [to: number, weight: number];
+
+function networkDelay(graph: readonly WeightedEdge[][], source: number): number {
+	const distance = new Array<number>(graph.length).fill(Infinity);
+	const heap: Array<[number, number]> = [[0, source]];
+	const push = (entry: [number, number]): void => {
+		heap.push(entry);
+		let index = heap.length - 1;
+		while (index > 0) {
+			const parent = Math.floor((index - 1) / 2);
+			if (heap[parent][0] <= heap[index][0]) break;
+			[heap[parent], heap[index]] = [heap[index], heap[parent]];
+			index = parent;
+		}
+	};
+	const pop = (): [number, number] => {
+		const result = heap[0];
+		const last = heap.pop() as [number, number];
+		if (heap.length > 0) {
+			heap[0] = last;
+			let index = 0;
+			while (true) {
+				const left = index * 2 + 1;
+				const right = left + 1;
+				let smallest = index;
+				if (left < heap.length && heap[left][0] < heap[smallest][0]) smallest = left;
+				if (right < heap.length && heap[right][0] < heap[smallest][0]) smallest = right;
+				if (smallest === index) break;
+				[heap[index], heap[smallest]] = [heap[smallest], heap[index]];
+				index = smallest;
+			}
+		}
+		return result;
+	};
+	distance[source] = 0;
+	push([0, source]);
+	while (heap.length > 0) {
+		const [current, vertex] = pop();
+		if (current !== distance[vertex]) continue;
+		for (const [next, weight] of graph[vertex]) {
+			const candidate = current + weight;
+			if (candidate >= distance[next]) continue;
+			distance[next] = candidate;
+			push([candidate, next]);
+		}
+	}
+	return distance.some((value) => value === Infinity) ? -1 : Math.max(...distance);
+}
+```
+
 Relax an edge when `currentDistance + weight` improves the neighbor. Use a min-heap of `[distance, vertex]` entries. If an older entry is popped after a better distance was found, skip it as stale.
 
 ```ts

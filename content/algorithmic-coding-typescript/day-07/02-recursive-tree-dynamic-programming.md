@@ -20,23 +20,55 @@ For height, a leaf returns `1`. A parent with two leaf children receives `1` and
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Find the diameter of a binary tree, measured as the number of edges on the longest path. This is **Diameter of Binary Tree**.
+
+**Best interview-ready solution:**
+
+1. **Recognize tree DP:** a node needs the height of each child to compute a path passing through itself.
+2. **Return height upward:** height is one plus the larger child height.
+3. **Update a global or returned best:** a path through the node has left height plus right height edges.
+4. **Use postorder:** both child heights must exist before the parent calculation.
+5. **Complexity:** O(n) time and O(h) recursion space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: postorder returns height and combines child heights into the best path diameter.
+type TreeNode = { value: number; left: TreeNode | null; right: TreeNode | null };
+
+function treeDiameter(root: TreeNode | null): number {
+	let best = 0;
+	const height = (node: TreeNode | null): number => {
+		if (node === null) return 0;
+		const left = height(node.left);
+		const right = height(node.right);
+		best = Math.max(best, left + right);
+		return 1 + Math.max(left, right);
+	};
+	height(root);
+	return best;
+}
+```
+
 For a maximum independent set, return two values per subtree: best total when the node is included and when it is excluded.
 
 ```ts
 type Choice = readonly [included: number, excluded: number];
 
 function bestIndependentSet(root: TreeNode | null): number {
-  function solve(node: TreeNode | null): Choice {
-    if (node === null) return [0, 0];
-    const left = solve(node.left);
-    const right = solve(node.right);
-    return [
-      node.value + left[1] + right[1],
-      Math.max(left[0], left[1]) + Math.max(right[0], right[1]),
-    ];
-  }
-  const [included, excluded] = solve(root);
-  return Math.max(included, excluded);
+	function solve(node: TreeNode | null): Choice {
+		if (node === null) return [0, 0];
+		const left = solve(node.left);
+		const right = solve(node.right);
+		return [
+			node.value + left[1] + right[1],
+			Math.max(left[0], left[1]) + Math.max(right[0], right[1]),
+		];
+	}
+	const [included, excluded] = solve(root);
+	return Math.max(included, excluded);
 }
 ```
 
@@ -78,8 +110,8 @@ Return the height of a binary tree, where an empty tree has height `0` and a lea
 
 ```ts
 function height(root: TreeNode | null): number {
-  if (root === null) return 0;
-  return 1 + Math.max(height(root.left), height(root.right));
+	if (root === null) return 0;
+	return 1 + Math.max(height(root.left), height(root.right));
 }
 ```
 

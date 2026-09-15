@@ -20,26 +20,60 @@ For `[A, B]`, the decision tree has four leaves: skip/skip `[]`, skip/take `[B]`
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Return every subset of an array. This is the classic **Subsets** problem.
+
+**Best interview-ready solution:**
+
+1. **Recognize the decision tree:** each value is either included or skipped.
+2. **Choose the state:** the next index and current path determine the branch.
+3. **Record safely:** copy the path at each leaf because backtracking mutates it.
+4. **Count the output:** there are 2^n subsets, so exponential output is unavoidable.
+5. **Complexity:** O(n 2^n) time including copies and O(n) recursion/path space besides output.
+
+**Code solution:**
+
+```ts
+// Pseudocode: branch by skip/take, copy the path at a leaf, and undo after recursion.
+function subsets(values: readonly number[]): number[][] {
+	const result: number[][] = [];
+	const path: number[] = [];
+	const visit = (index: number): void => {
+		if (index === values.length) {
+			result.push([...path]);
+			return;
+		}
+		visit(index + 1);
+		path.push(values[index]);
+		visit(index + 1);
+		path.pop();
+	};
+	visit(0);
+	return result;
+}
+```
+
 The state is `(index, path)`. At each index, skip or include the value; at the leaf, copy `path` because the working path is later mutated.
 
 ```ts
 function subsets(values: readonly number[]): number[][] {
-  const result: number[][] = [];
-  const path: number[] = [];
+	const result: number[][] = [];
+	const path: number[] = [];
 
-  function visit(index: number): void {
-    if (index === values.length) {
-      result.push([...path]);
-      return;
-    }
-    visit(index + 1);
-    path.push(values[index]);
-    visit(index + 1);
-    path.pop();
-  }
+	function visit(index: number): void {
+		if (index === values.length) {
+			result.push([...path]);
+			return;
+		}
+		visit(index + 1);
+		path.push(values[index]);
+		visit(index + 1);
+		path.pop();
+	}
 
-  visit(0);
-  return result;
+	visit(0);
+	return result;
 }
 ```
 
@@ -81,22 +115,22 @@ Return every subset of a readonly array. The empty subset must be included.
 
 ```ts
 function subsets(values: readonly number[]): number[][] {
-  const result: number[][] = [];
-  const path: number[] = [];
+	const result: number[][] = [];
+	const path: number[] = [];
 
-  function visit(index: number): void {
-    if (index === values.length) {
-      result.push([...path]);
-      return;
-    }
-    visit(index + 1);
-    path.push(values[index]);
-    visit(index + 1);
-    path.pop();
-  }
+	function visit(index: number): void {
+		if (index === values.length) {
+			result.push([...path]);
+			return;
+		}
+		visit(index + 1);
+		path.push(values[index]);
+		visit(index + 1);
+		path.pop();
+	}
 
-  visit(0);
-  return result;
+	visit(0);
+	return result;
 }
 ```
 

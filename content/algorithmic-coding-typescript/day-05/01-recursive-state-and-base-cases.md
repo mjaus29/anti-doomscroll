@@ -20,12 +20,36 @@ For `sumFrom([3, 1, 4], 0)`, the calls are `3 + sumFrom(1)`, then `1 + sumFrom(2
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Return the maximum depth of a binary tree. This is **Maximum Depth of Binary Tree**.
+
+**Best interview-ready solution:**
+
+1. **Recognize the recursive state:** the current node completely defines the remaining subtree.
+2. **Base case:** an empty node has depth zero.
+3. **Combine children:** the current depth is one plus the larger child depth.
+4. **Prove progress:** each call moves to a child, so the tree gets smaller and reaches null.
+5. **Complexity:** O(n) time and O(h) recursion space for height h.
+
+**Code solution:**
+
+```ts
+// Pseudocode: empty node returns zero; otherwise return one plus the larger child depth.
+type TreeNode = { value: number; left: TreeNode | null; right: TreeNode | null };
+
+function maxDepth(root: TreeNode | null): number {
+	if (root === null) return 0;
+	return 1 + Math.max(maxDepth(root.left), maxDepth(root.right));
+}
+```
+
 Ask what completely determines the remaining work. For a prefix sum, the state is the next index:
 
 ```ts
 function sumFrom(values: readonly number[], index: number): number {
-  if (index === values.length) return 0;
-  return values[index] + sumFrom(values, index + 1);
+	if (index === values.length) return 0;
+	return values[index] + sumFrom(values, index + 1);
 }
 ```
 
@@ -67,8 +91,8 @@ Recursively compute the sum of a readonly array starting at a supplied index. De
 
 ```ts
 function sumFrom(values: readonly number[], index: number): number {
-  if (index === values.length) return 0;
-  return values[index] + sumFrom(values, index + 1);
+	if (index === values.length) return 0;
+	return values[index] + sumFrom(values, index + 1);
 }
 ```
 

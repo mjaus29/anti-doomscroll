@@ -20,6 +20,46 @@ For a small array, compare a brute-force maximum-subarray scan with Kadane's alg
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Find the maximum sum of a contiguous subarray and verify the optimized solution with a brute-force oracle. This is **Maximum Subarray**.
+
+**Best interview-ready solution:**
+
+1. **Write the obvious oracle:** enumerate every start and end pair and track each sum.
+2. **Write the optimized Kadane solution independently.**
+3. **Compare both on normal, all-negative, empty-contract, and many small random arrays.**
+4. **When they disagree, preserve the exact input and shrink it to expose the violated invariant.**
+5. **Complexity:** oracle O(n^2), optimized solution O(n); the oracle is for confidence, not production.
+
+**Code solution:**
+
+```ts
+// Pseudocode: compare linear Kadane with a quadratic oracle on small cases.
+function maxSubarray(values: readonly number[]): number {
+	if (values.length === 0) return 0;
+	let current = values[0];
+	let best = values[0];
+	for (let index = 1; index < values.length; index += 1) {
+		current = Math.max(values[index], current + values[index]);
+		best = Math.max(best, current);
+	}
+	return best;
+}
+
+function bruteMaxSubarray(values: readonly number[]): number {
+	let best = -Infinity;
+	for (let start = 0; start < values.length; start += 1) {
+		let total = 0;
+		for (let end = start; end < values.length; end += 1) {
+			total += values[end];
+			best = Math.max(best, total);
+		}
+	}
+	return best;
+}
+```
+
 - A brute-force oracle can be slow but obvious on small inputs.
 - Differential testing compares optimized and reference outputs.
 - A property checks something every valid output must satisfy.

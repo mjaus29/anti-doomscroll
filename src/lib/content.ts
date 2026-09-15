@@ -56,7 +56,7 @@ const GROUP_CATALOG = [
 		label: 'Group 8',
 		title: 'Algorithmic Coding / TypeScript',
 		description:
-			'12-day problem-solving track covering complexity, core data structures, graph algorithms, dynamic programming, and contest-ready TypeScript.',
+			'12-day coding-interview track covering complexity, core data structures, graph algorithms, dynamic programming, and interview-ready TypeScript.',
 	},
 ] as const;
 

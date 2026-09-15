@@ -24,6 +24,35 @@ Think of a prefix array as a row of running receipts. For `[3, 1, 4, 2]`, the re
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Count the number of subarrays whose sum equals a target. This is **Subarray Sum Equals K**.
+
+**Best interview-ready solution:**
+
+1. **Recognize the prefix relation:** a subarray sums to target when currentPrefix minus earlierPrefix equals target.
+2. **Choose the state:** store how often each prefix sum has appeared.
+3. **Query before update:** add the frequency of currentPrefix minus target to the answer, then record currentPrefix.
+4. **Initialize correctly:** start the map with prefix sum zero occurring once, representing a subarray beginning at index zero.
+5. **Complexity:** O(n) expected time and O(n) space; this works with negative values unlike a basic sliding window.
+
+**Code solution:**
+
+```ts
+// Pseudocode: currentPrefix minus target identifies earlier prefixes that form target-sum subarrays.
+function countSubarraysWithSum(values: readonly number[], target: number): number {
+	const prefixCounts = new Map<number, number>([[0, 1]]);
+	let prefix = 0;
+	let result = 0;
+	for (const value of values) {
+		prefix += value;
+		result += prefixCounts.get(prefix - target) ?? 0;
+		prefixCounts.set(prefix, (prefixCounts.get(prefix) ?? 0) + 1);
+	}
+	return result;
+}
+```
+
 Define `prefix[i]` as the sum of the first `i` values, so `prefix[0]` is zero. Then `[left, right]` sums to `prefix[right + 1] - prefix[left]`.
 
 ```ts

@@ -20,22 +20,52 @@ For `left = "abc"` and `right = "ac"`, match `a`, skip `b`, then match `c`. The 
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Return the length of the longest common subsequence of two strings. This is **Longest Common Subsequence**.
+
+**Best interview-ready solution:**
+
+1. **Define the state:** dp[i][j] is the best subsequence length for the first i and j characters.
+2. **Match case:** equal current characters contribute one plus the diagonal state.
+3. **Mismatch case:** skip one current character and take the maximum of above and left.
+4. **Compress carefully:** save the old diagonal before overwriting the current row value.
+5. **Complexity:** O(nm) time and O(m) space for length only.
+
+**Code solution:**
+
+```ts
+// Pseudocode: matching characters use diagonal plus one; mismatches use max of above and left.
+function lcsLength(left: string, right: string): number {
+	const dp = new Array<number>(right.length + 1).fill(0);
+	for (let row = 1; row <= left.length; row += 1) {
+		let diagonal = 0;
+		for (let column = 1; column <= right.length; column += 1) {
+			const above = dp[column];
+			dp[column] =
+				left[row - 1] === right[column - 1] ? diagonal + 1 : Math.max(dp[column], dp[column - 1]);
+			diagonal = above;
+		}
+	}
+	return dp[right.length];
+}
+```
+
 For LCS, `dp[row][column]` means the longest common subsequence of the two prefixes. Matching characters use the diagonal plus one; otherwise take the best of above and left.
 
 ```ts
 function lcsLength(left: string, right: string): number {
-  const dp = new Array<number>(right.length + 1).fill(0);
-  for (let row = 1; row <= left.length; row += 1) {
-    let diagonal = 0;
-    for (let column = 1; column <= right.length; column += 1) {
-      const above = dp[column];
-      dp[column] = left[row - 1] === right[column - 1]
-        ? diagonal + 1
-        : Math.max(dp[column], dp[column - 1]);
-      diagonal = above;
-    }
-  }
-  return dp[right.length];
+	const dp = new Array<number>(right.length + 1).fill(0);
+	for (let row = 1; row <= left.length; row += 1) {
+		let diagonal = 0;
+		for (let column = 1; column <= right.length; column += 1) {
+			const above = dp[column];
+			dp[column] =
+				left[row - 1] === right[column - 1] ? diagonal + 1 : Math.max(dp[column], dp[column - 1]);
+			diagonal = above;
+		}
+	}
+	return dp[right.length];
 }
 ```
 
@@ -77,18 +107,17 @@ Return the length of the longest common subsequence of two strings using only $O
 
 ```ts
 function lcsLength(left: string, right: string): number {
-  const dp = new Array<number>(right.length + 1).fill(0);
-  for (let row = 1; row <= left.length; row += 1) {
-    let diagonal = 0;
-    for (let column = 1; column <= right.length; column += 1) {
-      const above = dp[column];
-      dp[column] = left[row - 1] === right[column - 1]
-        ? diagonal + 1
-        : Math.max(dp[column], dp[column - 1]);
-      diagonal = above;
-    }
-  }
-  return dp[right.length];
+	const dp = new Array<number>(right.length + 1).fill(0);
+	for (let row = 1; row <= left.length; row += 1) {
+		let diagonal = 0;
+		for (let column = 1; column <= right.length; column += 1) {
+			const above = dp[column];
+			dp[column] =
+				left[row - 1] === right[column - 1] ? diagonal + 1 : Math.max(dp[column], dp[column - 1]);
+			diagonal = above;
+		}
+	}
+	return dp[right.length];
 }
 ```
 

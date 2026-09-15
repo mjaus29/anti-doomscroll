@@ -20,6 +20,34 @@ For `[3, 1, 5]`, start with `best = 3`. After `1`, the processed prefix is `[3, 
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Find the maximum sum of a contiguous subarray. This is **Maximum Subarray**, commonly solved with Kadane's algorithm.
+
+**Best interview-ready solution:**
+
+1. **Recognize the state:** at each value, decide whether the best subarray ending here starts fresh or extends the previous one.
+2. **Transition:** current equals the maximum of the current value and current plus the current value.
+3. **Keep the answer:** update best after every item.
+4. **Handle negatives:** initialize from the first value, not zero, when all values may be negative.
+5. **Complexity:** one pass, O(n) time and O(1) space; current is the best sum ending at the current index.
+
+**Code solution:**
+
+```ts
+// Pseudocode: extend the best subarray ending here or start fresh, then update the global best.
+function maxSubarraySum(values: readonly number[]): number {
+	if (values.length === 0) return 0;
+	let current = values[0];
+	let best = values[0];
+	for (let index = 1; index < values.length; index += 1) {
+		current = Math.max(values[index], current + values[index]);
+		best = Math.max(best, current);
+	}
+	return best;
+}
+```
+
 For a running maximum, the invariant is: after processing the current prefix, `best` is its maximum. A proof has three moves:
 
 1. **Initialization:** the invariant is true before the first iteration.

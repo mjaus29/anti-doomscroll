@@ -20,13 +20,43 @@ For queue `[A, B, C]`, `head = 0` reads `A`, then becomes `1`; it reads `B`, the
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Return the maximum value in every window of size k. This is **Sliding Window Maximum**.
+
+**Best interview-ready solution:**
+
+1. **Recognize the window:** each outgoing and incoming value changes the maximum.
+2. **Use a decreasing deque of indices:** the front is always the largest candidate.
+3. **Remove expired indices:** discard indices outside the current window.
+4. **Remove dominated values:** from the back, discard values smaller than the incoming value because they can never become maximum before it expires.
+5. **Complexity:** O(n) time and O(k) space; each index enters and leaves once.
+
+**Code solution:**
+
+```ts
+// Pseudocode: keep decreasing candidate indices, remove expired ones, and read the front maximum.
+function maxSlidingWindow(values: readonly number[], size: number): number[] {
+	if (size <= 0 || size > values.length) return [];
+	const deque: number[] = [];
+	const result: number[] = [];
+	for (let index = 0; index < values.length; index += 1) {
+		while (deque.length > 0 && deque[0] <= index - size) deque.shift();
+		while (deque.length > 0 && values[deque[deque.length - 1]] <= values[index]) deque.pop();
+		deque.push(index);
+		if (index >= size - 1) result.push(values[deque[0]]);
+	}
+	return result;
+}
+```
+
 ```ts
 function drain(values: readonly number[]): number[] {
-  const queue = [...values];
-  const output: number[] = [];
-  let head = 0;
-  while (head < queue.length) output.push(queue[head++]);
-  return output;
+	const queue = [...values];
+	const output: number[] = [];
+	let head = 0;
+	while (head < queue.length) output.push(queue[head++]);
+	return output;
 }
 ```
 
@@ -71,14 +101,14 @@ Process values FIFO and return them in order without using `shift()`.
 
 ```ts
 function processQueue(values: readonly number[]): number[] {
-  const queue = [...values];
-  const output: number[] = [];
-  let head = 0;
-  while (head < queue.length) {
-    output.push(queue[head]);
-    head += 1;
-  }
-  return output;
+	const queue = [...values];
+	const output: number[] = [];
+	let head = 0;
+	while (head < queue.length) {
+		output.push(queue[head]);
+		head += 1;
+	}
+	return output;
 }
 ```
 

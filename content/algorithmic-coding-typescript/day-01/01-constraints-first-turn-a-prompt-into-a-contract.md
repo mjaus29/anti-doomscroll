@@ -23,6 +23,45 @@ Treat the prompt like a delivery contract. It tells you what arrives, what packa
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Given an array of numbers and a target, return the indices of two distinct values that add to the target, or null when no pair exists. This is the classic **Two Sum** problem.
+
+**Best interview-ready solution:**
+
+1. **Recognize the repeated work:** checking every pair is O(n^2) and ignores the constraint signal.
+2. **Choose the state:** while scanning left to right, store each earlier value and its index in a Map.
+3. **Ask for the complement:** for the current value, the needed earlier value is target minus the current value.
+4. **Preserve correctness:** check the map before inserting the current value, so an item cannot pair with itself; the map contains exactly the processed prefix.
+5. **State complexity:** expected O(n) time and O(n) auxiliary space. Explain the map trade-off instead of claiming constant space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: scan left to right, check the needed complement, then store the current index.
+function firstPairWithSum(values: readonly number[], target: number): [number, number] | null {
+	const seen = new Map<number, number>();
+	for (let index = 0; index < values.length; index += 1) {
+		const matchingIndex = seen.get(target - values[index]);
+		if (matchingIndex !== undefined) return [matchingIndex, index];
+		seen.set(values[index], index);
+	}
+	return null;
+}
+```
+
+### Most Common Coding Interview Question
+
+**Question:** Given an array of numbers and a target, return the indices of two distinct values that add to the target, or `null` when no pair exists. This is the classic **Two Sum** problem.
+
+**Best interview-ready solution:**
+
+1. **Recognize the repeated work:** checking every pair is $O(n^2)$ and ignores the constraint signal.
+2. **Choose the state:** while scanning left to right, store each earlier value and its index in a `Map`.
+3. **Ask for the complement:** for `values[index]`, the needed earlier value is `target - values[index]`.
+4. **Preserve correctness:** check the map before inserting the current value, so an item cannot pair with itself; the map invariant is that it contains exactly the processed prefix.
+5. **State complexity:** expected $O(n)$ time and $O(n)$ auxiliary space. Explain the map trade-off instead of claiming constant space.
+
 - **Input:** What are the types, limits, duplicates, ordering, and empty cases?
 - **Output:** Is the answer an index, value, path, count, all answers, or `null`?
 - **Baseline:** Describe the simplest correct solution before optimizing it.

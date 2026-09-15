@@ -20,6 +20,36 @@ For `[2, 1, 5, 1]` with window size `2`, start with `2 + 1 = 3`. Move the frame:
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Find the length of the longest substring without repeating characters. This is **Longest Substring Without Repeating Characters**.
+
+**Best interview-ready solution:**
+
+1. **Recognize the window:** the answer is a contiguous range whose characters must stay unique.
+2. **Choose the state:** keep a left boundary and the most recent index of each character.
+3. **Repair duplicates:** when a character repeats, move left to one position after its previous index, never backward.
+4. **Measure after repair:** every window considered is valid, so update the maximum length.
+5. **Complexity:** O(n) expected time and O(k) space for distinct characters.
+
+**Code solution:**
+
+```ts
+// Pseudocode: expand right, and when a duplicate is inside the window, move left past its last index.
+function longestUniqueSubstring(text: string): number {
+	const lastSeen = new Map<string, number>();
+	let left = 0;
+	let best = 0;
+	for (let right = 0; right < text.length; right += 1) {
+		const previous = lastSeen.get(text[right]);
+		if (previous !== undefined && previous >= left) left = previous + 1;
+		best = Math.max(best, right - left + 1);
+		lastSeen.set(text[right], right);
+	}
+	return best;
+}
+```
+
 - **Fixed window:** add the incoming value and subtract the value leaving.
 - **Variable window:** expand right, then shrink left while a monotone condition is invalid.
 - Keep counts or a running sum as the window state.
@@ -63,16 +93,16 @@ Return the maximum sum of any window of exactly `size` values, or `null` for an 
 
 ```ts
 function maxWindowSum(values: readonly number[], size: number): number | null {
-  if (size <= 0 || size > values.length) return null;
-  let window = 0;
-  for (let index = 0; index < size; index += 1) window += values[index];
+	if (size <= 0 || size > values.length) return null;
+	let window = 0;
+	for (let index = 0; index < size; index += 1) window += values[index];
 
-  let best = window;
-  for (let index = size; index < values.length; index += 1) {
-    window += values[index] - values[index - size];
-    best = Math.max(best, window);
-  }
-  return best;
+	let best = window;
+	for (let index = size; index < values.length; index += 1) {
+		window += values[index] - values[index - size];
+		best = Math.max(best, window);
+	}
+	return best;
 }
 ```
 

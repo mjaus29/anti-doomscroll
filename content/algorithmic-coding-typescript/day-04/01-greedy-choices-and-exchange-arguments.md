@@ -20,6 +20,32 @@ For intervals `[1, 4]`, `[2, 3]`, and `[3, 5]`, sort by finish time. Choose `[2,
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Determine whether you can reach the last index when each value gives the maximum jump length. This is **Jump Game**.
+
+**Best interview-ready solution:**
+
+1. **Recognize the greedy state:** only the farthest reachable index matters.
+2. **Scan left to right:** if the current index is beyond farthest, the goal is unreachable.
+3. **Extend reach:** update farthest with current index plus its jump length.
+4. **Prove safety:** every index at or before farthest is reachable, so its jump can be considered.
+5. **Complexity:** O(n) time and O(1) space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: track the farthest reachable index and fail only when the current index is beyond it.
+function canJump(values: readonly number[]): boolean {
+	let farthest = 0;
+	for (let index = 0; index < values.length; index += 1) {
+		if (index > farthest) return false;
+		farthest = Math.max(farthest, index + values[index]);
+	}
+	return true;
+}
+```
+
 For maximum non-overlapping intervals, choose the interval with the earliest finish. In any optimal schedule, replace its first interval with this one; it finishes no later, so every later chosen interval still fits.
 
 ```ts

@@ -20,18 +20,51 @@ In `[1, 2, 2, 2, 5]`, target `2` has lower bound `1` and upper bound `4`. The eq
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Return the first and last positions of a target in a sorted array. This is **Find First and Last Position of Element in Sorted Array**.
+
+**Best interview-ready solution:**
+
+1. **Recognize two boundaries:** the first position is lower bound; the position after the last is upper bound.
+2. **Run binary search twice:** use value less than target for lower bound and value less than or equal for upper bound.
+3. **Convert the result:** the last occurrence is upper bound minus one.
+4. **Check absence:** if lower bound is outside the array or does not equal target, return the pair [-1, -1].
+5. **Complexity:** O(log n) time and O(1) space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: binary-search the first value at least target and the first value greater than target.
+function searchRange(values: readonly number[], target: number): [number, number] {
+	const boundary = (strict: boolean): number => {
+		let left = 0;
+		let right = values.length;
+		while (left < right) {
+			const middle = left + Math.floor((right - left) / 2);
+			if (values[middle] < target || (strict && values[middle] === target)) left = middle + 1;
+			else right = middle;
+		}
+		return left;
+	};
+	const first = boundary(false);
+	if (first === values.length || values[first] !== target) return [-1, -1];
+	return [first, boundary(true) - 1];
+}
+```
+
 The equal values occupy `[lowerBound, upperBound)`, so their count is `upperBound - lowerBound`.
 
 ```ts
 function upperBound(values: readonly number[], target: number): number {
-  let left = 0;
-  let right = values.length;
-  while (left < right) {
-    const middle = left + Math.floor((right - left) / 2);
-    if (values[middle] <= target) left = middle + 1;
-    else right = middle;
-  }
-  return left;
+	let left = 0;
+	let right = values.length;
+	while (left < right) {
+		const middle = left + Math.floor((right - left) / 2);
+		if (values[middle] <= target) left = middle + 1;
+		else right = middle;
+	}
+	return left;
 }
 ```
 
@@ -73,7 +106,7 @@ Count how many times `target` appears in a sorted readonly array without scannin
 
 ```ts
 function countOccurrences(values: readonly number[], target: number): number {
-  return upperBound(values, target) - lowerBound(values, target);
+	return upperBound(values, target) - lowerBound(values, target);
 }
 ```
 

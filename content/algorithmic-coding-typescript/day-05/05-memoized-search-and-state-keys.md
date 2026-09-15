@@ -20,24 +20,58 @@ In subset target search, state `(index = 2, remaining = 5)` is different from `(
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Determine whether a string can be segmented into dictionary words. This is **Word Break**.
+
+**Best interview-ready solution:**
+
+1. **Recognize repeated suffix questions:** whether the remainder beginning at index i can be segmented is a reusable state.
+2. **Choose the state:** memoize the starting index, not the whole path of words.
+3. **Try dictionary words:** if a word matches at i, recursively solve the suffix after it.
+4. **Cache both outcomes:** false is a valid answer, so use a reliable memo presence check.
+5. **Complexity:** approximately O(n times dictionary matching work) with O(n) memo space; a trie can improve prefix lookup.
+
+**Code solution:**
+
+```ts
+// Pseudocode: memoize whether each start index can consume a dictionary-word suffix.
+function wordBreak(text: string, words: readonly string[]): boolean {
+	const dictionary = new Set(words);
+	const memo = new Map<number, boolean>();
+	const search = (index: number): boolean => {
+		if (index === text.length) return true;
+		if (memo.has(index)) return memo.get(index) as boolean;
+		for (let end = index + 1; end <= text.length; end += 1) {
+			if (dictionary.has(text.slice(index, end)) && search(end)) {
+				memo.set(index, true);
+				return true;
+			}
+		}
+		memo.set(index, false);
+		return false;
+	};
+	return search(0);
+}
+```
+
 For subset target search, both `index` and `remaining` belong in the key. Two calls with the same pair have the same future options.
 
 ```ts
 function canReachTarget(values: readonly number[], target: number): boolean {
-  const memo = new Map<string, boolean>();
+	const memo = new Map<string, boolean>();
 
-  function search(index: number, remaining: number): boolean {
-    if (remaining === 0) return true;
-    if (index === values.length || remaining < 0) return false;
-    const key = `${index}:${remaining}`;
-    if (memo.has(key)) return memo.get(key) as boolean;
-    const answer = search(index + 1, remaining) ||
-      search(index + 1, remaining - values[index]);
-    memo.set(key, answer);
-    return answer;
-  }
+	function search(index: number, remaining: number): boolean {
+		if (remaining === 0) return true;
+		if (index === values.length || remaining < 0) return false;
+		const key = `${index}:${remaining}`;
+		if (memo.has(key)) return memo.get(key) as boolean;
+		const answer = search(index + 1, remaining) || search(index + 1, remaining - values[index]);
+		memo.set(key, answer);
+		return answer;
+	}
 
-  return search(0, target);
+	return search(0, target);
 }
 ```
 
@@ -79,20 +113,19 @@ Return whether a subset of `values` can sum to `target`, using each value at mos
 
 ```ts
 function canReachTarget(values: readonly number[], target: number): boolean {
-  const memo = new Map<string, boolean>();
+	const memo = new Map<string, boolean>();
 
-  function search(index: number, remaining: number): boolean {
-    if (remaining === 0) return true;
-    if (index === values.length || remaining < 0) return false;
-    const key = `${index}:${remaining}`;
-    if (memo.has(key)) return memo.get(key) as boolean;
-    const answer = search(index + 1, remaining) ||
-      search(index + 1, remaining - values[index]);
-    memo.set(key, answer);
-    return answer;
-  }
+	function search(index: number, remaining: number): boolean {
+		if (remaining === 0) return true;
+		if (index === values.length || remaining < 0) return false;
+		const key = `${index}:${remaining}`;
+		if (memo.has(key)) return memo.get(key) as boolean;
+		const answer = search(index + 1, remaining) || search(index + 1, remaining - values[index]);
+		memo.set(key, answer);
+		return answer;
+	}
 
-  return search(0, target);
+	return search(0, target);
 }
 ```
 

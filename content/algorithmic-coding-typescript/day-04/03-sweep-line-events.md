@@ -63,6 +63,43 @@ For half-open intervals `[1, 4)` and `[2, 5)`, start with `0`, add one at `1`, a
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Find the minimum number of meeting rooms required for a set of meetings. This is **Meeting Rooms II**.
+
+**Best interview-ready solution:**
+
+1. **Convert to events:** every start needs a room; every end releases one.
+2. **Sort starts and ends separately:** compare the next start with the next end.
+3. **Allocate or release:** an earlier start increases active rooms; an earlier end frees one.
+4. **Handle ties:** for half-open meetings, process an end before a start at the same time.
+5. **Complexity:** O(n log n) time and O(n) space; a min-heap is an alternative when meetings arrive online.
+
+**Code solution:**
+
+```ts
+// Pseudocode: sort starts and ends, allocate before the next end, otherwise release a room.
+function minimumRooms(meetings: readonly (readonly [number, number])[]): number {
+	const starts = meetings.map(([start]) => start).sort((a, b) => a - b);
+	const ends = meetings.map(([, end]) => end).sort((a, b) => a - b);
+	let startIndex = 0;
+	let endIndex = 0;
+	let active = 0;
+	let best = 0;
+	while (startIndex < starts.length) {
+		if (starts[startIndex] < ends[endIndex]) {
+			active += 1;
+			best = Math.max(best, active);
+			startIndex += 1;
+		} else {
+			active -= 1;
+			endIndex += 1;
+		}
+	}
+	return best;
+}
+```
+
 For maximum overlap, a start contributes `+1` and an end contributes `-1`. Sort by time, then define the tie rule: process ends first for half-open intervals, starts first when touching closed intervals overlap.
 
 ```ts

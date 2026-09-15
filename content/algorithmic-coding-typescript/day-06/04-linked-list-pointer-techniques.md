@@ -20,6 +20,37 @@ Start with `previous = null` and `current = 1`. Save `next = 2`, set `1.next = n
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Reverse a singly linked list. This is the classic **Reverse Linked List** problem.
+
+**Best interview-ready solution:**
+
+1. **Recognize the pointer operation:** each node must point to the already reversed prefix.
+2. **Save the remainder:** store current.next before changing it.
+3. **Reverse one link:** set current.next to previous, then advance both pointers.
+4. **Maintain the invariant:** previous is the reversed prefix and current is the untouched suffix.
+5. **Complexity:** O(n) time and O(1) extra space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: save next, reverse the current link, then advance previous and current pointers.
+type ListNode = { value: number; next: ListNode | null };
+
+function reverseList(head: ListNode | null): ListNode | null {
+	let previous: ListNode | null = null;
+	let current = head;
+	while (current !== null) {
+		const next = current.next;
+		current.next = previous;
+		previous = current;
+		current = next;
+	}
+	return previous;
+}
+```
+
 ```ts
 type ListNode = { value: number; next: ListNode | null };
 ```
@@ -65,16 +96,16 @@ Reverse a singly linked list iteratively and return the new head.
 
 ```ts
 function reverseList(head: ListNode | null): ListNode | null {
-  let previous: ListNode | null = null;
-  let current = head;
+	let previous: ListNode | null = null;
+	let current = head;
 
-  while (current !== null) {
-    const next = current.next;
-    current.next = previous;
-    previous = current;
-    current = next;
-  }
-  return previous;
+	while (current !== null) {
+		const next = current.next;
+		current.next = previous;
+		previous = current;
+		current = next;
+	}
+	return previous;
 }
 ```
 

@@ -20,6 +20,29 @@ For values `[4, 1, 4]`, XOR starts at `0`: `0 ^ 4 = 4`, then `4 ^ 1 = 5`, then `
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Find the single number when every other number appears exactly twice. This is **Single Number**.
+
+**Best interview-ready solution:**
+
+1. **Recognize cancellation:** pairs should disappear while the unpaired value remains.
+2. **Use XOR:** x XOR x is zero and x XOR zero is x.
+3. **Fold every value into one accumulator.**
+4. **Do not use a Set when the problem guarantees exactly pairs; XOR uses constant extra space.**
+5. **Complexity:** O(n) time and O(1) extra space, with the JavaScript 32-bit bitwise caveat.
+
+**Code solution:**
+
+```ts
+// Pseudocode: XOR every value; equal pairs cancel and the single value remains.
+function singleNumber(values: readonly number[]): number {
+	let answer = 0;
+	for (const value of values) answer ^= value;
+	return answer;
+}
+```
+
 For mask `value` and bit `bit`:
 
 - test: `(value & (1 << bit)) !== 0`

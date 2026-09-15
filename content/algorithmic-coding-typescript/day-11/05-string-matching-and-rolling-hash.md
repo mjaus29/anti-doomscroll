@@ -20,6 +20,42 @@ Searching `aba` in `ababa` finds a match at index `0`. After that match, the end
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Find the first occurrence of a pattern in a text without repeatedly rescanning matched characters. This is **Find the Index of the First Occurrence in a String**.
+
+**Best interview-ready solution:**
+
+1. **Recognize repeated prefixes:** a mismatch may still leave a suffix that matches a pattern prefix.
+2. **Build the KMP prefix table for the pattern.**
+3. **On mismatch, jump the pattern index using the table while the text index never moves backward.**
+4. **Return when the matched length equals the pattern length.**
+5. **Complexity:** O(text length plus pattern length) time and O(pattern length) space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: build the KMP prefix table and jump borders without moving the text index backward.
+function firstOccurrence(text: string, pattern: string): number {
+	if (pattern.length === 0) return 0;
+	const prefix = new Array<number>(pattern.length).fill(0);
+	for (let index = 1; index < pattern.length; index += 1) {
+		let border = prefix[index - 1];
+		while (border > 0 && pattern[index] !== pattern[border]) border = prefix[border - 1];
+		if (pattern[index] === pattern[border]) border += 1;
+		prefix[index] = border;
+	}
+
+	let matched = 0;
+	for (let index = 0; index < text.length; index += 1) {
+		while (matched > 0 && text[index] !== pattern[matched]) matched = prefix[matched - 1];
+		if (text[index] === pattern[matched]) matched += 1;
+		if (matched === pattern.length) return index - pattern.length + 1;
+	}
+	return -1;
+}
+```
+
 KMP's prefix table stores the longest proper prefix that is also a suffix for each pattern prefix. On a mismatch, jump to that border instead of restarting the text scan. Matching is $O(n + m)$.
 
 Rolling hash lets substring hashes update or be queried quickly, but equal hashes do not prove equal strings unless collisions are handled or verified.

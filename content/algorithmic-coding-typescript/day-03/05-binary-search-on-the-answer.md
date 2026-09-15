@@ -20,6 +20,36 @@ For weights `[3, 2, 4]` shipped in two days, capacity `4` fails because the orde
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Find the minimum integer eating speed that finishes all banana piles within a deadline. This is **Koko Eating Bananas**.
+
+**Best interview-ready solution:**
+
+1. **Recognize the answer space:** the unknown is a speed, not an array index.
+2. **Build the predicate:** calculate total hours at a candidate speed and ask whether it fits the deadline.
+3. **Prove monotonicity:** if speed s works, every speed larger than s also works.
+4. **Binary-search the boundary:** keep the smallest feasible speed.
+5. **Complexity:** O(n log m) time for n piles and maximum pile m, with O(1) extra space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: test a candidate speed, keep lower speeds when feasible, otherwise raise the lower bound.
+function minEatingSpeed(piles: readonly number[], hours: number): number {
+	let low = 1;
+	let high = Math.max(...piles);
+	while (low < high) {
+		const speed = low + Math.floor((high - low) / 2);
+		let required = 0;
+		for (const pile of piles) required += Math.ceil(pile / speed);
+		if (required <= hours) high = speed;
+		else low = speed + 1;
+	}
+	return low;
+}
+```
+
 For shipping packages, `canShip(capacity)` returns whether all weights fit within `days`. If capacity `c` works, every larger capacity works too. That true/false boundary is what binary search needs.
 
 - Lower bound: the smallest value that could work, often the largest single item.
@@ -62,28 +92,28 @@ Given package weights in order and a number of days, return the minimum daily ca
 
 ```ts
 function minimumCapacity(weights: readonly number[], days: number): number {
-  let low = Math.max(...weights);
-  let high = weights.reduce((total, weight) => total + weight, 0);
+	let low = Math.max(...weights);
+	let high = weights.reduce((total, weight) => total + weight, 0);
 
-  const canShip = (capacity: number): boolean => {
-    let usedDays = 1;
-    let load = 0;
-    for (const weight of weights) {
-      if (load + weight > capacity) {
-        usedDays += 1;
-        load = 0;
-      }
-      load += weight;
-    }
-    return usedDays <= days;
-  };
+	const canShip = (capacity: number): boolean => {
+		let usedDays = 1;
+		let load = 0;
+		for (const weight of weights) {
+			if (load + weight > capacity) {
+				usedDays += 1;
+				load = 0;
+			}
+			load += weight;
+		}
+		return usedDays <= days;
+	};
 
-  while (low < high) {
-    const middle = low + Math.floor((high - low) / 2);
-    if (canShip(middle)) high = middle;
-    else low = middle + 1;
-  }
-  return low;
+	while (low < high) {
+		const middle = low + Math.floor((high - low) / 2);
+		if (canShip(middle)) high = middle;
+		else low = middle + 1;
+	}
+	return low;
 }
 ```
 

@@ -20,15 +20,62 @@ Start `idle`. Event `start` moves to `running`; event `finish` moves to `done`; 
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Design a browser history with visit, back, and forward operations. This is **Design Browser History**.
+
+**Best interview-ready solution:**
+
+1. **Recognize two directions:** history before the current page and history after it are separate states.
+2. **Choose the structure:** use a list plus current index, or two stacks for back and forward history.
+3. **Visit resets forward history:** a new page makes previously forward pages unreachable.
+4. **Clamp movement:** back and forward cannot pass the available boundaries.
+5. **Complexity:** list plus index gives O(1) movement and O(n) space; two stacks gives O(1) amortized operations.
+
+**Code solution:**
+
 ```ts
-type State = "idle" | "running" | "done";
-type Event = "start" | "finish" | "reset";
+// Pseudocode: visit pushes the page and clears forward history; back and forward move between stacks.
+class BrowserHistory {
+	private readonly backStack: string[];
+	private readonly forwardStack: string[] = [];
+
+	constructor(homepage: string) {
+		this.backStack = [homepage];
+	}
+
+	visit(url: string): void {
+		this.backStack.push(url);
+		this.forwardStack.length = 0;
+	}
+
+	back(steps: number): string {
+		while (steps > 0 && this.backStack.length > 1) {
+			this.forwardStack.push(this.backStack.pop() as string);
+			steps -= 1;
+		}
+		return this.backStack[this.backStack.length - 1];
+	}
+
+	forward(steps: number): string {
+		while (steps > 0 && this.forwardStack.length > 0) {
+			this.backStack.push(this.forwardStack.pop() as string);
+			steps -= 1;
+		}
+		return this.backStack[this.backStack.length - 1];
+	}
+}
+```
+
+```ts
+type State = 'idle' | 'running' | 'done';
+type Event = 'start' | 'finish' | 'reset';
 
 function nextState(state: State, event: Event): State {
-  if (event === "reset") return "idle";
-  if (state === "idle" && event === "start") return "running";
-  if (state === "running" && event === "finish") return "done";
-  return state;
+	if (event === 'reset') return 'idle';
+	if (state === 'idle' && event === 'start') return 'running';
+	if (state === 'running' && event === 'finish') return 'done';
+	return state;
 }
 ```
 
@@ -69,17 +116,17 @@ Implement the three-state machine above and process a sequence of events, return
 ### Solution
 
 ```ts
-type State = "idle" | "running" | "done";
-type Event = "start" | "finish" | "reset";
+type State = 'idle' | 'running' | 'done';
+type Event = 'start' | 'finish' | 'reset';
 
 function finalState(events: readonly Event[]): State {
-  let state: State = "idle";
-  for (const event of events) {
-    if (event === "reset") state = "idle";
-    else if (state === "idle" && event === "start") state = "running";
-    else if (state === "running" && event === "finish") state = "done";
-  }
-  return state;
+	let state: State = 'idle';
+	for (const event of events) {
+		if (event === 'reset') state = 'idle';
+		else if (state === 'idle' && event === 'start') state = 'running';
+		else if (state === 'running' && event === 'finish') state = 'done';
+	}
+	return state;
 }
 ```
 

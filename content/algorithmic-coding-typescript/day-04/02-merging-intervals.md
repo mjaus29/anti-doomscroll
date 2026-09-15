@@ -20,6 +20,36 @@ Start with `[1, 3]`. The next interval `[2, 6]` overlaps, so the block becomes `
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Merge all overlapping intervals. This is the classic **Merge Intervals** problem.
+
+**Best interview-ready solution:**
+
+1. **Sort by start time:** this puts possible overlaps next to each other.
+2. **Maintain the invariant:** the output is sorted, non-overlapping, and covers the processed intervals.
+3. **Extend or close:** update the current end with the maximum end on overlap; otherwise append a new interval.
+4. **Define touching:** use less than or equal for closed intervals and less than for half-open intervals.
+5. **Complexity:** O(n log n) time and O(n) output space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: sort by start, extend the current interval on overlap, otherwise append a new one.
+function mergeIntervals(
+	intervals: readonly (readonly [number, number])[]
+): Array<[number, number]> {
+	const ordered = [...intervals].sort((left, right) => left[0] - right[0]);
+	const merged: Array<[number, number]> = [];
+	for (const [start, end] of ordered) {
+		const current = merged[merged.length - 1];
+		if (current === undefined || start > current[1]) merged.push([start, end]);
+		else current[1] = Math.max(current[1], end);
+	}
+	return merged;
+}
+```
+
 After sorting, only the last merged interval can overlap the next one. The invariant is that the result is sorted, non-overlapping, and covers exactly the processed input.
 
 ```ts

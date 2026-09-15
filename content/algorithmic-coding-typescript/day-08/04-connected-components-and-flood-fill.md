@@ -20,27 +20,73 @@ For graph edges `0 - 1` and `2 - 3`, a traversal from `0` marks `{0, 1}` and cou
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Count the number of islands in a binary grid. This is **Number of Islands**.
+
+**Best interview-ready solution:**
+
+1. **Recognize components:** each unvisited land cell starts one island traversal.
+2. **Run BFS or DFS from that cell.**
+3. **Mark land as visited when discovered so the same island is not counted twice.**
+4. **Continue scanning after the traversal ends to find disconnected islands.**
+5. **Complexity:** O(rows times columns) time and O(rows times columns) worst-case space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: each unvisited land cell starts a traversal that marks its entire island.
+function countIslands(grid: string[][]): number {
+	let islands = 0;
+	const directions = [
+		[1, 0],
+		[-1, 0],
+		[0, 1],
+		[0, -1],
+	] as const;
+	for (let row = 0; row < grid.length; row += 1) {
+		for (let column = 0; column < grid[row].length; column += 1) {
+			if (grid[row][column] !== '1') continue;
+			islands += 1;
+			const stack: Array<[number, number]> = [[row, column]];
+			grid[row][column] = '0';
+			while (stack.length > 0) {
+				const [currentRow, currentColumn] = stack.pop() as [number, number];
+				for (const [rowDelta, columnDelta] of directions) {
+					const nextRow = currentRow + rowDelta;
+					const nextColumn = currentColumn + columnDelta;
+					if (grid[nextRow]?.[nextColumn] !== '1') continue;
+					grid[nextRow][nextColumn] = '0';
+					stack.push([nextRow, nextColumn]);
+				}
+			}
+		}
+	}
+	return islands;
+}
+```
+
 Flood fill uses the same rule on a grid: capture the original value, replace a cell when it is discovered, and enqueue matching neighbors. Marking on discovery prevents duplicate work.
 
 ```ts
 function countComponents(graph: readonly number[][]): number {
-  const visited = new Set<number>();
-  let count = 0;
-  for (let start = 0; start < graph.length; start += 1) {
-    if (visited.has(start)) continue;
-    count += 1;
-    const stack = [start];
-    visited.add(start);
-    while (stack.length > 0) {
-      const vertex = stack.pop() as number;
-      for (const neighbor of graph[vertex]) {
-        if (visited.has(neighbor)) continue;
-        visited.add(neighbor);
-        stack.push(neighbor);
-      }
-    }
-  }
-  return count;
+	const visited = new Set<number>();
+	let count = 0;
+	for (let start = 0; start < graph.length; start += 1) {
+		if (visited.has(start)) continue;
+		count += 1;
+		const stack = [start];
+		visited.add(start);
+		while (stack.length > 0) {
+			const vertex = stack.pop() as number;
+			for (const neighbor of graph[vertex]) {
+				if (visited.has(neighbor)) continue;
+				visited.add(neighbor);
+				stack.push(neighbor);
+			}
+		}
+	}
+	return count;
 }
 ```
 
@@ -80,24 +126,24 @@ Count connected components in an undirected adjacency list.
 
 ```ts
 function countComponents(graph: readonly number[][]): number {
-  const visited = new Set<number>();
-  let count = 0;
-  for (let start = 0; start < graph.length; start += 1) {
-    if (visited.has(start)) continue;
-    count += 1;
-    const stack = [start];
-    visited.add(start);
-    while (stack.length > 0) {
-      const vertex = stack.pop() as number;
-      for (const neighbor of graph[vertex]) {
-        if (!visited.has(neighbor)) {
-          visited.add(neighbor);
-          stack.push(neighbor);
-        }
-      }
-    }
-  }
-  return count;
+	const visited = new Set<number>();
+	let count = 0;
+	for (let start = 0; start < graph.length; start += 1) {
+		if (visited.has(start)) continue;
+		count += 1;
+		const stack = [start];
+		visited.add(start);
+		while (stack.length > 0) {
+			const vertex = stack.pop() as number;
+			for (const neighbor of graph[vertex]) {
+				if (!visited.has(neighbor)) {
+					visited.add(neighbor);
+					stack.push(neighbor);
+				}
+			}
+		}
+	}
+	return count;
 }
 ```
 

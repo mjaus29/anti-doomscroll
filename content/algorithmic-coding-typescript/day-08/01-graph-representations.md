@@ -20,19 +20,52 @@ For an undirected edge `[0, 1]`, the adjacency list stores `1` under `0` and `0`
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Return a deep copy of an undirected graph. This is **Clone Graph**.
+
+**Best interview-ready solution:**
+
+1. **Recognize the identity problem:** each original node must map to exactly one cloned node.
+2. **Use a Map from original node to clone.**
+3. **Create and store the clone before exploring neighbors, which also breaks cycles.**
+4. **Recursively or iteratively clone each neighbor and attach it to the cloned node.**
+5. **Complexity:** O(V + E) time and O(V) space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: map each original node to one clone before recursively cloning its neighbors.
+type GraphNode = { value: number; neighbors: GraphNode[] };
+
+function cloneGraph(node: GraphNode | null): GraphNode | null {
+	if (node === null) return null;
+	const clones = new Map<GraphNode, GraphNode>();
+	const clone = (current: GraphNode): GraphNode => {
+		const existing = clones.get(current);
+		if (existing !== undefined) return existing;
+		const copy: GraphNode = { value: current.value, neighbors: [] };
+		clones.set(current, copy);
+		copy.neighbors = current.neighbors.map(clone);
+		return copy;
+	};
+	return clone(node);
+}
+```
+
 For a sparse undirected graph, use an adjacency list and store each edge twice:
 
 ```ts
 function buildUndirectedGraph(
-  vertexCount: number,
-  edges: readonly (readonly [number, number])[]
+	vertexCount: number,
+	edges: readonly (readonly [number, number])[]
 ): number[][] {
-  const graph = Array.from({ length: vertexCount }, () => [] as number[]);
-  for (const [from, to] of edges) {
-    graph[from].push(to);
-    graph[to].push(from);
-  }
-  return graph;
+	const graph = Array.from({ length: vertexCount }, () => [] as number[]);
+	for (const [from, to] of edges) {
+		graph[from].push(to);
+		graph[to].push(from);
+	}
+	return graph;
 }
 ```
 
@@ -77,15 +110,15 @@ Build an undirected adjacency list for `vertexCount` vertices from an edge list.
 
 ```ts
 function buildUndirectedGraph(
-  vertexCount: number,
-  edges: readonly (readonly [number, number])[]
+	vertexCount: number,
+	edges: readonly (readonly [number, number])[]
 ): number[][] {
-  const graph = Array.from({ length: vertexCount }, () => [] as number[]);
-  for (const [from, to] of edges) {
-    graph[from].push(to);
-    graph[to].push(from);
-  }
-  return graph;
+	const graph = Array.from({ length: vertexCount }, () => [] as number[]);
+	for (const [from, to] of edges) {
+		graph[from].push(to);
+		graph[to].push(from);
+	}
+	return graph;
 }
 ```
 

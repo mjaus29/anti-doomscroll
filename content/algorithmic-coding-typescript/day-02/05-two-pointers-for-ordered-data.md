@@ -20,6 +20,45 @@ For `[1, 3, 4, 8]` and target `7`, start with `1 + 8 = 9`, so move right to `4`.
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Return all unique triplets that sum to zero. This is the classic **3Sum** problem.
+
+**Best interview-ready solution:**
+
+1. **Create order:** sort the values so pointer movement can eliminate candidates.
+2. **Fix one value:** for each index, solve a two-sum problem in the suffix with left and right pointers.
+3. **Move by comparison:** a small sum moves left rightward; a large sum moves right leftward.
+4. **Skip duplicates:** skip equal fixed values and equal pointer values so each triplet appears once.
+5. **Complexity:** O(n^2) time after sorting and O(1) extra space apart from the output.
+
+**Code solution:**
+
+```ts
+// Pseudocode: sort, fix one value, and move left/right pointers toward the target sum.
+function threeSum(values: readonly number[]): number[][] {
+	const ordered = [...values].sort((left, right) => left - right);
+	const result: number[][] = [];
+	for (let index = 0; index < ordered.length - 2; index += 1) {
+		if (index > 0 && ordered[index] === ordered[index - 1]) continue;
+		let left = index + 1;
+		let right = ordered.length - 1;
+		while (left < right) {
+			const sum = ordered[index] + ordered[left] + ordered[right];
+			if (sum === 0) {
+				result.push([ordered[index], ordered[left], ordered[right]]);
+				while (left < right && ordered[left] === ordered[left + 1]) left += 1;
+				while (left < right && ordered[right] === ordered[right - 1]) right -= 1;
+				left += 1;
+				right -= 1;
+			} else if (sum < 0) left += 1;
+			else right -= 1;
+		}
+	}
+	return result;
+}
+```
+
 For a sorted target-sum search, compare the ends:
 
 - sum too small: move `left` right because every pair using that left value is too small;
@@ -64,16 +103,16 @@ Given a sorted readonly array, return whether two distinct values add to `target
 
 ```ts
 function hasPairWithSum(values: readonly number[], target: number): boolean {
-  let left = 0;
-  let right = values.length - 1;
+	let left = 0;
+	let right = values.length - 1;
 
-  while (left < right) {
-    const sum = values[left] + values[right];
-    if (sum === target) return true;
-    if (sum < target) left += 1;
-    else right -= 1;
-  }
-  return false;
+	while (left < right) {
+		const sum = values[left] + values[right];
+		if (sum === target) return true;
+		if (sum < target) left += 1;
+		else right -= 1;
+	}
+	return false;
 }
 ```
 

@@ -20,6 +20,41 @@ Start with groups `{0}`, `{1}`, `{2}`. `union(0, 1)` creates `{0, 1}`. `union(1,
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Find the first edge that creates a cycle in an undirected graph. This is **Redundant Connection**.
+
+**Best interview-ready solution:**
+
+1. **Recognize incremental connectivity:** before adding an edge, ask whether its endpoints already share a component.
+2. **Use DSU with find and union.**
+3. **If both endpoints have the same root, the edge is redundant.**
+4. **Otherwise union their roots using path compression and size/rank.**
+5. **Complexity:** near O(E) total amortized time and O(V) space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: compare roots; return a redundant edge when roots match, otherwise union them.
+function redundantEdge(
+	vertexCount: number,
+	edges: readonly (readonly [number, number])[]
+): readonly [number, number] | null {
+	const parent = Array.from({ length: vertexCount }, (_, index) => index);
+	const find = (value: number): number => {
+		if (parent[value] !== value) parent[value] = find(parent[value]);
+		return parent[value];
+	};
+	for (const edge of edges) {
+		const leftRoot = find(edge[0]);
+		const rightRoot = find(edge[1]);
+		if (leftRoot === rightRoot) return edge;
+		parent[leftRoot] = rightRoot;
+	}
+	return null;
+}
+```
+
 ```ts
 class DisjointSet {
 	private readonly parent: number[];

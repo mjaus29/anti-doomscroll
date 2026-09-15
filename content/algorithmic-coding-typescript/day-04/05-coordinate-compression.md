@@ -20,6 +20,47 @@ For `[100, 5, 100, 20]`, distinct sorted values are `[5, 20, 100]`. Their ranks 
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** For each value, count how many smaller values appear to its right. This is **Count of Smaller Numbers After Self**.
+
+**Best interview-ready solution:**
+
+1. **Recognize sparse coordinates:** values may be large, but only the input values need ranks.
+2. **Compress values:** sort unique values and map each one to a dense index.
+3. **Scan right to left:** a Fenwick tree stores how often each rank has appeared.
+4. **Query then update:** query ranks smaller than the current value, then add the current rank.
+5. **Complexity:** O(n log n) time and O(n) space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: rank values, scan right-to-left, query smaller ranks, then record the current rank.
+function countSmaller(values: readonly number[]): number[] {
+	const ordered = [...new Set(values)].sort((a, b) => a - b);
+	const ranks = new Map(ordered.map((value, index) => [value, index]));
+	const tree = new Array<number>(ordered.length + 1).fill(0);
+	const add = (rank: number): void => {
+		for (let position = rank + 1; position < tree.length; position += position & -position) {
+			tree[position] += 1;
+		}
+	};
+	const countLess = (rank: number): number => {
+		let total = 0;
+		for (let position = rank; position > 0; position -= position & -position)
+			total += tree[position];
+		return total;
+	};
+	const result = new Array<number>(values.length);
+	for (let index = values.length - 1; index >= 0; index -= 1) {
+		const rank = ranks.get(values[index]) as number;
+		result[index] = countLess(rank);
+		add(rank);
+	}
+	return result;
+}
+```
+
 ```ts
 function compress(values: readonly number[]): Map<number, number> {
 	const ordered = [...new Set(values)].sort((a, b) => a - b);

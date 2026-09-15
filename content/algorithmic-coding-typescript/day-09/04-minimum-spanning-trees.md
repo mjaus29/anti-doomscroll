@@ -20,6 +20,45 @@ For edges `(0, 1, 1)`, `(1, 2, 2)`, and `(0, 2, 3)`, accept the cost `1` edge, t
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Connect every point in a plane with minimum total Manhattan distance. This is **Min Cost to Connect All Points**.
+
+**Best interview-ready solution:**
+
+1. **Recognize the objective:** connect the whole graph cheaply; this is MST, not a route from one source.
+2. **Generate edge costs from point distances.**
+3. **Use Prim's algorithm to repeatedly add the cheapest edge from the connected set to an unconnected point, or use Kruskal with DSU.**
+4. **Stop after V minus one edges and sum their costs.**
+5. **Complexity:** Prim's simple dense implementation is O(V^2) time and O(V) space, often best for the complete graph.
+
+**Code solution:**
+
+```ts
+// Pseudocode: repeatedly add the cheapest edge from the connected set to a new point.
+function minConnectionCost(points: readonly (readonly [number, number])[]): number {
+	const used = new Array<boolean>(points.length).fill(false);
+	const best = new Array<number>(points.length).fill(Infinity);
+	best[0] = 0;
+	let total = 0;
+	for (let step = 0; step < points.length; step += 1) {
+		let vertex = -1;
+		for (let index = 0; index < points.length; index += 1) {
+			if (!used[index] && (vertex === -1 || best[index] < best[vertex])) vertex = index;
+		}
+		used[vertex] = true;
+		total += best[vertex];
+		for (let index = 0; index < points.length; index += 1) {
+			const distance =
+				Math.abs(points[vertex][0] - points[index][0]) +
+				Math.abs(points[vertex][1] - points[index][1]);
+			best[index] = Math.min(best[index], distance);
+		}
+	}
+	return total;
+}
+```
+
 Kruskal sorts edges by weight and adds an edge only when it joins two different DSU components. The cut property says the lightest edge crossing a component cut is safe.
 
 ```ts

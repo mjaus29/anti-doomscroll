@@ -20,6 +20,33 @@ For prices `[7, 1, 5]`, start with cheapest `7` and profit `0`. Read `1`: cheape
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Return the maximum profit from one buy and one later sell. This is **Best Time to Buy and Sell Stock**.
+
+**Best interview-ready solution:**
+
+1. **Recognize the order constraint:** the buy must happen before the sell, so do not sort prices.
+2. **Choose the state:** keep the cheapest price seen so far and the best profit so far.
+3. **Process each price:** first ask what profit selling today would produce, then consider today's price as a future minimum.
+4. **Preserve correctness:** cheapest is always an earlier price, so every candidate profit uses valid order.
+5. **Complexity:** O(n) time and O(1) space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: keep the cheapest earlier price, compare today's sale, then update the minimum.
+function maxProfit(prices: readonly number[]): number {
+	let cheapest = Infinity;
+	let best = 0;
+	for (const price of prices) {
+		best = Math.max(best, price - cheapest);
+		cheapest = Math.min(cheapest, price);
+	}
+	return best;
+}
+```
+
 - An accumulator can be a sum, maximum, count, index, set, or small tuple.
 - State the invariant: what is true after processing each item?
 - Update order matters when the current value could play two roles.
@@ -63,15 +90,15 @@ Return the maximum profit from one buy followed by one later sell. Return `0` wh
 
 ```ts
 function maxProfit(prices: readonly number[]): number {
-  let cheapest = Infinity;
-  let best = 0;
+	let cheapest = Infinity;
+	let best = 0;
 
-  for (const price of prices) {
-    best = Math.max(best, price - cheapest);
-    cheapest = Math.min(cheapest, price);
-  }
+	for (const price of prices) {
+		best = Math.max(best, price - cheapest);
+		cheapest = Math.min(cheapest, price);
+	}
 
-  return best;
+	return best;
 }
 ```
 

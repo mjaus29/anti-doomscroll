@@ -20,6 +20,54 @@ Insert `app`: create or follow `a`, `p`, `p`, then mark the final node as a word
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Implement insertion, exact lookup, and prefix lookup for a dictionary. This is **Implement Trie (Prefix Tree)**.
+
+**Best interview-ready solution:**
+
+1. **Recognize shared prefixes:** each character follows one child edge from the current node.
+2. **Create missing nodes while inserting.**
+3. **Mark only the final node as a complete word.**
+4. **For prefix lookup, success means the path exists even if the final node is not a complete word.**
+5. **Complexity:** O(L) per operation for word/prefix length L and space proportional to stored characters.
+
+**Code solution:**
+
+```ts
+// Pseudocode: follow or create one child per character and mark only complete words.
+class TrieNode {
+	readonly children = new Map<string, TrieNode>();
+	isWord = false;
+}
+
+class Trie {
+	private readonly root = new TrieNode();
+
+	insert(word: string): void {
+		let node = this.root;
+		for (const character of word) {
+			let next = node.children.get(character);
+			if (next === undefined) {
+				next = new TrieNode();
+				node.children.set(character, next);
+			}
+			node = next;
+		}
+		node.isWord = true;
+	}
+
+	hasWord(word: string): boolean {
+		let node: TrieNode | undefined = this.root;
+		for (const character of word) {
+			node = node.children.get(character);
+			if (node === undefined) return false;
+		}
+		return node.isWord;
+	}
+}
+```
+
 Each node represents a prefix; `isWord` separately marks whether that prefix is a complete word.
 
 ```ts

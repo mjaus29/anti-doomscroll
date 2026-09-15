@@ -20,6 +20,35 @@ For one-or-two-step climbing, `dp[0] = 1`, `dp[1] = 1`, and `dp[2] = dp[1] + dp[
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Count the number of ways to climb n stairs using one-step or two-step moves. This is **Climbing Stairs**.
+
+**Best interview-ready solution:**
+
+1. **Define the state:** dp[i] is the number of ways to reach step i.
+2. **Write the transition:** the final move came from i minus one or i minus two.
+3. **Initialize:** dp[0] and dp[1] are one under the usual empty-path convention.
+4. **Compress memory:** each state reads only the previous two states.
+5. **Complexity:** O(n) time and O(1) space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: ways[i] equals ways[i - 1] plus ways[i - 2]; retain only two prior states.
+function climbWays(n: number): number {
+	if (n <= 1) return 1;
+	let twoBack = 1;
+	let oneBack = 1;
+	for (let step = 2; step <= n; step += 1) {
+		const current = oneBack + twoBack;
+		twoBack = oneBack;
+		oneBack = current;
+	}
+	return oneBack;
+}
+```
+
 Ask four questions:
 
 1. What does `dp[state]` mean in one sentence?

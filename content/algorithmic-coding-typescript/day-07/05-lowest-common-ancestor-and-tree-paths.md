@@ -20,17 +20,48 @@ If `A` is in the left subtree and `B` is in the right subtree of `root`, the lef
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Find the lowest common ancestor of two nodes in a binary tree. This is **Lowest Common Ancestor of a Binary Tree**.
+
+**Best interview-ready solution:**
+
+1. **Recognize the subtree report:** each recursive call can return whether it found either target.
+2. **Stop at null or either target.**
+3. **Recurse into both children.**
+4. **If both sides return a target, the current node is the first shared ancestor; otherwise pass the non-null result upward.**
+5. **Complexity:** O(n) time and O(h) recursion space, assuming both nodes exist.
+
+**Code solution:**
+
+```ts
+// Pseudocode: recurse into both subtrees; two non-null results make the current node the ancestor.
+type TreeNode = { value: number; left: TreeNode | null; right: TreeNode | null };
+
+function lowestCommonAncestor(
+	root: TreeNode | null,
+	first: TreeNode,
+	second: TreeNode
+): TreeNode | null {
+	if (root === null || root === first || root === second) return root;
+	const left = lowestCommonAncestor(root.left, first, second);
+	const right = lowestCommonAncestor(root.right, first, second);
+	if (left !== null && right !== null) return root;
+	return left ?? right;
+}
+```
+
 ```ts
 function lowestCommonAncestor(
-  root: TreeNode | null,
-  first: TreeNode,
-  second: TreeNode
+	root: TreeNode | null,
+	first: TreeNode,
+	second: TreeNode
 ): TreeNode | null {
-  if (root === null || root === first || root === second) return root;
-  const left = lowestCommonAncestor(root.left, first, second);
-  const right = lowestCommonAncestor(root.right, first, second);
-  if (left !== null && right !== null) return root;
-  return left ?? right;
+	if (root === null || root === first || root === second) return root;
+	const left = lowestCommonAncestor(root.left, first, second);
+	const right = lowestCommonAncestor(root.right, first, second);
+	if (left !== null && right !== null) return root;
+	return left ?? right;
 }
 ```
 
@@ -72,15 +103,15 @@ Find the LCA of two node references in a general binary tree. Assume both nodes 
 
 ```ts
 function lowestCommonAncestor(
-  root: TreeNode | null,
-  first: TreeNode,
-  second: TreeNode
+	root: TreeNode | null,
+	first: TreeNode,
+	second: TreeNode
 ): TreeNode | null {
-  if (root === null || root === first || root === second) return root;
-  const left = lowestCommonAncestor(root.left, first, second);
-  const right = lowestCommonAncestor(root.right, first, second);
-  if (left !== null && right !== null) return root;
-  return left ?? right;
+	if (root === null || root === first || root === second) return root;
+	const left = lowestCommonAncestor(root.left, first, second);
+	const right = lowestCommonAncestor(root.right, first, second);
+	if (left !== null && right !== null) return root;
+	return left ?? right;
 }
 ```
 

@@ -20,6 +20,36 @@ For `left = "abb"`, the buckets become `a: 1, b: 2`. Read `right = "bab"`: remov
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Group a list of words so anagrams appear together. This is the classic **Group Anagrams** problem.
+
+**Best interview-ready solution:**
+
+1. **Recognize the invariant:** anagrams share the same character-count signature.
+2. **Build the key:** count the 26 lowercase letters, or sort the word when the alphabet is not bounded.
+3. **Use a Map:** map each signature to its output group.
+4. **Preserve duplicates:** append every original word; do not store only one representative.
+5. **Complexity:** counting gives O(total characters) time for a fixed alphabet and O(total characters) space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: build a count signature for each word and append it to the matching map bucket.
+function groupAnagrams(words: readonly string[]): string[][] {
+	const groups = new Map<string, string[]>();
+	for (const word of words) {
+		const counts = new Array<number>(26).fill(0);
+		for (const character of word) counts[character.charCodeAt(0) - 97] += 1;
+		const key = counts.join('#');
+		const group = groups.get(key) ?? [];
+		group.push(word);
+		groups.set(key, group);
+	}
+	return [...groups.values()];
+}
+```
+
 - Use `Map` for dynamic keys or non-string keys.
 - Use `Record<string, number>` for a known string-keyed table.
 - Increment while reading one collection and decrement while reading the other.
@@ -64,19 +94,19 @@ Return whether two strings are anagrams. Treat characters exactly as supplied an
 
 ```ts
 function sameLetters(left: string, right: string): boolean {
-  if (left.length !== right.length) return false;
-  const counts = new Map<string, number>();
+	if (left.length !== right.length) return false;
+	const counts = new Map<string, number>();
 
-  for (const character of left) {
-    counts.set(character, (counts.get(character) ?? 0) + 1);
-  }
-  for (const character of right) {
-    const remaining = counts.get(character);
-    if (remaining === undefined) return false;
-    if (remaining === 1) counts.delete(character);
-    else counts.set(character, remaining - 1);
-  }
-  return counts.size === 0;
+	for (const character of left) {
+		counts.set(character, (counts.get(character) ?? 0) + 1);
+	}
+	for (const character of right) {
+		const remaining = counts.get(character);
+		if (remaining === undefined) return false;
+		if (remaining === 1) counts.delete(character);
+		else counts.set(character, remaining - 1);
+	}
+	return counts.size === 0;
 }
 ```
 

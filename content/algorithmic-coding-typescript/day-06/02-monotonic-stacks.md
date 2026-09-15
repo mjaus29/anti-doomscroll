@@ -20,19 +20,49 @@ For `[2, 1, 3]`, push indices `0` and `1`. When `3` arrives, it is greater than 
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** For each day, return how many days must pass before a warmer temperature. This is **Daily Temperatures**.
+
+**Best interview-ready solution:**
+
+1. **Recognize unresolved candidates:** each earlier day waits for the first greater temperature.
+2. **Store indices:** keep a decreasing stack of temperatures whose answer is unknown.
+3. **Resolve from the top:** while the current temperature is warmer, pop an index and record the distance.
+4. **Prove amortization:** each index is pushed once and popped once.
+5. **Complexity:** O(n) time and O(n) space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: keep unresolved cooler days and pop them when a warmer day arrives.
+function dailyTemperatures(temperatures: readonly number[]): number[] {
+	const result = new Array<number>(temperatures.length).fill(0);
+	const stack: number[] = [];
+	for (let index = 0; index < temperatures.length; index += 1) {
+		while (stack.length > 0 && temperatures[stack[stack.length - 1]] < temperatures[index]) {
+			const previous = stack.pop() as number;
+			result[previous] = index - previous;
+		}
+		stack.push(index);
+	}
+	return result;
+}
+```
+
 For next greater values, store indices whose answer is unknown. Values at those indices are decreasing from bottom to top; a new larger value resolves the smaller top entries.
 
 ```ts
 function nextGreater(values: readonly number[]): number[] {
-  const result = new Array<number>(values.length).fill(-1);
-  const stack: number[] = [];
-  for (let index = 0; index < values.length; index += 1) {
-    while (stack.length > 0 && values[stack[stack.length - 1]] < values[index]) {
-      result[stack.pop() as number] = values[index];
-    }
-    stack.push(index);
-  }
-  return result;
+	const result = new Array<number>(values.length).fill(-1);
+	const stack: number[] = [];
+	for (let index = 0; index < values.length; index += 1) {
+		while (stack.length > 0 && values[stack[stack.length - 1]] < values[index]) {
+			result[stack.pop() as number] = values[index];
+		}
+		stack.push(index);
+	}
+	return result;
 }
 ```
 
@@ -74,15 +104,15 @@ For each value, return the next greater value to its right, or `-1` if none exis
 
 ```ts
 function nextGreater(values: readonly number[]): number[] {
-  const result = new Array<number>(values.length).fill(-1);
-  const stack: number[] = [];
-  for (let index = 0; index < values.length; index += 1) {
-    while (stack.length > 0 && values[stack[stack.length - 1]] < values[index]) {
-      result[stack.pop() as number] = values[index];
-    }
-    stack.push(index);
-  }
-  return result;
+	const result = new Array<number>(values.length).fill(-1);
+	const stack: number[] = [];
+	for (let index = 0; index < values.length; index += 1) {
+		while (stack.length > 0 && values[stack[stack.length - 1]] < values[index]) {
+			result[stack.pop() as number] = values[index];
+		}
+		stack.push(index);
+	}
+	return result;
 }
 ```
 

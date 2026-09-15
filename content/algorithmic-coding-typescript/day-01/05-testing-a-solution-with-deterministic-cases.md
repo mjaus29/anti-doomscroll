@@ -20,6 +20,38 @@ For `firstPairWithSum`, use three questions: does `[2, 7]` find `[0, 1]`? Does `
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Given two strings, determine whether they are anagrams. This is the classic **Valid Anagram** problem and a useful test-design exercise.
+
+**Best interview-ready solution:**
+
+1. **Reject early:** different lengths cannot be anagrams.
+2. **Choose the state:** count each character in the first string with a Map.
+3. **Balance the counts:** decrement while reading the second string and fail if a character is missing.
+4. **Test the contract:** include equal strings, duplicates, different lengths, empty strings, and case-sensitive differences.
+5. **Complexity:** expected O(n) time and O(k) space for k distinct characters.
+
+**Code solution:**
+
+```ts
+// Pseudocode: count characters on the left, decrement with the right, and fail on a missing count.
+function isAnagram(left: string, right: string): boolean {
+	if (left.length !== right.length) return false;
+	const counts = new Map<string, number>();
+	for (const character of left) {
+		counts.set(character, (counts.get(character) ?? 0) + 1);
+	}
+	for (const character of right) {
+		const remaining = counts.get(character);
+		if (remaining === undefined) return false;
+		if (remaining === 1) counts.delete(character);
+		else counts.set(character, remaining - 1);
+	}
+	return counts.size === 0;
+}
+```
+
 Test in this order:
 
 1. The smallest valid input.

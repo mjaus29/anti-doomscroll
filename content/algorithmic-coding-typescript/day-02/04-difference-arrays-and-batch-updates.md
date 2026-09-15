@@ -20,26 +20,61 @@ For length `5` and update `[1, 3, +2]`, place `+2` at index `1` and `-2` at inde
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Apply many flight-booking updates where each update adds seats to an inclusive range of flights. This is **Corporate Flight Bookings**.
+
+**Best interview-ready solution:**
+
+1. **Recognize batch updates:** every update affects a range, so changing each position would repeat work.
+2. **Mark boundaries:** add the delta at the range start and subtract it immediately after the range end.
+3. **Recover values:** take a running sum across the difference array.
+4. **Check endpoints:** allocate one extra slot so right plus one is always safe.
+5. **Complexity:** O(n + u) time and O(n) space for n flights and u updates.
+
+**Code solution:**
+
+```ts
+// Pseudocode: mark each range start and stop, then prefix-sum the boundary changes.
+function flightBookings(
+	bookings: readonly (readonly [first: number, last: number, seats: number])[],
+	flightCount: number
+): number[] {
+	const difference = new Array<number>(flightCount + 1).fill(0);
+	for (const [first, last, seats] of bookings) {
+		difference[first - 1] += seats;
+		difference[last] -= seats;
+	}
+	const result = new Array<number>(flightCount);
+	let active = 0;
+	for (let index = 0; index < flightCount; index += 1) {
+		active += difference[index];
+		result[index] = active;
+	}
+	return result;
+}
+```
+
 For adding `delta` to `[left, right]`, do `difference[left] += delta` and `difference[right + 1] -= delta`. The extra slot receives the stop marker even when `right` is the last real index.
 
 ```ts
 function applyRangeAdds(
-  length: number,
-  updates: readonly (readonly [number, number, number])[]
+	length: number,
+	updates: readonly (readonly [number, number, number])[]
 ): number[] {
-  const difference = new Array<number>(length + 1).fill(0);
-  for (const [left, right, delta] of updates) {
-    difference[left] += delta;
-    difference[right + 1] -= delta;
-  }
+	const difference = new Array<number>(length + 1).fill(0);
+	for (const [left, right, delta] of updates) {
+		difference[left] += delta;
+		difference[right + 1] -= delta;
+	}
 
-  const result: number[] = [];
-  let current = 0;
-  for (let index = 0; index < length; index += 1) {
-    current += difference[index];
-    result.push(current);
-  }
-  return result;
+	const result: number[] = [];
+	let current = 0;
+	for (let index = 0; index < length; index += 1) {
+		current += difference[index];
+		result.push(current);
+	}
+	return result;
 }
 ```
 
@@ -79,22 +114,22 @@ Apply updates `[left, right, delta]` to an initially zero array and return the f
 
 ```ts
 function applyRangeAdds(
-  length: number,
-  updates: readonly (readonly [number, number, number])[]
+	length: number,
+	updates: readonly (readonly [number, number, number])[]
 ): number[] {
-  const difference = new Array<number>(length + 1).fill(0);
-  for (const [left, right, delta] of updates) {
-    difference[left] += delta;
-    difference[right + 1] -= delta;
-  }
+	const difference = new Array<number>(length + 1).fill(0);
+	for (const [left, right, delta] of updates) {
+		difference[left] += delta;
+		difference[right + 1] -= delta;
+	}
 
-  const result = new Array<number>(length);
-  let current = 0;
-  for (let index = 0; index < length; index += 1) {
-    current += difference[index];
-    result[index] = current;
-  }
-  return result;
+	const result = new Array<number>(length);
+	let current = 0;
+	for (let index = 0; index < length; index += 1) {
+		current += difference[index];
+		result[index] = current;
+	}
+	return result;
 }
 ```
 

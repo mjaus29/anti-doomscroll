@@ -20,14 +20,39 @@ For root `8`, left `3`, and right `10`, searching for `7` compares with `8` and 
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Determine whether a binary tree is a valid binary search tree. This is **Validate Binary Search Tree**.
+
+**Best interview-ready solution:**
+
+1. **Recognize the global invariant:** each node must fit between bounds inherited from every ancestor.
+2. **Start with negative and positive infinity bounds.**
+3. **Recurse left with an updated upper bound and right with an updated lower bound.**
+4. **Choose duplicate policy:** strict inequalities reject duplicates in this version.
+5. **Complexity:** O(n) time and O(h) space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: carry ancestor bounds and reject any node outside its inherited interval.
+type TreeNode = { value: number; left: TreeNode | null; right: TreeNode | null };
+
+function isValidBst(root: TreeNode | null, low = -Infinity, high = Infinity): boolean {
+	if (root === null) return true;
+	if (root.value <= low || root.value >= high) return false;
+	return isValidBst(root.left, low, root.value) && isValidBst(root.right, root.value, high);
+}
+```
+
 ```ts
 function contains(root: TreeNode | null, target: number): boolean {
-  let current = root;
-  while (current !== null) {
-    if (current.value === target) return true;
-    current = target < current.value ? current.left : current.right;
-  }
-  return false;
+	let current = root;
+	while (current !== null) {
+		if (current.value === target) return true;
+		current = target < current.value ? current.left : current.right;
+	}
+	return false;
 }
 ```
 
@@ -68,15 +93,10 @@ Validate a BST with strict ordering: every node in the left subtree is smaller a
 ### Solution
 
 ```ts
-function isValidBst(
-  root: TreeNode | null,
-  low = -Infinity,
-  high = Infinity
-): boolean {
-  if (root === null) return true;
-  if (root.value <= low || root.value >= high) return false;
-  return isValidBst(root.left, low, root.value) &&
-    isValidBst(root.right, root.value, high);
+function isValidBst(root: TreeNode | null, low = -Infinity, high = Infinity): boolean {
+	if (root === null) return true;
+	if (root.value <= low || root.value >= high) return false;
+	return isValidBst(root.left, low, root.value) && isValidBst(root.right, root.value, high);
 }
 ```
 

@@ -20,6 +20,48 @@ For `A -> B` in `5` minutes and `A -> C -> B` in `2 + 1` minutes, first record `
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Return the time for a signal to reach every node in a non-negative weighted directed network, or failure if one node is unreachable. This is **Network Delay Time**, the same shortest-path core used by the route-planner capstone.
+
+**Best interview-ready solution:**
+
+1. **Model the input:** build an adjacency list and define distance for each named location.
+2. **Choose Dijkstra:** all travel times are non-negative, so the smallest unsettled distance is safe.
+3. **Relax edges:** update distance and predecessor when a cheaper route appears; skip stale queue entries.
+4. **Finish with a completeness check:** if any location remains at infinity, return failure; otherwise return the maximum distance or reconstructed route.
+5. **Complexity:** O((V + E) log V) with a binary heap and O(V + E) storage.
+
+**Code solution:**
+
+```ts
+// Pseudocode: start the source at zero and repeatedly relax the location with the smallest arrival time.
+type RouteEdge = readonly [to: string, minutes: number];
+
+function shortestArrivalTimes(
+	graph: ReadonlyMap<string, readonly RouteEdge[]>,
+	start: string
+): Map<string, number> {
+	const distance = new Map<string, number>();
+	for (const location of graph.keys()) distance.set(location, Infinity);
+	distance.set(start, 0);
+	const queue: Array<[number, string]> = [[0, start]];
+
+	while (queue.length > 0) {
+		queue.sort((left, right) => left[0] - right[0]);
+		const [current, location] = queue.shift() as [number, string];
+		if (current !== distance.get(location)) continue;
+		for (const [next, minutes] of graph.get(location) ?? []) {
+			const candidate = current + minutes;
+			if (candidate >= (distance.get(next) ?? Infinity)) continue;
+			distance.set(next, candidate);
+			queue.push([candidate, next]);
+		}
+	}
+	return distance;
+}
+```
+
 - Vertex: a named location.
 - Edge: a directed connection with non-negative travel time.
 - State: best known distance plus predecessor for each location.

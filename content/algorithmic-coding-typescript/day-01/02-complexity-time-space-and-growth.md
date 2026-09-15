@@ -23,6 +23,32 @@ Think of each algorithm as a worker processing packages. An $O(n)$ worker touche
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Given an array of numbers, return true if any value appears more than once. This is the classic **Contains Duplicate** problem.
+
+**Best interview-ready solution:**
+
+1. **Recognize the constraint:** a pairwise comparison is O(n^2); membership is the repeated question.
+2. **Choose the structure:** keep a Set of values already seen.
+3. **Scan once:** if the current value is already in the set, return true; otherwise add it.
+4. **Prove it:** after each iteration, the set contains exactly the distinct values in the processed prefix.
+5. **State the trade-off:** expected O(n) time and O(n) space; sorting can reduce auxiliary space only if mutation is allowed.
+
+**Code solution:**
+
+```ts
+// Pseudocode: remember seen values and return as soon as a value repeats.
+function containsDuplicate(values: readonly number[]): boolean {
+	const seen = new Set<number>();
+	for (const value of values) {
+		if (seen.has(value)) return true;
+		seen.add(value);
+	}
+	return false;
+}
+```
+
 | Growth       | Typical pattern      |
 | ------------ | -------------------- |
 | $O(1)$       | direct lookup        |

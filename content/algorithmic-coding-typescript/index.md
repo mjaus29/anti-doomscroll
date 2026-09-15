@@ -11,7 +11,7 @@ By the end of the track you should be able to:
 - Explain why a solution is correct using invariants, induction, or an exchange argument.
 - Implement common array, string, tree, graph, greedy, and dynamic programming patterns in TypeScript.
 - Test edge cases and compare an optimized solution with a small brute-force oracle.
-- Read a new problem, decompose it, and produce a measured solution under contest time pressure.
+- Read a new problem, decompose it, and produce a measured solution under coding-interview time pressure.
 
 ## Study rhythm
 
@@ -123,12 +123,12 @@ Day 11 - Advanced Structures and Strings
 - [Segment Trees](day-11/04-segment-trees.md)
 - [String Matching and Rolling Hash](day-11/05-string-matching-and-rolling-hash.md)
 
-Day 12 - Contest Practice and Capstone
+Day 12 - Interview Practice and Capstone
 
 - [Decomposing an Unfamiliar Problem](day-12/01-decomposing-an-unfamiliar-problem.md)
 - [Test Oracles and Property Thinking](day-12/02-test-oracles-and-property-thinking.md)
 - [Performance in TypeScript](day-12/03-performance-in-typescript.md)
-- [Mock Contest Workflow](day-12/04-mock-contest-workflow.md)
+- [Mock Interview Workflow](day-12/04-mock-interview-workflow.md)
 - [Capstone: Build a Route Planner](day-12/05-capstone-build-a-route-planner.md)
 
 ## Mastery rubric

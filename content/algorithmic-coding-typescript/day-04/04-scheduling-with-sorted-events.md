@@ -20,6 +20,34 @@ For meetings `[1, 4)`, `[2, 3)`, and `[3, 5)`, the minimum-room question peaks a
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Remove the minimum number of intervals so the remaining intervals do not overlap. This is **Non-overlapping Intervals**.
+
+**Best interview-ready solution:**
+
+1. **Reframe the objective:** maximize intervals kept, which is easier than minimizing removals.
+2. **Sort by end time:** the earliest-finishing compatible interval leaves the most room.
+3. **Greedily keep or remove:** keep an interval when its start is at least the last finish; otherwise remove it.
+4. **Use the exchange argument:** replacing a kept interval with an earlier-finishing one cannot reduce future choices.
+5. **Complexity:** O(n log n) time and O(n) space for a copied sort.
+
+**Code solution:**
+
+```ts
+// Pseudocode: keep earliest-finishing compatible intervals and count every overlap as a removal.
+function eraseOverlapIntervals(intervals: readonly (readonly [number, number])[]): number {
+	const ordered = [...intervals].sort((left, right) => left[1] - right[1]);
+	let finish = -Infinity;
+	let removed = 0;
+	for (const [start, end] of ordered) {
+		if (start < finish) removed += 1;
+		else finish = end;
+	}
+	return removed;
+}
+```
+
 - Maximum number of unweighted meetings: sort by earliest finish.
 - Minimum simultaneous rooms: process starts and ends as events or track the earliest active finish in a min-heap.
 - Maximum value: earliest finish alone is not enough; use weighted interval DP and predecessor search.

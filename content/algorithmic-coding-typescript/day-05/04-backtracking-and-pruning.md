@@ -20,6 +20,52 @@ For candidates `[2, 3]` and target `5`, choose `2` and the remaining target beco
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Determine whether a word exists in a character grid by moving up, down, left, or right without reusing a cell. This is **Word Search**.
+
+**Best interview-ready solution:**
+
+1. **Recognize the search state:** current cell, next character index, and visited cells.
+2. **Try matching neighbors:** recurse only when the next cell contains the needed character.
+3. **Mark and undo:** mark a cell before recursion and restore it after returning.
+4. **Prune safely:** stop immediately on a mismatch, boundary, or already visited cell.
+5. **Complexity:** O(rows times columns times 4^wordLength) worst case and O(wordLength) recursion space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: match the cell, mark it, explore four neighbors, and restore it on return.
+function wordExists(board: string[][], word: string): boolean {
+	const directions = [
+		[1, 0],
+		[-1, 0],
+		[0, 1],
+		[0, -1],
+	] as const;
+	const search = (row: number, column: number, index: number): boolean => {
+		if (index === word.length) return true;
+		if (board[row]?.[column] !== word[index]) return false;
+		const saved = board[row][column];
+		board[row][column] = '#';
+		for (const [rowDelta, columnDelta] of directions) {
+			if (search(row + rowDelta, column + columnDelta, index + 1)) {
+				board[row][column] = saved;
+				return true;
+			}
+		}
+		board[row][column] = saved;
+		return false;
+	};
+	for (let row = 0; row < board.length; row += 1) {
+		for (let column = 0; column < board[row].length; column += 1) {
+			if (search(row, column, 0)) return true;
+		}
+	}
+	return false;
+}
+```
+
 The loop is usually:
 
 1. reject an impossible state,
@@ -64,30 +110,27 @@ Return combinations of positive candidates that sum to `target`; a candidate may
 ### Solution
 
 ```ts
-function combinationSum(
-  candidates: readonly number[],
-  target: number
-): number[][] {
-  const ordered = [...candidates].sort((a, b) => a - b);
-  const result: number[][] = [];
-  const path: number[] = [];
+function combinationSum(candidates: readonly number[], target: number): number[][] {
+	const ordered = [...candidates].sort((a, b) => a - b);
+	const result: number[][] = [];
+	const path: number[] = [];
 
-  function visit(start: number, remaining: number): void {
-    if (remaining === 0) {
-      result.push([...path]);
-      return;
-    }
-    for (let index = start; index < ordered.length; index += 1) {
-      const value = ordered[index];
-      if (value > remaining) break;
-      if (index > start && value === ordered[index - 1]) continue;
-      path.push(value);
-      visit(index, remaining - value);
-      path.pop();
-    }
-  }
-  visit(0, target);
-  return result;
+	function visit(start: number, remaining: number): void {
+		if (remaining === 0) {
+			result.push([...path]);
+			return;
+		}
+		for (let index = start; index < ordered.length; index += 1) {
+			const value = ordered[index];
+			if (value > remaining) break;
+			if (index > start && value === ordered[index - 1]) continue;
+			path.push(value);
+			visit(index, remaining - value);
+			path.pop();
+		}
+	}
+	visit(0, target);
+	return result;
 }
 ```
 

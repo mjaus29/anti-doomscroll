@@ -69,6 +69,42 @@ With edge `A -> B` cost `0`, put `B` at the front. With `A -> C` cost `1`, put `
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Find the cheapest flight from source to destination using at most k stops. This is **Cheapest Flights Within K Stops**.
+
+**Best interview-ready solution:**
+
+1. **Recognize the edge-count limit:** ordinary Dijkstra can use too many stops, so use bounded relaxation or layered DP.
+2. **Keep a distance array for the previous layer and a copy for the next layer.**
+3. **Relax every edge once per allowed flight, using the previous copy so one round cannot chain unlimited edges.**
+4. **After k plus one rounds, return the destination distance or failure.**
+5. **Complexity:** O(kE) time and O(V) space; Bellman-Ford-style layering handles negative edge values if the problem permits them.
+
+**Code solution:**
+
+```ts
+// Pseudocode: repeat edge relaxations one layer per allowed flight using a copied distance array.
+function cheapestFlight(
+	vertexCount: number,
+	flights: readonly (readonly [from: number, to: number, cost: number])[],
+	source: number,
+	destination: number,
+	maxStops: number
+): number {
+	let distance = new Array<number>(vertexCount).fill(Infinity);
+	distance[source] = 0;
+	for (let flight = 0; flight <= maxStops; flight += 1) {
+		const next = [...distance];
+		for (const [from, to, cost] of flights) {
+			if (distance[from] !== Infinity) next[to] = Math.min(next[to], distance[from] + cost);
+		}
+		distance = next;
+	}
+	return distance[destination] === Infinity ? -1 : distance[destination];
+}
+```
+
 **0-1 BFS:** add a zero-cost neighbor to the front of a deque and a one-cost neighbor to the back. It keeps distances ordered in $O(V + E)$.
 
 **Bellman-Ford:** relax every edge up to `V - 1` times. If a reachable edge can still improve on pass `V`, a reachable negative cycle exists.

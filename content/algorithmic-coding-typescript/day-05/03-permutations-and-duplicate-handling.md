@@ -20,32 +20,71 @@ For `[1, 1, 2]`, sort first. At the first seat, choose the first `1`, but skip t
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Return every permutation of distinct values. This is the classic **Permutations** problem.
+
+**Best interview-ready solution:**
+
+1. **Recognize the state:** each depth fills one position in the arrangement.
+2. **Track used values:** choose one unused index for the current position.
+3. **Backtrack:** mark the choice, recurse, then unmark it for the next branch.
+4. **Handle duplicates when present:** sort first and skip an equal value when its predecessor is unused at the same depth.
+5. **Complexity:** O(n times n!) time to copy outputs and O(n) working space besides results.
+
+**Code solution:**
+
+```ts
+// Pseudocode: choose each unused position, recurse, then unmark it for the next branch.
+function permutations(values: readonly number[]): number[][] {
+	const result: number[][] = [];
+	const path: number[] = [];
+	const used = new Array<boolean>(values.length).fill(false);
+	const visit = (): void => {
+		if (path.length === values.length) {
+			result.push([...path]);
+			return;
+		}
+		for (let index = 0; index < values.length; index += 1) {
+			if (used[index]) continue;
+			used[index] = true;
+			path.push(values[index]);
+			visit();
+			path.pop();
+			used[index] = false;
+		}
+	};
+	visit();
+	return result;
+}
+```
+
 Sort equal values together, track used positions, and skip a duplicate when its equal predecessor is available at the same depth.
 
 ```ts
 function uniquePermutations(values: readonly number[]): number[][] {
-  const ordered = [...values].sort((a, b) => a - b);
-  const result: number[][] = [];
-  const path: number[] = [];
-  const used = new Array<boolean>(ordered.length).fill(false);
+	const ordered = [...values].sort((a, b) => a - b);
+	const result: number[][] = [];
+	const path: number[] = [];
+	const used = new Array<boolean>(ordered.length).fill(false);
 
-  function visit(): void {
-    if (path.length === ordered.length) {
-      result.push([...path]);
-      return;
-    }
-    for (let index = 0; index < ordered.length; index += 1) {
-      if (used[index]) continue;
-      if (index > 0 && ordered[index] === ordered[index - 1] && !used[index - 1]) continue;
-      used[index] = true;
-      path.push(ordered[index]);
-      visit();
-      path.pop();
-      used[index] = false;
-    }
-  }
-  visit();
-  return result;
+	function visit(): void {
+		if (path.length === ordered.length) {
+			result.push([...path]);
+			return;
+		}
+		for (let index = 0; index < ordered.length; index += 1) {
+			if (used[index]) continue;
+			if (index > 0 && ordered[index] === ordered[index - 1] && !used[index - 1]) continue;
+			used[index] = true;
+			path.push(ordered[index]);
+			visit();
+			path.pop();
+			used[index] = false;
+		}
+	}
+	visit();
+	return result;
 }
 ```
 
@@ -85,28 +124,28 @@ Return all unique permutations of a number array that may contain duplicates.
 
 ```ts
 function uniquePermutations(values: readonly number[]): number[][] {
-  const ordered = [...values].sort((a, b) => a - b);
-  const result: number[][] = [];
-  const path: number[] = [];
-  const used = new Array<boolean>(ordered.length).fill(false);
+	const ordered = [...values].sort((a, b) => a - b);
+	const result: number[][] = [];
+	const path: number[] = [];
+	const used = new Array<boolean>(ordered.length).fill(false);
 
-  function visit(): void {
-    if (path.length === ordered.length) {
-      result.push([...path]);
-      return;
-    }
-    for (let index = 0; index < ordered.length; index += 1) {
-      if (used[index]) continue;
-      if (index > 0 && ordered[index] === ordered[index - 1] && !used[index - 1]) continue;
-      used[index] = true;
-      path.push(ordered[index]);
-      visit();
-      path.pop();
-      used[index] = false;
-    }
-  }
-  visit();
-  return result;
+	function visit(): void {
+		if (path.length === ordered.length) {
+			result.push([...path]);
+			return;
+		}
+		for (let index = 0; index < ordered.length; index += 1) {
+			if (used[index]) continue;
+			if (index > 0 && ordered[index] === ordered[index - 1] && !used[index - 1]) continue;
+			used[index] = true;
+			path.push(ordered[index]);
+			visit();
+			path.pop();
+			used[index] = false;
+		}
+	}
+	visit();
+	return result;
 }
 ```
 

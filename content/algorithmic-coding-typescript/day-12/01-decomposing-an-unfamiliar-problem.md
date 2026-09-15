@@ -20,6 +20,38 @@ For a route with a transfer limit, write the state as `(location, transfersUsed)
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Return the product of every array element except the element at the current index, without division. This is **Product of Array Except Self**.
+
+**Best interview-ready solution:**
+
+1. **Recognize repeated multiplication:** each answer is a product of a left prefix and a right suffix.
+2. **Store prefix products in the output array.**
+3. **Scan from right to left with one suffix accumulator and multiply it into each output entry.**
+4. **Zeros work naturally because no division is used.**
+5. **Complexity:** O(n) time and O(1) extra space beyond the output.
+
+**Code solution:**
+
+```ts
+// Pseudocode: write prefix products forward, then multiply by suffix products in reverse.
+function productExceptSelf(values: readonly number[]): number[] {
+	const result = new Array<number>(values.length).fill(1);
+	let prefix = 1;
+	for (let index = 0; index < values.length; index += 1) {
+		result[index] = prefix;
+		prefix *= values[index];
+	}
+	let suffix = 1;
+	for (let index = values.length - 1; index >= 0; index -= 1) {
+		result[index] *= suffix;
+		suffix *= values[index];
+	}
+	return result;
+}
+```
+
 Use this seven-step pass:
 
 1. Restate input, output, and constraints.

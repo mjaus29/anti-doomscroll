@@ -20,24 +20,52 @@ With capacity `5`, item weights `2` and `3`, process the first item and record i
 
 ## K — Key Concepts
 
+### 1. Most Common Coding Interview Question
+
+**Question:** Determine whether an array can be split into two subsets with equal sum. This is **Partition Equal Subset Sum**.
+
+**Best interview-ready solution:**
+
+1. **Reject odd total sums:** an equal split needs target equal to total divided by two.
+2. **Recognize 0/1 subset sum:** each number may be used once to reach target.
+3. **Use a boolean DP over sums.**
+4. **Iterate sums downward for each number so one number cannot be reused in the same iteration.**
+5. **Complexity:** O(n times target) time and O(target) space.
+
+**Code solution:**
+
+```ts
+// Pseudocode: target is half the total; update reachable sums backward so each item is used once.
+function canPartition(values: readonly number[]): boolean {
+	const total = values.reduce((sum, value) => sum + value, 0);
+	if (total % 2 !== 0) return false;
+	const target = total / 2;
+	const possible = new Array<boolean>(target + 1).fill(false);
+	possible[0] = true;
+	for (const value of values) {
+		for (let sum = target; sum >= value; sum -= 1) {
+			possible[sum] ||= possible[sum - value];
+		}
+	}
+	return possible[target];
+}
+```
+
 For 0/1 knapsack, `dp[capacity]` is the best value using processed items within that capacity.
 
 ```ts
 function bestValue(
-  weights: readonly number[],
-  values: readonly number[],
-  capacity: number
+	weights: readonly number[],
+	values: readonly number[],
+	capacity: number
 ): number {
-  const dp = new Array<number>(capacity + 1).fill(0);
-  for (let item = 0; item < weights.length; item += 1) {
-    for (let remaining = capacity; remaining >= weights[item]; remaining -= 1) {
-      dp[remaining] = Math.max(
-        dp[remaining],
-        dp[remaining - weights[item]] + values[item]
-      );
-    }
-  }
-  return dp[capacity];
+	const dp = new Array<number>(capacity + 1).fill(0);
+	for (let item = 0; item < weights.length; item += 1) {
+		for (let remaining = capacity; remaining >= weights[item]; remaining -= 1) {
+			dp[remaining] = Math.max(dp[remaining], dp[remaining - weights[item]] + values[item]);
+		}
+	}
+	return dp[capacity];
 }
 ```
 
@@ -79,17 +107,17 @@ Return the maximum value of items that fit in capacity, using each item at most 
 
 ```ts
 function bestValue(
-  weights: readonly number[],
-  values: readonly number[],
-  capacity: number
+	weights: readonly number[],
+	values: readonly number[],
+	capacity: number
 ): number {
-  const dp = new Array<number>(capacity + 1).fill(0);
-  for (let item = 0; item < weights.length; item += 1) {
-    for (let remaining = capacity; remaining >= weights[item]; remaining -= 1) {
-      dp[remaining] = Math.max(dp[remaining], dp[remaining - weights[item]] + values[item]);
-    }
-  }
-  return dp[capacity];
+	const dp = new Array<number>(capacity + 1).fill(0);
+	for (let item = 0; item < weights.length; item += 1) {
+		for (let remaining = capacity; remaining >= weights[item]; remaining -= 1) {
+			dp[remaining] = Math.max(dp[remaining], dp[remaining - weights[item]] + values[item]);
+		}
+	}
+	return dp[capacity];
 }
 ```
 
