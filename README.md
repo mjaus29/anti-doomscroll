@@ -7,7 +7,7 @@ Interactive JavaScript & TypeScript learning companion — installable, offline-
 - 📱 **Installable PWA** — Add to home screen on mobile devices
 - 📶 **Offline capable** — Works without internet using service workers
 - 🌙 **Dark theme** — Minimalist modern dark UI
-- 🗂️ **13 days of content** — From JS foundations to advanced TypeScript
+- 🗂️ **82 days of content** — Eight focused tracks from JS foundations to algorithmic TypeScript
 - 📖 **Card-based reading** — Each subtopic in its own card
 - ⬅️➡️ **Navigation** — Next/prev buttons + keyboard arrows
 - 📑 **Sidebar** — Toggle sidebar to browse all days and topics
@@ -79,4 +79,4 @@ Generates a static export in `out/` with PWA service worker.
 
 ## Adding New Content
 
-Drop markdown files into `javascript-typescript-mentor/day-XX/` directories. The app automatically discovers all day folders and their topics at build time.
+Drop an `index.md` file and `day-XX/` topic directories into `content/<group-id>/`. The app automatically discovers all group, day, and topic files at build time.
