@@ -1,139 +1,140 @@
 # Full Curriculum Overview - Algorithmic Coding / TypeScript
 
-This 12-day track teaches a repeatable process for solving algorithmic problems in strict TypeScript. Each day moves from a pattern to a proof habit to deliberate practice.
+A 12-day coding-interview track for developers who know basic JavaScript/TypeScript but have never studied algorithms. Every lesson teaches one pattern, shows it on a tiny example, then solves the interview problem it is famous for.
 
 ## Outcomes
 
 By the end of the track you should be able to:
 
-- Translate a problem statement into a precise input, output, and constraint contract.
-- Choose a data structure and estimate time and space before coding.
-- Explain why a solution is correct using invariants, induction, or an exchange argument.
-- Implement common array, string, tree, graph, greedy, and dynamic programming patterns in TypeScript.
-- Test edge cases and compare an optimized solution with a small brute-force oracle.
-- Read a new problem, decompose it, and produce a measured solution under coding-interview time pressure.
+- Turn a problem statement into clear inputs, outputs, and edge cases before coding.
+- Estimate time and space with Big-O and use the input size to guess the expected solution.
+- Recognize the ~20 patterns behind most interview questions from the wording of the problem.
+- Write each pattern from a blank file in strict TypeScript.
+- Explain why your solution is correct and how fast it is, out loud, under time pressure.
 
-## Study rhythm
+## How to study
 
-For each topic, write the invariant or state definition before the implementation. Then solve the practice prompt without looking at a reference, test the smallest cases first, and record the failed assumption that caused each bug.
+1. Read **T — TL;DR** and the **Reach for it when** signals first. Recognizing the pattern is half the interview.
+2. Trace the **Walk through it** table by hand. Do not skip this — it is where the idea clicks.
+3. Close the lesson and write **The template** from memory.
+4. Try the **Coding Challenge** for 10 minutes before opening the solution.
+5. If you get stuck, write down the one idea you were missing. Revisit that lesson tomorrow.
 
-Use the final topic of each day for a timed implementation. Revisit any pattern that still requires memorizing code instead of recognizing the shape of the problem.
+Doing one small thing beats opening a feed. Start with the **Right now** action at the end of each lesson.
 
 ## T-KWICK lesson format
 
-Every subtopic is a focused 5–15 minute learning card:
-
-- **T — TL;DR:** the pattern in one sentence.
-- **Beginner Walkthrough:** what problem it solves, how to picture it, and a tiny trace before code.
-- **K — Key Concepts:** the minimum mental model and invariant.
-- **W — Why it matters:** the interview and engineering payoff.
-- **I — Interview Q&A:** concise answers to likely follow-ups.
-- **C — Common pitfalls (+ fix):** fast corrections for typical mistakes.
-- **K — Coding Challenge (+ solution):** one small implementation followed by one action to do now.
-
-Start with the final **Right now** action. Doing one small thing beats opening a feed.
+- **T — TL;DR:** the pattern in plain words, plus the signals that tell you to use it.
+- **K — Key Concepts:** an analogy, a step-by-step trace, the reusable template, and the classic interview problem.
+- **W — Why it matters:** where it shows up and what interviewers listen for.
+- **I — Interview Q&A:** follow-up questions you should be ready for.
+- **C — Common pitfalls + fix:** the bugs beginners hit most often.
+- **K — Coding Challenge + solution:** a new problem that reuses the template.
 
 ## Curriculum map
 
-Day 1 - Problem Solving Foundations
+Day 1 - Interview Foundations
 
-- [Constraints First: Turn a Prompt into a Contract](day-01/01-constraints-first-turn-a-prompt-into-a-contract.md)
-- [Complexity: Time, Space, and Growth](day-01/02-complexity-time-space-and-growth.md)
-- [Correctness: Invariants and Edge Cases](day-01/03-correctness-invariants-and-edge-cases.md)
-- [TypeScript for Algorithms: Inputs, Outputs, and Strictness](day-01/04-typescript-for-algorithms-inputs-outputs-and-strictness.md)
-- [Testing a Solution with Deterministic Cases](day-01/05-testing-a-solution-with-deterministic-cases.md)
+- [How to Approach a Coding Problem](day-01/01-how-to-approach-a-coding-problem.md)
+- [Big-O: Time and Space Complexity](day-01/02-big-o-time-and-space-complexity.md)
+- [TypeScript Toolkit for Algorithms](day-01/03-typescript-toolkit-for-algorithms.md)
+- [Testing and Edge Cases](day-01/04-testing-and-edge-cases.md)
 
-Day 2 - Arrays and Strings
+Day 2 - Arrays, Strings, and Hashing
 
-- [Array Traversal and Accumulators](day-02/01-array-traversal-and-accumulators.md)
-- [Frequency Tables with Map and Record](day-02/02-frequency-tables-with-map-and-record.md)
-- [Prefix Sums and Range Queries](day-02/03-prefix-sums-and-range-queries.md)
-- [Difference Arrays and Batch Updates](day-02/04-difference-arrays-and-batch-updates.md)
-- [Two Pointers for Ordered Data](day-02/05-two-pointers-for-ordered-data.md)
+- [Hash Maps and Sets](day-02/01-hash-maps-and-sets.md)
+- [Frequency Counting](day-02/02-frequency-counting.md)
+- [Running State and Kadane's Algorithm](day-02/03-running-state-and-kadanes-algorithm.md)
+- [Prefix Sums](day-02/04-prefix-sums.md)
+- [String Techniques](day-02/05-string-techniques.md)
+- [Matrix Traversal](day-02/06-matrix-traversal.md)
 
-Day 3 - Windows, Sorting, and Search
+Day 3 - Two Pointers and Sliding Window
 
-- [Sliding Window](day-03/01-sliding-window.md)
-- [Sorting with Safe Comparators](day-03/02-sorting-with-safe-comparators.md)
-- [Binary Search Basics](day-03/03-binary-search-basics.md)
-- [Lower Bound and Upper Bound](day-03/04-lower-bound-and-upper-bound.md)
-- [Binary Search on the Answer](day-03/05-binary-search-on-the-answer.md)
+- [Two Pointers: Opposite Ends](day-03/01-two-pointers-opposite-ends.md)
+- [Read and Write Pointers](day-03/02-read-and-write-pointers.md)
+- [Sorting and 3Sum](day-03/03-sorting-and-3sum.md)
+- [Sliding Window: Variable Size](day-03/04-sliding-window-variable-size.md)
+- [Sliding Window: Fixed Size](day-03/05-sliding-window-fixed-size.md)
 
-Day 4 - Greedy and Intervals
+Day 4 - Binary Search
 
-- [Greedy Choices and Exchange Arguments](day-04/01-greedy-choices-and-exchange-arguments.md)
-- [Merging Intervals](day-04/02-merging-intervals.md)
-- [Sweep Line Events](day-04/03-sweep-line-events.md)
-- [Scheduling with Sorted Events](day-04/04-scheduling-with-sorted-events.md)
-- [Coordinate Compression](day-04/05-coordinate-compression.md)
+- [Binary Search Basics](day-04/01-binary-search-basics.md)
+- [First and Last Position](day-04/02-first-and-last-position.md)
+- [Rotated Sorted Arrays](day-04/03-rotated-sorted-arrays.md)
+- [Binary Search on the Answer](day-04/04-binary-search-on-the-answer.md)
 
-Day 5 - Recursion and Backtracking
+Day 5 - Stacks, Queues, and Design
 
-- [Recursive State and Base Cases](day-05/01-recursive-state-and-base-cases.md)
-- [Subsets and Combinations](day-05/02-subsets-and-combinations.md)
-- [Permutations and Duplicate Handling](day-05/03-permutations-and-duplicate-handling.md)
-- [Backtracking and Pruning](day-05/04-backtracking-and-pruning.md)
-- [Memoized Search and State Keys](day-05/05-memoized-search-and-state-keys.md)
+- [Stacks: Valid Parentheses and Min Stack](day-05/01-stacks-valid-parentheses-and-min-stack.md)
+- [Monotonic Stack](day-05/02-monotonic-stack.md)
+- [Queues and Deques](day-05/03-queues-and-deques.md)
+- [Design: LRU Cache](day-05/04-design-lru-cache.md)
 
-Day 6 - Stacks, Queues, and Linked Lists
+Day 6 - Linked Lists
 
-- [Stack Patterns and Balanced Delimiters](day-06/01-stack-patterns-and-balanced-delimiters.md)
-- [Monotonic Stacks](day-06/02-monotonic-stacks.md)
-- [Queues and Deques for Frontier Processing](day-06/03-queues-and-deques-for-frontier-processing.md)
-- [Linked List Pointer Techniques](day-06/04-linked-list-pointer-techniques.md)
-- [Simulations and State Machines](day-06/05-simulations-and-state-machines.md)
+- [Linked List Basics and Reversal](day-06/01-linked-list-basics-and-reversal.md)
+- [Dummy Nodes and Merging Lists](day-06/02-dummy-nodes-and-merging-lists.md)
+- [Fast and Slow Pointers](day-06/03-fast-and-slow-pointers.md)
+- [Combining Techniques: Reorder List](day-06/04-combining-techniques-reorder-list.md)
 
-Day 7 - Trees and Heaps
+Day 7 - Trees
 
-- [Tree Traversals](day-07/01-tree-traversals.md)
-- [Recursive Tree Dynamic Programming](day-07/02-recursive-tree-dynamic-programming.md)
-- [Binary Search Trees](day-07/03-binary-search-trees.md)
-- [Heaps and Priority Queues](day-07/04-heaps-and-priority-queues.md)
-- [Lowest Common Ancestor and Tree Paths](day-07/05-lowest-common-ancestor-and-tree-paths.md)
+- [Binary Tree Basics and DFS](day-07/01-binary-tree-basics-and-dfs.md)
+- [Level Order Traversal (BFS)](day-07/02-level-order-traversal-bfs.md)
+- [Tree Recursion That Returns Information](day-07/03-tree-recursion-that-returns-information.md)
+- [Binary Search Trees](day-07/04-binary-search-trees.md)
+- [Lowest Common Ancestor and Path Sums](day-07/05-lowest-common-ancestor-and-path-sums.md)
 
-Day 8 - Graph Foundations
+Day 8 - Heaps and Intervals
 
-- [Graph Representations](day-08/01-graph-representations.md)
-- [Breadth-First Search and Depth-First Search](day-08/02-breadth-first-search-and-depth-first-search.md)
-- [Grid Graphs](day-08/03-grid-graphs.md)
-- [Connected Components and Flood Fill](day-08/04-connected-components-and-flood-fill.md)
-- [Topological Sorting](day-08/05-topological-sorting.md)
+- [Heaps and Priority Queues](day-08/01-heaps-and-priority-queues.md)
+- [Top K Problems](day-08/02-top-k-problems.md)
+- [Merge K Sorted Lists](day-08/03-merge-k-sorted-lists.md)
+- [Merge and Insert Intervals](day-08/04-merge-and-insert-intervals.md)
+- [Meeting Rooms and Overlapping Intervals](day-08/05-meeting-rooms-and-overlapping-intervals.md)
 
-Day 9 - Weighted Graphs and Disjoint Sets
+Day 9 - Recursion and Backtracking
 
-- [Union Find and Disjoint Set Union](day-09/01-union-find-and-disjoint-set-union.md)
-- [Dijkstra's Algorithm](day-09/02-dijkstras-algorithm.md)
-- [0-1 BFS and Bellman-Ford](day-09/03-0-1-bfs-and-bellman-ford.md)
-- [Minimum Spanning Trees](day-09/04-minimum-spanning-trees.md)
-- [Choosing a Shortest Path Model](day-09/05-choosing-a-shortest-path-model.md)
+- [Recursion and the Call Stack](day-09/01-recursion-and-the-call-stack.md)
+- [Subsets and Combination Sum](day-09/02-subsets-and-combination-sum.md)
+- [Permutations](day-09/03-permutations.md)
+- [Word Search and Pruning](day-09/04-word-search-and-pruning.md)
 
-Day 10 - Dynamic Programming
+Day 10 - Graphs
 
-- [DP State and Transition](day-10/01-dp-state-and-transition.md)
-- [One-Dimensional Dynamic Programming](day-10/02-one-dimensional-dynamic-programming.md)
-- [Two-Dimensional and Grid DP](day-10/03-two-dimensional-and-grid-dp.md)
-- [Knapsack and Subset Sum](day-10/04-knapsack-and-subset-sum.md)
-- [Subsequences and State Compression](day-10/05-subsequences-and-state-compression.md)
+- [Graph Representations](day-10/01-graph-representations.md)
+- [Graph DFS and BFS](day-10/02-graph-dfs-and-bfs.md)
+- [Grid Graphs: Number of Islands](day-10/03-grid-graphs-number-of-islands.md)
+- [Multi-Source BFS: Rotting Oranges](day-10/04-multi-source-bfs-rotting-oranges.md)
+- [Topological Sort: Course Schedule](day-10/05-topological-sort-course-schedule.md)
+- [Union-Find](day-10/06-union-find.md)
 
-Day 11 - Advanced Structures and Strings
+Day 11 - Dynamic Programming
 
-- [Bit Manipulation](day-11/01-bit-manipulation.md)
-- [Tries for Prefix Queries](day-11/02-tries-for-prefix-queries.md)
-- [Fenwick Trees](day-11/03-fenwick-trees.md)
-- [Segment Trees](day-11/04-segment-trees.md)
-- [String Matching and Rolling Hash](day-11/05-string-matching-and-rolling-hash.md)
+- [DP Fundamentals: Climbing Stairs](day-11/01-dp-fundamentals-climbing-stairs.md)
+- [Take or Skip: House Robber](day-11/02-take-or-skip-house-robber.md)
+- [Try Every Choice: Coin Change and Word Break](day-11/03-try-every-choice-coin-change-and-word-break.md)
+- [Longest Increasing Subsequence](day-11/04-longest-increasing-subsequence.md)
+- [Grid DP: Unique Paths](day-11/05-grid-dp-unique-paths.md)
+- [Two-String DP: LCS and Edit Distance](day-11/06-two-string-dp-lcs-and-edit-distance.md)
+- [0/1 Knapsack: Partition Equal Subset Sum](day-11/07-0-1-knapsack-partition-equal-subset-sum.md)
 
-Day 12 - Interview Practice and Capstone
+Day 12 - Greedy, Advanced Topics, and Final Review
 
-- [Decomposing an Unfamiliar Problem](day-12/01-decomposing-an-unfamiliar-problem.md)
-- [Test Oracles and Property Thinking](day-12/02-test-oracles-and-property-thinking.md)
-- [Performance in TypeScript](day-12/03-performance-in-typescript.md)
-- [Mock Interview Workflow](day-12/04-mock-interview-workflow.md)
-- [Capstone: Build a Route Planner](day-12/05-capstone-build-a-route-planner.md)
+- [Greedy: Jump Game and Gas Station](day-12/01-greedy-jump-game-and-gas-station.md)
+- [Dijkstra's Shortest Path](day-12/02-dijkstras-shortest-path.md)
+- [Tries](day-12/03-tries.md)
+- [Bit Manipulation](day-12/04-bit-manipulation.md)
+- [Pattern Cheat Sheet and Mock Interview](day-12/05-pattern-cheat-sheet-and-mock-interview.md)
 
-## Mastery rubric
+## Not covered on purpose
 
-- **Recognize:** name the likely pattern and its invariant from a new prompt.
-- **Implement:** write the solution from a blank file with strict TypeScript enabled.
-- **Defend:** state correctness and complexity without hand-waving.
-- **Adapt:** change the representation or state when the constraints change.
+Segment trees, Fenwick trees, string hashing (Rabin-Karp/KMP), Bellman-Ford, minimum spanning trees, and bitmask DP are rare in typical software-engineering interviews. Learn them after you are comfortable with everything above.
+
+## Mastery checklist
+
+- **Recognize:** name the pattern from the problem wording in under a minute.
+- **Implement:** write it from a blank file with strict TypeScript.
+- **Explain:** state why it is correct and its time and space cost.
+- **Adapt:** change the approach when the constraints change (sorted vs unsorted, small vs huge input).
