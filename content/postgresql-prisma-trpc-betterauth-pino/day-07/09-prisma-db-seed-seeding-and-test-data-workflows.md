@@ -10,27 +10,32 @@
 
 ## K — Key Concepts
 
-```json
-// package.json — register the seed script
-{
-  "prisma": {
-    "seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts"
-  }
-}
+```ts
+// prisma.config.ts — register the seed script (Prisma 7)
+import 'dotenv/config'
+import { defineConfig, env } from 'prisma/config'
 
-// Or with tsx (faster, no tsconfig needed):
-// "seed": "tsx prisma/seed.ts"
-
-// Or with ts-node and ESM:
-// "seed": "node --loader ts-node/esm prisma/seed.ts"
+export default defineConfig({
+  schema: 'prisma/schema.prisma',
+  migrations: {
+    path: 'prisma/migrations',
+    seed: 'tsx prisma/seed.ts',     // tsx works with Prisma 7's ESM output
+  },
+  datasource: { url: env('DATABASE_URL') },
+})
+// Before Prisma 7 this lived in package.json:
+//   "prisma": { "seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts" }
 ```
 
 ```typescript
 // prisma/seed.ts — complete seed script pattern
 
-import { PrismaClient, UserRole } from "@prisma/client";
+import { PrismaClient, UserRole } from "../src/generated/prisma/client";  // seed runs outside the app bundler: use a relative path
+import { PrismaPg } from "@prisma/adapter-pg";
+import "dotenv/config";
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log("🌱 Starting seed...");
@@ -104,16 +109,15 @@ main()
 ```bash
 # ── Running the seed ───────────────────────────────────────────────────────
 npx prisma db seed
-# Runs the seed script defined in package.json "prisma.seed"
+# Runs the seed script defined in prisma.config.ts → migrations.seed
 
-# Auto-seeding: prisma migrate reset automatically runs seed after reset
+# Prisma 7: seeding is NO LONGER automatic after migrate reset / migrate dev
+# (and the --skip-seed flag was removed). Run the seed explicitly:
 npx prisma migrate reset
 # 1. Drops all tables
 # 2. Reapplies all migrations
-# 3. Runs prisma db seed ✅
-
-# Also: prisma migrate dev runs seed after creating the first migration
-# (only if --skip-seed is not passed)
+npx prisma db seed      # 3. seed explicitly ✅
+# Before Prisma 7, migrate reset (and the first migrate dev) ran the seed for you.
 ```
 
 ```typescript
@@ -206,7 +210,7 @@ beforeAll(async () => {
 ## W — Why It Matters
 
 - Using `upsert` instead of `create` in seed scripts makes them **idempotent** — you can run `prisma db seed` repeatedly without duplicating data. This is essential for teams where seeding is part of the setup script and may run multiple times.
-- `prisma migrate reset` + automatic seed is the one-command "fresh start" for development — drop everything, reapply all migrations, seed. Every developer on the team can reset to a known-good state with one command. Without seed, the reset just leaves an empty database.
+- `prisma migrate reset` followed by `prisma db seed` (Prisma 7 no longer seeds automatically) is the two-command "fresh start" for development — drop everything, reapply all migrations, seed. Every developer on the team can reset to a known-good state with two commands (put them in one npm script). Without seed, the reset just leaves an empty database.
 - Large-scale seed with `faker` + `createMany` is critical for realistic performance testing — an app that performs well with 10 rows may be completely different with 1 million rows. Seeding realistic data volumes lets you catch N+1 queries, missing indexes, and slow queries during development instead of in production.
 
 ---
@@ -256,10 +260,14 @@ Write a complete `prisma/seed.ts` for an e-commerce platform with: (1) 3 product
 ```typescript
 // prisma/seed.ts
 
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '../src/generated/prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { faker } from '@faker-js/faker'
+import 'dotenv/config'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+})
 
 // ── Reference data — idempotent, safe everywhere ──────────────────────────
 async function seedCategories() {

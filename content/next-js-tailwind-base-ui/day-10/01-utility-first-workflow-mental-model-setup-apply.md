@@ -77,17 +77,16 @@ Utility-first (Tailwind):
 }
 
 /* Step 3: Custom utilities (replaces plugins for simple utilities) */
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-  .text-pretty {
-    text-wrap: pretty;
-  }
-  .scrollbar-hide {
-    scrollbar-width: none;
-  }
-  .scrollbar-hide::-webkit-scrollbar {
+/* v4: @utility registers a custom utility (works with variants like hover:); v3 used @layer utilities { .name {} } */
+@utility text-balance {
+  text-wrap: balance;
+}
+@utility text-pretty {
+  text-wrap: pretty;
+}
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
     display: none;
   }
 }
@@ -199,7 +198,7 @@ theme.extend.colors.brand: {...}   --color-brand-500: #3b82f6 in @theme
 arbitrary values: bg-[#1a2b3c]     Still works ✅
 JIT (just-in-time)                 Always-on (no separate JIT config)
 purge/content: [...]               Automatic content detection ✅
-plugins: [...]                     @layer utilities {} in CSS
+plugins: [...]                     @utility / @plugin in CSS
 ```
 
 ---
@@ -237,16 +236,17 @@ plugins: [...]                     @layer utilities {} in CSS
 }
 ```
 
-**Fix:** Import Tailwind only in `globals.css`:
+**Fix:** Import Tailwind only in `globals.css`, and in each CSS Module that uses `@apply`, add `@reference` pointing at it (Tailwind v4 — v3 didn't need this):
 
 ```css
 /* globals.css — only place */
 @import "tailwindcss";
 
-/* button.module.css — use @apply, no @import */
+/* button.module.css — @reference (not @import) gives @apply access to your theme */
+@reference "../../app/globals.css";
 .button {
   @apply px-4 py-2 rounded-lg;
-} /* ← works because globals.css imported it ✅ */
+} /* ← v4: CSS Modules are processed separately, so @apply needs @reference ✅ */
 ```
 
 ### ❌ Pitfall: Using `@apply` for one-off styles instead of inline utilities
@@ -277,7 +277,7 @@ Set up a complete Tailwind v4.3 config in `globals.css` with:
 
 1. `@import "tailwindcss"`
 2. `@theme` block with 4 brand colors, custom spacing (`18`, `22`), 2 font stacks, and a custom shadow
-3. `@layer utilities` with `text-balance`, `text-pretty`, and `scrollbar-hide`
+3. `@utility` blocks for `text-balance`, `text-pretty`, and `scrollbar-hide`
 4. A base `body` style using the font variable
 5. Write a `<HeroCard>` component using ONLY Tailwind utilities (no CSS) — flex layout, padding, brand color background, custom font
 
@@ -302,17 +302,16 @@ Set up a complete Tailwind v4.3 config in `globals.css` with:
   --shadow-glow: 0 0 24px -4px rgb(59 130 246 / 0.4);
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-  .text-pretty {
-    text-wrap: pretty;
-  }
-  .scrollbar-hide {
-    scrollbar-width: none;
-  }
-  .scrollbar-hide::-webkit-scrollbar {
+/* v4: @utility registers a custom utility (works with variants like hover:); v3 used @layer utilities { .name {} } */
+@utility text-balance {
+  text-wrap: balance;
+}
+@utility text-pretty {
+  text-wrap: pretty;
+}
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
     display: none;
   }
 }

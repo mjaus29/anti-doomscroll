@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-`NextRequest` extends the Web `Request` API with Next.js-specific properties (`nextUrl`, `cookies`, `geo`, `ip`). `NextResponse` extends the Web `Response` API with helpers for JSON, redirects, rewrites, and cookie management. They are the primary tools for building Route Handlers and Middleware.
+`NextRequest` extends the Web `Request` API with Next.js-specific properties (`nextUrl`, `cookies`). `NextResponse` extends the Web `Response` API with helpers for JSON, redirects, rewrites, and cookie management. They are the primary tools for building Route Handlers and Proxy.
 
 ---
 
@@ -44,11 +44,11 @@ export async function GET(request: NextRequest) {
   const formData = await request.formData(); // multipart form data
   const arrayBuffer = await request.arrayBuffer(); // binary data
 
-  // ─── IP and Geo (Vercel-specific)
-  const ip = request.ip; // client IP
-  const country = request.geo?.country; // 'US'
-  const city = request.geo?.city; // 'San Francisco'
-  const region = request.geo?.region; // 'CA'
+  // ─── IP and Geo (host-specific headers — request.ip / request.geo were removed in Next.js 15)
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]; // client IP
+  const country = request.headers.get("x-vercel-ip-country"); // 'US' (Vercel; or use ipAddress()/geolocation() from @vercel/functions)
+  const city = request.headers.get("x-vercel-ip-city"); // 'San Francisco' (URL-encoded)
+  const region = request.headers.get("x-vercel-ip-country-region"); // 'CA'
 
   return NextResponse.json({ status: "ok" });
 }
@@ -165,10 +165,10 @@ export async function GET(request: NextRequest) {
 
 ```tsx
 // When you need to modify response headers from a component returned value
-// (common in Middleware)
+// (common in Proxy)
 import { NextResponse } from "next/server";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const response = NextResponse.next(); // pass through to the page
 
   // Add security headers to every response
@@ -202,7 +202,7 @@ export function middleware(request: NextRequest) {
 
 ### Q1: What is the difference between `NextRequest` and the standard Web `Request`?
 
-**A:** `NextRequest` extends the standard Web `Request` API with Next.js-specific additions: `nextUrl` (a `NextURL` object with `.pathname`, `.searchParams`, `.host` pre-parsed and editable for rewrites/redirects), `cookies` (a `RequestCookies` object with `.get()`, `.getAll()`, `.has()` methods), and `geo`/`ip` properties (on Vercel deployments) for client geolocation and IP. The standard `Request` has only `url` as a string and no cookie helpers. In Route Handlers and Middleware, always use `NextRequest` for these enhanced capabilities.
+**A:** `NextRequest` extends the standard Web `Request` API with Next.js-specific additions: `nextUrl` (a `NextURL` object with `.pathname`, `.searchParams`, `.host` pre-parsed and editable for rewrites/redirects), `cookies` (a `RequestCookies` object with `.get()`, `.getAll()`, `.has()` methods). (`request.geo` and `request.ip` were removed in Next.js 15 — read host headers such as `x-forwarded-for`/`x-vercel-ip-country`, or use `@vercel/functions`' `geolocation()` / `ipAddress()`.) The standard `Request` has only `url` as a string and no cookie helpers. In Route Handlers and Proxy, always use `NextRequest` for these enhanced capabilities.
 
 ### Q2: How do you handle CORS in Next.js Route Handlers?
 

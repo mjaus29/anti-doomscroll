@@ -268,7 +268,7 @@ Build an `OrderService` with three nested write operations: (1) `placeOrder` —
 
 ```typescript
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 
 // ── (1) placeOrder — create with items + connect discount code ─────────────
 interface PlaceOrderInput {

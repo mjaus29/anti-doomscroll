@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-`z.infer<typeof Schema>` gives you the **output type** — what the form data looks like after Zod parses it. Pass this as the generic to `useForm<T>`. This makes `register`, `errors`, `watch`, `getValues`, and `setValue` fully type-safe — TypeScript catches invalid field names at compile time.
+`z.infer<typeof Schema>` gives you the **output type** — what the form data looks like after Zod parses it. With `zodResolver` (v5+) the form *values* are the schema's **input** type and the `handleSubmit` data is the **output** type, so pass both: `useForm<z.input<S>, unknown, z.output<S>>` (or omit the generic and let it infer from `resolver`). This makes `register`, `errors`, `watch`, `getValues`, and `setValue` fully type-safe — TypeScript catches invalid field names at compile time.
 
 ---
 
@@ -17,7 +17,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 
 const ProfileSchema = z.object({
   username:    z.string().min(3).max(20),
-  email:       z.string().email(),
+  email:       z.email(),
   age:         z.coerce.number().int().min(13),
   role:        z.enum(['admin', 'editor', 'viewer']).default('viewer'),
   bio:         z.string().max(160).optional(),
@@ -33,9 +33,13 @@ const ProfileSchema = z.object({
 //   bio?:       string | undefined
 //   newsletter: boolean
 // }
-type ProfileForm = z.infer<typeof ProfileSchema>
+type ProfileInput  = z.input<typeof ProfileSchema>    // what the form holds (role?, newsletter? optional)
+type ProfileOutput = z.output<typeof ProfileSchema>   // === z.infer — what handleSubmit receives
 
-const { register, formState: { errors }, watch, setValue } = useForm<ProfileForm>({
+// .default() / z.coerce / .transform make input and output differ, so a single
+// useForm<ProfileOutput> conflicts with zodResolver. Pass all three generics:
+const { register, formState: { errors }, watch, setValue } =
+  useForm<ProfileInput, unknown, ProfileOutput>({
   resolver:      zodResolver(ProfileSchema),
   defaultValues: { username: '', email: '', age: 18, role: 'viewer', newsletter: false }
 })
@@ -64,13 +68,13 @@ setValue('age',  'twenty')  // ❌ TypeScript error — expects number
 
 const Schema = z.object({ age: z.coerce.number().int().min(18) })
 type FormOutput = z.infer<typeof Schema>          // { age: number }
-type FormInput  = z.input<typeof Schema>           // { age: unknown }
+type FormInput  = z.input<typeof Schema>           // { age: unknown }  (Zod 4: coerce input is `unknown`)
 
-// useForm<FormOutput> is correct — RHF coerces values at submit time
-// The <input> field still produces a string, but after schema.safeParse,
-// data.age is a number ✅
-useForm<FormOutput>({ resolver: zodResolver(Schema) })
-// handleSubmit data.age → number ✅
+// Form values = INPUT type, submitted data = OUTPUT type. The <input> still
+// produces a string, but after schema.safeParse, data.age is a number ✅
+useForm<FormInput, unknown, FormOutput>({ resolver: zodResolver(Schema) })
+// handleSubmit(data => data.age) → number ✅
+// Before @hookform/resolvers v5 / Zod 4, a single useForm<FormOutput> was enough.
 
 // ─── defaultValues must match the INPUT type
 // age field is a number in the schema but the input renders a string
@@ -83,16 +87,16 @@ defaultValues: { age: 18 }  // renders as "18" in the input ✅
 ## W — Why It Matters
 
 - Full TypeScript safety across the entire form: if you rename a field in the schema, every `register('oldName')` call becomes a TypeScript error immediately — no runtime surprises.
-- `useForm<z.infer<typeof Schema>>` means your `handleSubmit` callback's `data` parameter is precisely typed — `data.age` is `number`, not `string | number | unknown`.
+- `useForm<z.input<typeof Schema>, unknown, z.output<typeof Schema>>` means your `handleSubmit` callback's `data` parameter is precisely typed — `data.age` is `number`, not `string | number | unknown`.
 - The pattern of coercing at the schema level (`z.coerce.number()`) instead of using `valueAsNumber` on register means the type flows correctly from schema → form type → submit handler type, all from one definition.
 
 ---
 
 ## I — Interview Q&A
 
-### Q: Should you use `z.infer` or `z.input` as the generic for `useForm<T>` when your schema has coerce or transforms?
+### Q: Which type should you give `useForm` when your schema has coerce, defaults or transforms?
 
-**A:** Use `z.infer` (which is `z.output`) in almost all cases — it represents what the data looks like after Zod runs, which is what your `handleSubmit` callback receives. The HTML input always sends strings to the browser regardless of the TypeScript type — RHF reads the raw DOM value, passes it to Zod, and Zod coerces it. The inferred output type is what you care about in your submit handler. The only exception is when you have complex transforms that dramatically change the shape — in that case use `z.input` for the form type so `register` field names match the pre-transform shape.
+**A:** Use both. `useForm<z.input<S>, unknown, z.output<S>>` — the first generic is the type of the form *values* (the schema input, which is what `register`, `watch` and `defaultValues` work with), the third is the type `handleSubmit` receives after Zod runs (the schema output, `z.infer`). `zodResolver` infers the two separately, so a single `useForm<z.infer<S>>` stops compiling as soon as the schema has `.default()`, `z.coerce` or `.transform()`. If the schema has none of those, input equals output and a single generic still works — or simply omit the generic and let TypeScript infer from `resolver`.
 
 ---
 
@@ -102,7 +106,7 @@ defaultValues: { age: 18 }  // renders as "18" in the input ✅
 
 ```tsx
 // ❌ No defaultValues — RHF can't track isDirty, inputs are uncontrolled
-const { register } = useForm<ProfileForm>({
+const { register } = useForm<ProfileInput, unknown, ProfileOutput>({
   resolver: zodResolver(ProfileSchema)
   // missing defaultValues
 })
@@ -113,7 +117,7 @@ const { register } = useForm<ProfileForm>({
 
 ```tsx
 // ✅
-useForm<ProfileForm>({
+useForm<ProfileInput, unknown, ProfileOutput>({
   resolver:      zodResolver(ProfileSchema),
   defaultValues: { username: '', email: '', age: 18, role: 'viewer', newsletter: false }
 })
@@ -144,11 +148,11 @@ const CreateProductSchema = z.object({
   featured:    z.boolean().default(false)
 })
 
-type CreateProduct = z.infer<typeof CreateProductSchema>
-// { name: string; price: number; category: ...; description?: string; featured: boolean }
+type CreateProductInput  = z.input<typeof CreateProductSchema>    // price: unknown, featured?: boolean
+type CreateProductOutput = z.output<typeof CreateProductSchema>   // { name: string; price: number; ...; featured: boolean }
 
 export function CreateProductForm() {
-  const { register, handleSubmit, formState: { errors } } = useForm<CreateProduct>({
+  const { register, handleSubmit, formState: { errors } } = useForm<CreateProductInput, unknown, CreateProductOutput>({
     resolver:      zodResolver(CreateProductSchema),
     defaultValues: { name: '', price: 0, category: 'electronics', featured: false }
   })

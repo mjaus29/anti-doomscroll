@@ -15,7 +15,7 @@ RHF supports nested fields via dot-notation strings — `register('address.city'
 const OrderSchema = z.object({
   customer: z.object({
     name:  z.string().min(1, 'Name required'),
-    email: z.string().email('Invalid email')
+    email: z.email('Invalid email')
   }),
   shipping: z.object({
     street:  z.string().min(5),
@@ -153,7 +153,7 @@ type F = z.infer<typeof Schema>
 
 export function OrderAddressForm() {
   const { register, handleSubmit, control, setValue, getValues,
-          formState: { errors } } = useForm<F>({
+          formState: { errors } } = useForm<z.input<typeof Schema>, unknown, z.output<typeof Schema>>({
     resolver:      zodResolver(Schema),
     defaultValues: {
       billing:       { name: '', street: '', city: '' },

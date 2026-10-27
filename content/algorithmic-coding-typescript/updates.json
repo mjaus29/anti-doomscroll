@@ -1,0 +1,22 @@
+{
+  "updates": [
+    {
+      "lesson": "day-01/02-big-o-time-and-space-complexity",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "O(n²) limit made consistent with the rest of the course: about n ≤ 10³–10⁴.",
+      "changes": [
+        "Key Concepts — constraints table: `n ≤ 10³` → `n ≤ 10³`–`10⁴` for O(n²)."
+      ]
+    },
+    {
+      "lesson": "day-12/05-pattern-cheat-sheet-and-mock-interview",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "O(n²) limit made consistent with day-01/02: about n ≤ 10³–10⁴.",
+      "changes": [
+        "Key Concepts — pattern/constraints table: `≤ 10⁴` → `≤ 10³–10⁴` for O(n²)."
+      ]
+    }
+  ]
+}

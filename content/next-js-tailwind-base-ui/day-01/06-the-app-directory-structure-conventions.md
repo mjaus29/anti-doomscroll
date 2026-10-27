@@ -21,7 +21,7 @@ ROUTE files (recognized by Next.js — create routing behavior):
   not-found.tsx     → shown when notFound() is called
   template.tsx      → like layout but remounts on each navigation
   route.ts / route.js  → API endpoint (no UI)
-  middleware.ts     → edge middleware (must be at root of app or src)
+  proxy.ts     → request proxy, runs before routing (Next 16; was middleware.ts) — must be at project root or src/
 
 NON-ROUTE files (ignored by router — co-location):
   components/

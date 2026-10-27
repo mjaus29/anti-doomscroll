@@ -59,11 +59,11 @@ const BookingSchema = z.object({
   checkOut: z.coerce.date()
 })
 .refine(d => isBefore(d.checkIn, d.checkOut), {
-  message: 'Check-out must be after check-in',
+  error: 'Check-out must be after check-in',
   path:    ['checkOut']
 })
 .refine(d => isAfter(d.checkIn, addDays(new Date(), -1)), {
-  message: 'Check-in cannot be in the past',
+  error: 'Check-in cannot be in the past',
   path:    ['checkIn']
 })
 
@@ -87,7 +87,7 @@ const isPastDeadline    = isPast(deadline)
 
 ### Q: How do you validate that a check-out date is at least 1 day after check-in in a Zod schema?
 
-**A:** Use `.refine()` on the object schema with `isBefore` or `isAfter` from date-fns: `.refine(data => isAfter(data.checkOut, data.checkIn), { message: '...', path: ['checkOut'] })`. This checks the whole object after individual fields validate. For "at least 1 day after", use `isAfter(data.checkOut, data.checkIn)` since `isAfter` is strictly after — same day returns `false`. If you need "same day or after", use `!isBefore(data.checkOut, data.checkIn)` or compare with `addDays(data.checkIn, -1)`.
+**A:** Use `.refine()` on the object schema with `isBefore` or `isAfter` from date-fns: `.refine(data => isAfter(data.checkOut, data.checkIn), { error: '...', path: ['checkOut'] })`. This checks the whole object after individual fields validate. For "at least 1 day after", use `isAfter(data.checkOut, data.checkIn)` since `isAfter` is strictly after — same day returns `false`. If you need "same day or after", use `!isBefore(data.checkOut, data.checkIn)` or compare with `addDays(data.checkIn, -1)`.
 
 ---
 
@@ -131,19 +131,19 @@ const EventDateSchema = z.object({
   registrationDeadline: z.coerce.date()
 })
 .refine(d => isFuture(d.startDate), {
-  message: 'Start date must be in the future',
+  error: 'Start date must be in the future',
   path:    ['startDate']
 })
 .refine(d => isAfter(d.endDate, d.startDate), {
-  message: 'End date must be after start date',
+  error: 'End date must be after start date',
   path:    ['endDate']
 })
 .refine(d => isBefore(d.registrationDeadline, d.startDate), {
-  message: 'Registration deadline must be before the event start',
+  error: 'Registration deadline must be before the event start',
   path:    ['registrationDeadline']
 })
 .refine(d => isFuture(d.registrationDeadline), {
-  message: 'Registration deadline must be in the future',
+  error: 'Registration deadline must be in the future',
   path:    ['registrationDeadline']
 })
 

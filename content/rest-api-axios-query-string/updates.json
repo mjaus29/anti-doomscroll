@@ -1,0 +1,37 @@
+{
+  "updates": [
+    {
+      "lesson": "day-05/07-null-empty-value-handling",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "query-string does not drop null by default: null becomes a bare key (`page`); only undefined is dropped.",
+      "changes": [
+        "TL;DR — added the actual defaults (undefined dropped, null → bare key, '' → `q=`).",
+        "Key Concepts — default example output `'q=&sort=price'` → `'page&q=&sort=price'`; `skipNull` heading/comment now says undefined is always skipped.",
+        "Why It Matters — \"null is dropped by default\" → null becomes a bare `?page`.",
+        "Interview Q&A — Q1 and Q3 corrected (null serializes as a bare key; a bare key parses to null, not undefined).",
+        "Common Pitfalls — unclean-filters example output now `'category&page=1&q=&sort=price'`."
+      ]
+    },
+    {
+      "lesson": "day-04/11-abortcontroller-based-cancellation",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Typo fix in a code comment: \"Axis\" → \"Axios\".",
+      "changes": [
+        "Key Concepts — code comment \"Axis listens to it\" → \"Axios listens to it\"."
+      ]
+    },
+    {
+      "lesson": "day-04/06-interceptor-execution-order-request-before-response",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "The first-added interceptor sits closest to the network (runs last for requests, first for responses), not on the outside.",
+      "changes": [
+        "Key Concepts — timing-pattern explanation rewritten: register the stamp/read pair first so it brackets the HTTP call.",
+        "Key Concepts — \"outer shell\" claim reversed: first-added is the innermost layer, last-added the outermost.",
+        "Interview Q&A — Q1 \"first added is the outermost wrapper\" → first added runs last, closest to the network; Q3 explanation aligned."
+      ]
+    }
+  ]
+}

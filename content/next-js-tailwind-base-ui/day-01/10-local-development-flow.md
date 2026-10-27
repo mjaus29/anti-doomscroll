@@ -258,8 +258,8 @@ Write a `package.json` scripts section for a Next.js 16 project that:
     "dev:network": "next dev --turbopack --hostname 0.0.0.0 --port 3000",
     "build": "npm run type-check && npm run lint && next build",
     "start": "next start",
-    "lint": "next lint",
-    "lint:fix": "next lint --fix",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf .next node_modules/.cache",
     "clean:all": "rm -rf .next node_modules && npm install"

@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-Next.js 16 + `create-next-app` sets up Tailwind CSS v4 with PostCSS automatically. Tailwind v4 uses a CSS-first configuration approach — most setup happens in `globals.css` instead of `tailwind.config.ts`. Write utility classes directly in JSX. No CSS files needed for 90% of styling.
+Next.js 16 + `create-next-app` sets up Tailwind CSS v4 with PostCSS automatically. Tailwind v4 uses a CSS-first configuration approach — all setup happens in `globals.css` — `create-next-app` generates no `tailwind.config.ts`. Write utility classes directly in JSX. No CSS files needed for 90% of styling.
 
 ---
 
@@ -48,20 +48,7 @@ body {
 }
 ```
 
-```ts
-// tailwind.config.ts — still present but minimal in v4
-import type { Config } from "tailwindcss";
-
-const config: Config = {
-  content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
-};
-
-export default config;
-```
+> **v4: no `tailwind.config.ts`.** `create-next-app` generates only `globals.css` (with `@import "tailwindcss"`) and `postcss.config.mjs`. Template files are detected automatically; add extra folders with `@source "../path"` in CSS. Before v4 you had a `tailwind.config.ts` with a `content` array.
 
 ```js
 // postcss.config.mjs
@@ -126,10 +113,11 @@ export default function HomePage() {
 }
 ```
 
-### Extending the Theme (Tailwind v3 Style — `tailwind.config.ts`)
+### Extending the Theme (Legacy Tailwind v3 Style — `tailwind.config.ts`)
 
 ```ts
-// tailwind.config.ts — v3 compatible approach
+// tailwind.config.ts — legacy v3 approach; v4 only loads it if you opt in from CSS with:
+//   @config "../../tailwind.config.ts";   (prefer @theme in CSS for new code)
 import type { Config } from "tailwindcss";
 
 const config: Config = {

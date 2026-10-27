@@ -123,7 +123,8 @@ GROUP BY o.id, c.id, c.name, c.email;
 ```prisma
 // Map the view in schema.prisma (with preview feature):
 generator client {
-  provider        = "prisma-client-js"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
   previewFeatures = ["views"]
 }
 
@@ -319,7 +320,8 @@ WHERE p.deleted_at IS NULL;
 // schema.prisma additions:
 
 generator client {
-  provider        = "prisma-client-js"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
   previewFeatures = ["views"]
 }
 

@@ -248,7 +248,7 @@ export default function SettingsLayout({
 
 ### Q3: Where is the best place to put the authentication check for a dashboard?
 
-**A:** In the outermost group layout — `src/app/(dashboard)/layout.tsx`. This is a Server Component that runs before any page renders. One auth check protects every route in the group. Middleware (`middleware.ts`) is the other valid location and runs even earlier (before the layout), making it ideal for redirecting unauthenticated users before any server work happens. The defense-in-depth pattern uses both: middleware for the fast redirect, layout for fetching the user object needed by the UI.
+**A:** In the outermost group layout — `src/app/(dashboard)/layout.tsx`. This is a Server Component that runs before any page renders. One auth check protects every route in the group. Proxy (`proxy.ts`) is the other valid location and runs even earlier (before the layout), making it ideal for redirecting unauthenticated users before any server work happens. The defense-in-depth pattern uses both: proxy for the fast redirect, layout for fetching the user object needed by the UI.
 
 ---
 

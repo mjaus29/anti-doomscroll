@@ -34,7 +34,7 @@ INCLUDES:
   ✅ Focus management (focus trap in dialogs, focus restoration)
   ✅ Floating UI positioning (Popover, Menu, Select, Tooltip)
   ✅ Open/close state management (controlled + uncontrolled)
-  ✅ data-state attributes ("open", "closed", "checked", etc.)
+  ✅ data-* state attributes (data-open, data-closed, data-checked, etc.)
   ✅ Portal rendering (outside DOM tree)
   ✅ Composable anatomy (Root/Trigger/Content/etc.)
 
@@ -63,7 +63,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className="bg-[--color-bg] text-[--color-text] font-sans
+        className="bg-(--color-bg) text-(--color-text) font-sans
                         antialiased"
       >
         {children}
@@ -77,7 +77,7 @@ export default function RootLayout({
 // Example: using a Base UI component directly in a page
 // No provider, no setup, no CSS import — just import and use
 
-import * as Popover from "@base-ui/react/popover";
+import { Popover } from "@base-ui/react/popover";
 
 export default function Page() {
   return (
@@ -96,29 +96,26 @@ export default function Page() {
 ### Import Patterns
 
 ```tsx
-// ─── Namespace import (recommended — clear which component set)
-import * as Popover from "@base-ui/react/popover";
-import * as Dialog from "@base-ui/react/dialog";
-import * as Menu from "@base-ui/react/menu";
-import * as Select from "@base-ui/react/select";
-import * as Tabs from "@base-ui/react/tabs";
-import * as Tooltip from "@base-ui/react/tooltip";
-import * as Toast from "@base-ui/react/toast";
-import * as Switch from "@base-ui/react/switch";
-import * as Checkbox from "@base-ui/react/checkbox";
-import * as Slider from "@base-ui/react/slider";
-import * as Progress from "@base-ui/react/progress";
+// ─── Named import of the component namespace (the documented way)
+// Each subpath exports ONE namespace named after the component.
+// (Older lessons/tutorials used `import * as Popover from ...`; the Base UI docs now
+// show `import { Popover } from ...`, which is what you should write.)
+import { Popover } from "@base-ui/react/popover";
+import { Dialog } from "@base-ui/react/dialog";
+import { Menu } from "@base-ui/react/menu";
+import { Select } from "@base-ui/react/select";
+import { Tabs } from "@base-ui/react/tabs";
+import { Tooltip } from "@base-ui/react/tooltip";
+import { Toast } from "@base-ui/react/toast";
+import { Switch } from "@base-ui/react/switch";
+import { Checkbox } from "@base-ui/react/checkbox";
+import { Slider } from "@base-ui/react/slider";
+import { Progress } from "@base-ui/react/progress";
 
-// ─── Named import (alternative — for tree-shaking explicit control)
-import {
-  Root,
-  Trigger,
-  Portal,
-  Positioner,
-  Popup,
-} from "@base-ui/react/popover";
+// ─── Aliasing (useful when your wrapper exports the same name)
+import { Popover as PopoverPrimitive } from "@base-ui/react/popover";
 
-// ─── Usage with namespace (preferred in this curriculum)
+// ─── Usage
 <Popover.Root>
   <Popover.Trigger>Click me</Popover.Trigger>
   <Popover.Portal>
@@ -155,7 +152,7 @@ src/
 
 - `@base-ui/react` was built by the MUI team with accessibility as the primary constraint — WAI-ARIA patterns, keyboard navigation, focus management, and screen reader compatibility are built in and tested. Building these from scratch is weeks of work; Base UI provides them for free.
 - The zero-style philosophy means your design system is never constrained by component library defaults — you don't spend time overriding another library's CSS, fighting specificity, or loading unused styles. The final bundle contains only the CSS you write.
-- Base UI v1.4.1 uses `data-state` attributes (open/closed, checked/unchecked, etc.) as its styling API — this integrates perfectly with Tailwind's `data-[state=]:` variant system covered in Day 11.
+- Base UI v1.4.1 uses boolean `data-*` attributes (`data-open`/`data-closed`, `data-checked`/`data-unchecked`, etc. — not Radix-style `data-state="open"`) as its styling API — this integrates perfectly with Tailwind's `data-[open]:` variant system covered in Day 11.
 
 ---
 
@@ -218,7 +215,7 @@ export function cn(...inputs: ClassValue[]) {
 // src/components/ui/test-popover.tsx
 "use client";
 
-import * as Popover from "@base-ui/react/popover";
+import { Popover } from "@base-ui/react/popover";
 import { cn } from "@/lib/cn";
 
 export function TestPopover() {

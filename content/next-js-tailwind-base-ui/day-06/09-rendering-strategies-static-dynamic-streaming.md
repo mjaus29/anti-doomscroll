@@ -257,7 +257,7 @@ export default async function RootLayout({ children }) {
 // ThemeProvider.tsx ('use client') reads localStorage/cookies on mount
 
 // ✅ Option B: Keep layout static, apply theme via CSS class on <html>
-// Use middleware to set a cookie and a class on the response
+// Use proxy to set a cookie and a class on the response
 // Or use CSS custom properties that JavaScript sets on load
 export default function RootLayout({ children }) {
   // No cookies() here — layout stays static

@@ -77,7 +77,7 @@ Most interview problems are one of about 20 patterns in disguise. Read the probl
 | :---------- | :----- | :-------------- |
 | ≤ 20 | `O(2ⁿ)` or `O(n!)` | Backtracking over every choice |
 | ≤ 500 | `O(n³)` | Triple loop, interval DP |
-| ≤ 10⁴ | `O(n²)` | Pair loops, 2D DP |
+| ≤ 10³–10⁴ | `O(n²)` | Pair loops, 2D DP |
 | ≤ 10⁶ | `O(n log n)` or `O(n)` | Sort, heap, binary search, hash map, window |
 | ≥ 10⁹ (a value, not a length) | `O(log n)` | Binary search on the answer, fast power |
 

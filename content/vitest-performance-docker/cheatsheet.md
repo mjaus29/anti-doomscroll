@@ -106,7 +106,7 @@ it('debounces calls', async () => {
 | :------ | :----------- | :---- |
 | `vi.clearAllMocks()` | Clears `mock.calls` / results; keeps implementations | `beforeEach` |
 | `vi.resetAllMocks()` | Clears calls and drops `mockReturnValue` / `mockImplementation` | When each test sets its own behaviour |
-| `vi.restoreAllMocks()` | Puts `vi.spyOn` originals back | `afterEach` whenever you spy |
+| `vi.restoreAllMocks()` | Puts `vi.spyOn` originals back (Vitest 4: does not clear call history or reset `vi.fn()` mocks) | `afterEach` whenever you spy |
 
 Lessons: [Fake Timers](/group/vitest-performance-docker/day/02/04-fake-timers-settimeout-setinterval-debounce) · [Module Mocking](/group/vitest-performance-docker/day/02/08-module-mocking-vi-mock) · [Global Mocking](/group/vitest-performance-docker/day/02/09-global-mocking-vi-stubglobal-and-vi-stubenv) · [Reset vs Clear vs Restore](/group/vitest-performance-docker/day/02/10-reset-vs-clear-vs-restore-and-test-isolation)
 
@@ -133,11 +133,11 @@ it('shows an error for an empty email', () => {
 
 | Browser Mode fact | Detail |
 | :---------------- | :------ |
-| Enable | `browser: { enabled: true, provider: ... }` + `npm i -D @vitest/browser playwright` |
+| Enable | `browser: { enabled: true, provider: playwright(), instances: [{ browser: 'chromium' }] }` + `npm i -D @vitest/browser-playwright` |
 | Isolation | Fresh browser context (like incognito) per test **file**; clean the DOM between tests in a file |
 | Real input | `await userEvent.type(input, 'Mark')` · `await userEvent.click(button)` (always `await`) |
-| Version note | Lessons show `provider: 'playwright'` and imports from `@vitest/browser/context`. Vitest 4 uses `provider: playwright()` from `@vitest/browser-playwright`, `instances: [{ browser: 'chromium' }]`, and imports from `vitest/browser` |
-| Mixed suites | Keep most tests in jsdom; run `*.browser.test.ts` in a separate project (`test.projects`, which replaced `vitest.workspace.ts` in Vitest 3.2+) |
+| Version note | Vitest 4: `provider: playwright()` from `@vitest/browser-playwright`, `instances: [{ browser: 'chromium' }]`, and `import { page, userEvent } from 'vitest/browser'`. Before Vitest 4: `provider: 'playwright'`, `name: 'chromium'`, and `@vitest/browser/context`. `page` is Vitest's locator API (use `expect.element(...)`), not the raw Playwright `Page` |
+| Mixed suites | Keep most tests in jsdom; run `*.browser.test.ts` in a separate project (`test.projects`, which replaced `vitest.workspace.ts`; `environmentMatchGlobs` is gone too; use `extends: true` to inherit root plugins) |
 
 Lessons: [jsdom Fundamentals](/group/vitest-performance-docker/day/03/01-jsdom-fundamentals-what-it-is-and-how-vitest-uses-it) · [DOM Interaction Testing](/group/vitest-performance-docker/day/03/03-dom-interaction-testing-query-fire-assert) · [Browser Mode Setup](/group/vitest-performance-docker/day/03/06-browser-mode-setup-vitest-real-browser) · [Simulated vs Real Browser](/group/vitest-performance-docker/day/03/08-simulated-vs-real-browser-choosing-the-right-environment)
 
@@ -148,9 +148,9 @@ Lessons: [jsdom Fundamentals](/group/vitest-performance-docker/day/03/01-jsdom-f
 | Coverage report | `vitest run --coverage` | `v8` = fast, built in; `istanbul` = instrumented |
 | Enforce minimums | `coverage.thresholds: { lines: 80, branches: 75 }` | Fails the run below the floor |
 | Reporters | `text` (terminal), `html` (local browsing), `lcov` (CI tools) | |
-| Include untested files | `coverage.include: ['src/**']` | Older lessons use `all: true` (removed in Vitest 4) |
+| Include untested files | `coverage.include: ['src/**']` | `coverage.all` was removed in Vitest 4: only files matching `include` (or loaded by tests) are reported |
 | Find slow tests | `--reporter=verbose`, `slowTestThreshold` | Usually heavy `beforeAll`/`beforeEach`, real timers, real network |
-| Pool | `pool: 'threads'` (fast) / `'forks'` (isolated, native addons) / `'vmThreads'` | |
+| Pool | `pool: 'forks'` (default: isolated, native addons) / `'threads'` (lighter) / `'vmThreads'`, `'vmForks'` | `poolOptions` was removed in Vitest 4 |
 | Workers | `maxWorkers: 4` | Run serially: `fileParallelism: false` |
 | Module isolation | `isolate: true` (default) | `false` only after profiling, and only for stateless tests |
 | Shard across CI | `vitest run --shard=2/3` | Splits by file count, not time; merge coverage afterwards |
@@ -215,7 +215,7 @@ module.exports = { ci: { assert: { assertions: {
 | :---- | :------ | :--- |
 | Code split | `const Chart = await import('./Chart')` | Load on demand |
 | Lazy component (Next.js) | `dynamic(() => import('./Modal'))` | Keeps it out of the first bundle |
-| Image | `<Image src=... width height sizes="100vw" priority />` | `priority` = preload + high fetch priority, only for the LCP image (Next.js 16 renames it `preload`) |
+| Image | `<Image src=... width height sizes="100vw" preload />` | Next.js 16: `preload` inserts a preload `<link>`, only for the LCP image; `priority` is deprecated (docs: usually prefer `loading="eager"` or `fetchPriority="high"`, not combined with `preload`) |
 | Font | `Inter({ subsets: ['latin'], display: 'swap' })` | Self-hosted, size-adjusted fallback → near-zero CLS |
 | Third-party script | `<Script strategy="afterInteractive" />` | `lazyOnload` for chat widgets; `beforeInteractive` only for must-run-first scripts |
 | Data cache | `fetch(url, { next: { revalidate: 3600, tags: ['products'] } })` | `revalidateTag('products')` busts it on demand |
@@ -330,7 +330,7 @@ Lessons: [Docker Compose](/group/vitest-performance-docker/day/06/05-docker-comp
 | `setTimeout` sleeps to wait for the DOM | `await vi.waitFor(() => expect(...))` |
 | `--changed` runs everything in CI | Checkout with `fetch-depth: 0` |
 | `--retry=3` to make CI green | Find the shared state or timing assumption and fix it |
-| `loading="lazy"` on the hero image | Eager + `fetchpriority="high"` (Next.js: `priority`) |
+| `loading="lazy"` on the hero image | Eager + `fetchpriority="high"` (Next.js 16: `preload`, or `fetchPriority="high"`) |
 | Images with no `width`/`height` | Set dimensions or `aspect-ratio` to stop layout shift |
 | `COPY . .` before `npm ci` | Copy `package*.json`, install, then copy the source |
 | Connecting to `localhost:5432` from another container | Use the service name: `db:5432` |

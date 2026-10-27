@@ -233,7 +233,7 @@ queryString.stringify(
 | `parseNumbers` / `parseBooleans` | parse | `'2'` to `2`, `'true'` to `true` |
 | `parseNulls` | parse | the string `'null'` to `null` |
 | `decode` / `encode` | parse / stringify | default `true`; `encode: false` only for debugging |
-| `skipNull` | stringify | drop `null` and `undefined` |
+| `skipNull` | stringify | drop `null` keys (default: `null` → bare `key`; `undefined` is always dropped) |
 | `skipEmptyString` | stringify | drop `''` |
 | `sort` | stringify | keys alphabetical by default; `false` keeps insertion order |
 | `arrayFormat` | both | must be the **same** on parse and stringify |

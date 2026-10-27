@@ -124,7 +124,7 @@ Fix options (in order of impact):
 
 ### Challenge
 
-In a Next.js app, a `HeroBanner` component renders the LCP image. Fix it: (1) use `next/image` with `priority`, (2) add the correct `sizes`, (3) ensure no lazy loading, (4) demonstrate the correct import and usage.
+In a Next.js app, a `HeroBanner` component renders the LCP image. Fix it: (1) use `next/image` with `preload` (Next.js 16; `priority` before), (2) add the correct `sizes`, (3) ensure no lazy loading, (4) demonstrate the correct import and usage.
 
 ### Solution
 
@@ -139,7 +139,7 @@ export function HeroBanner() {
         src="/images/hero.jpg"
         alt="Hero banner — main product showcase"
         fill                    // fills the container (replaces width/height for fill mode)
-        priority                // sets fetchpriority="high" + preload link ✅
+        preload                 // Next.js 16: inserts the preload link (was `priority`) ✅
         sizes="100vw"           // full viewport width — accurate srcset selection
         style={{ objectFit: 'cover' }}
         quality={85}            // WebP/AVIF at 85% — good balance

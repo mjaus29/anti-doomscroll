@@ -211,7 +211,7 @@ it('retries failed requests the configured number of times', async () => {
 
 ### Challenge
 
-Design the complete Vitest configuration for a production Next.js app: (1) separate pools for pure utils (threads/fast) and API routes (forks/isolated); (2) coverage at 80% with per-file threshold off; (3) fake timers auto-enabled; (4) `clearMocks`/`restoreMocks` true; (5) `slowTestThreshold: 200`; (6) `globalSetup` + `setupFiles` entries; (7) `package.json` scripts for dev, CI, coverage, changed, and shard runs.
+Design the complete Vitest configuration for a production Next.js app: (1) separate `projects` for pure utils (threads/fast) and API routes (forks/isolated); (2) coverage at 80% with per-file threshold off; (3) fake timers auto-enabled; (4) `clearMocks`/`restoreMocks` true; (5) `slowTestThreshold: 200`; (6) `globalSetup` + `setupFiles` entries; (7) `package.json` scripts for dev, CI, coverage, changed, and shard runs.
 
 ### Solution
 
@@ -246,13 +246,10 @@ export default defineConfig({
 
     // ── Performance ───────────────────────────────────────────────────────
     slowTestThreshold: 200,
-    pool:              'threads',
-    poolOptions: {
-      threads: {
-        maxThreads: parseInt(process.env.CI_THREADS ?? '4'),
-        isolate:    true,
-      }
-    },
+    // Vitest 4: pool options are top-level (poolOptions was removed)
+    pool:              'forks',   // default; use separate `projects` with pool: 'threads' for pure utils if you measure a gain
+    maxWorkers:        parseInt(process.env.CI_THREADS ?? '4'),   // was poolOptions.*.maxThreads / maxForks
+    isolate:           true,
 
     // ── Sequence ──────────────────────────────────────────────────────────
     sequence: {
@@ -347,13 +344,13 @@ PERFORMANCE PROFILING
   afterEach(() => vi.useRealTimers())  → always restore
 
 WORKER POOLS
-  pool: 'threads'  (default — fastest, shared memory)
-  pool: 'forks'    (process isolation — for process.env mutations, native addons)
-  pool: 'vmThreads' (VM isolation — for complex module mock scenarios)
-  maxThreads: CPU count by default — set lower in CI (check CI_THREADS)
+  pool: 'forks'    (default — process isolation: process.env mutations, native addons)
+  pool: 'threads'  (lighter, shared process — pure JS/TS suites; native modules may segfault)
+  pool: 'vmThreads' / 'vmForks' (VM isolation — for complex module mock scenarios)
+  maxWorkers: available parallelism by default (top-level in Vitest 4; was poolOptions.*.maxThreads/maxForks) — set lower in CI (check CI_THREADS)
   isolate: true (default) → fresh module registry per file
   describe.concurrent → parallel within file (no shared mutable state!)
-  singleThread/singleFork → serial execution for DB integration tests
+  maxWorkers: 1 (or fileParallelism: false) → serial execution for DB integration tests (was singleThread/singleFork)
 
 SHARDING
   --shard=N/TOTAL  → runs the Nth segment of test files
@@ -374,7 +371,7 @@ CHANGED-TEST WORKFLOW
 
 MODULE CACHE / SETUP OVERHEAD
   globalSetup → once per process (before workers start) — DB start, fixtures
-  setupFiles  → once per worker × workerCount — custom matchers, global stubs
+  setupFiles  → before every test file — custom matchers, global stubs (keep it cheap)
   beforeAll   → once per describe/file — suite-specific resources
   beforeEach  → per test — cheapest repeatable isolation
   Transaction pattern: beforeEach(begin) + afterEach(rollback) → fast DB isolation

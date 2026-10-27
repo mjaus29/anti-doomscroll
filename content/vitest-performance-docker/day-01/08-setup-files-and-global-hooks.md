@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-Setup files run once before test files and configure the global test environment — import polyfills, set env vars, mock global objects. `beforeAll` / `afterAll` run once per `describe` block. `beforeEach` / `afterEach` run before/after every single test. Use `beforeEach` to reset state between tests and prevent test pollution.
+Setup files run before each test file and configure the global test environment — import polyfills, set env vars, mock global objects. `beforeAll` / `afterAll` run once per `describe` block. `beforeEach` / `afterEach` run before/after every single test. Use `beforeEach` to reset state between tests and prevent test pollution.
 
 ---
 

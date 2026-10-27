@@ -44,7 +44,8 @@ Composite types              │ ❌ None        │ JSONB as workaround
 ```prisma
 // ── Views — partial support via preview feature ───────────────────────────
 generator client {
-  provider        = "prisma-client-js"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
   previewFeatures = ["views"]
 }
 
@@ -141,13 +142,13 @@ model OrderItem {
 ```prisma
 // ── PostgreSQL extensions — preview feature ────────────────────────────────
 generator client {
-  provider        = "prisma-client-js"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
   previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
   provider   = "postgresql"
-  url        = env("DATABASE_URL")
   extensions = [pgcrypto, pg_trgm, uuid_ossp]  // declare extensions
 }
 
@@ -313,7 +314,7 @@ CREATE TRIGGER trigger_products_price_change
 ```typescript
 // Querying price change history with $queryRaw
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 
 interface PriceChangeRow {
   product_id: number;

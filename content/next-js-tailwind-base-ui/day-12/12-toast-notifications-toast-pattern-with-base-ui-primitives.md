@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-`@base-ui/react/toast` provides a full toast notification system — a `useToast` hook, `Viewport` for rendering toasts, and individual `Root`/`Title`/`Description`/`Close`/`Action` anatomy. Toasts are live regions announced by screen readers automatically.
+`@base-ui/react/toast` provides a full toast notification system — a `Toast.useToastManager()` hook (this lesson wraps it as `useToast`), `Viewport` for rendering toasts, and individual `Root`/`Title`/`Description`/`Close`/`Action` anatomy. Toasts are live regions announced by screen readers automatically.
 
 ---
 
@@ -16,7 +16,7 @@
 {
   /* ─── Full anatomy */
 }
-import * as Toast from "@base-ui/react/toast";
+import { Toast } from "@base-ui/react/toast";
 
 {
   /* 1. ToastProvider — wraps the app, manages the toast queue */
@@ -44,7 +44,7 @@ import * as Toast from "@base-ui/react/toast";
 // src/components/ui/toast.tsx
 "use client";
 
-import * as ToastPrimitive from "@base-ui/react/toast";
+import { Toast as ToastPrimitive } from "@base-ui/react/toast";
 import { cn } from "@/lib/cn";
 
 // ─── Provider — wrap app root once
@@ -248,7 +248,7 @@ export function useToast() {
 
 ```tsx
 // src/app/layout.tsx
-import * as ToastPrimitive from "@base-ui/react/toast";
+import { Toast as ToastPrimitive } from "@base-ui/react/toast";
 import { ToastViewport } from "@/components/ui/toast";
 
 export default function RootLayout({

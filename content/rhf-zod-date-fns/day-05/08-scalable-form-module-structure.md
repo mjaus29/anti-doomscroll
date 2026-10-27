@@ -38,7 +38,7 @@ src/
 import { z } from 'zod'
 
 export const CheckoutSchema = z.object({
-  customer: z.object({ name: z.string().min(1), email: z.string().email() }),
+  customer: z.object({ name: z.string().min(1), email: z.email() }),
   shipping: z.object({ street: z.string().min(5), city: z.string(), zip: z.string() }),
   payment:  z.object({ last4: z.string().length(4), expiry: z.string() }),
   saveCard: z.boolean().default(false)
@@ -58,7 +58,7 @@ import { CheckoutSchema, CheckoutForm } from './schema'
 export function useCheckoutForm() {
   const router = useRouter()
 
-  const methods = useForm<CheckoutForm>({
+  const methods = useForm<z.input<typeof CheckoutSchema>, unknown, z.output<typeof CheckoutSchema>>({
     resolver:      zodResolver(CheckoutSchema),
     mode:          'onTouched',
     defaultValues: {
@@ -213,7 +213,7 @@ import { zodResolver }          from '@hookform/resolvers/zod'
 import { CreateProjectSchema, CreateProject } from './schema'
 
 export function useCreateProject(onSuccess?: () => void) {
-  const methods = useForm<CreateProject>({
+  const methods = useForm<z.input<typeof CreateProjectSchema>, unknown, z.output<typeof CreateProjectSchema>>({
     resolver:      zodResolver(CreateProjectSchema),
     mode:          'onTouched',
     defaultValues: { name: '', description: '', visibility: 'private', tags: [] }

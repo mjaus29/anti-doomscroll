@@ -155,7 +155,7 @@ const [open, setOpen] = useState(false)
 
 - Accessibility is the hardest part of interactive components — a Dialog alone requires: focus trapping, Escape key handling, `aria-modal`, `aria-labelledby`, `aria-describedby`, focus restoration on close, body scroll prevention, and screen reader announcements. Base UI implements all of this correctly and cross-browser. Getting it wrong is a legal and UX liability.
 - The separation of behaviour and appearance is not just aesthetic — it means you can completely redesign your app's visual style (new design system, rebrand, dark mode overhaul) without touching any component logic. The behaviour layer is stable; the appearance layer changes freely.
-- `data-state` as the styling API is the key integration point — every time Base UI changes state (open/closed, checked/unchecked, highlighted/disabled), it updates `data-state` on the DOM element. Your Tailwind `data-[state=open]:` variants respond automatically. No `useState` required for visual state.
+- `data-*` attributes are the styling API and the key integration point — every time Base UI changes state (open/closed, checked/unchecked, highlighted/disabled), it toggles attributes like `data-open`, `data-closed` or `data-checked` on the DOM element. Your Tailwind `data-[open]:` variants respond automatically. No `useState` required for visual state.
 
 ---
 
@@ -208,7 +208,7 @@ Build a `<FeatureFlag>` toggle using `@base-ui/react/switch` — demonstrate con
 "use client";
 
 import { useState } from "react";
-import * as Switch from "@base-ui/react/switch";
+import { Switch } from "@base-ui/react/switch";
 import { cn } from "@/lib/cn";
 
 interface FeatureFlagProps {

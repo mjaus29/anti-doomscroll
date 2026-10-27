@@ -1,0 +1,104 @@
+{
+  "updates": [
+    {
+      "lesson": "day-05/02-dom-access-with-refs-forwardref",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "React 19 lets function components take `ref` as a normal prop; `forwardRef` is deprecated.",
+      "changes": [
+        "TL;DR — 'Use `forwardRef` to let parent components access a child's DOM node' → accept `ref` as a prop (React 19); `forwardRef` only needed before 19.",
+        "Key Concepts — `FancyInput` rewritten from `forwardRef(...)` to `function FancyInput({ label, ref, ...props })`, with a 'Before React 19' note (forwardRef still works but is deprecated); removed the `displayName` workaround.",
+        "Why It Matters / Interview Q&A — 'What is forwardRef and why is it needed?' → how `ref` reaches a child in React 19 vs the pre-19 `forwardRef` wrapper.",
+        "Coding Challenge — `ScrollableList` rewritten to take `ref` as a prop (Challenge/Solution headings unchanged)."
+      ]
+    },
+    {
+      "lesson": "day-05/03-useimperativehandle",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "With React 19's `ref` prop, `useImperativeHandle` examples no longer need `forwardRef`.",
+      "changes": [
+        "TL;DR / Key Concepts — 'Used with `forwardRef`' → the `ref` arrives as a normal prop in React 19 (forwardRef import removed, pre-19 noted).",
+        "Key Concepts — `Input`, `ControlledInput` and `Modal` examples rewritten from `forwardRef(...)` to plain components with a `ref` prop.",
+        "Why It Matters / Interview Q&A — wording changed from 'forwardRef receives the ref' to 'the component receives the ref prop (React 19; forwardRef before 19)'.",
+        "Common Pitfalls — stale-deps example `ListHandle` rewritten without `forwardRef`.",
+        "Coding Challenge — `VideoPlayer` rewritten with a `ref` prop instead of `forwardRef`."
+      ]
+    },
+    {
+      "lesson": "day-05/08-external-store-subscriptions",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "The Day 5 mental-model summary still said refs need `forwardRef`.",
+      "changes": [
+        "Mental Model (DOM ACCESS) — 'forwardRef: lets parent access child's internal DOM node' → React 19 `ref` is a normal prop (pre-19: forwardRef).",
+        "Mental Model (useImperativeHandle) — 'Always used with forwardRef' → takes the `ref` prop (React 19) / forwardRef's ref (pre-19)."
+      ]
+    },
+    {
+      "lesson": "day-07/06-loading-error-success-states",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "TanStack Query v5 has no `loading` status; `status` is pending | error | success and `isLoading` is derived.",
+      "changes": [
+        "TL;DR — state machine `pending → loading → success | error` → `status` is `'pending' | 'error' | 'success'`; `isLoading` = `isPending && isFetching`."
+      ]
+    },
+    {
+      "lesson": "day-07/07-react-query-devtools",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Query keys are hashed deterministically (object key order ignored), not compared via plain `JSON.stringify`.",
+      "changes": [
+        "Key Concepts — code comment 'TanStack Query serializes keys with JSON.stringify' → keys are hashed deterministically, object key order ignored."
+      ]
+    },
+    {
+      "lesson": "day-08/01-query-keys-as-unique-serializable-arrays",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Query keys are hashed deterministically (sorted object keys), consistent with lesson 08/03.",
+      "changes": [
+        "TL;DR — 'serializes it with `JSON.stringify`' → hashes it deterministically (a JSON.stringify that sorts object keys, so property order doesn't matter)."
+      ]
+    },
+    {
+      "lesson": "day-08/02-variable-dependent-keys",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Key change detection compares deterministic hashes, not plain `JSON.stringify` strings.",
+      "changes": [
+        "Interview Q&A — 'serializes the current key with `JSON.stringify` and compares' → hashes the key deterministically (object keys sorted) and compares the hashes."
+      ]
+    },
+    {
+      "lesson": "day-08/09-cache-lifecycle",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "The lifecycle lists five phases, not four.",
+      "changes": [
+        "TL;DR — 'four phases' → 'five phases' (fetching → fresh → stale → inactive → deleted)."
+      ]
+    },
+    {
+      "lesson": "day-12/09-map-and-set-usage",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Immer only drafts Map/Set after you call `enableMapSet()` once; otherwise it throws.",
+      "changes": [
+        "TL;DR / Key Concepts — 'work fine with Immer' / 'Immer handles Set natively' → needs a one-time `enableMapSet()` at app startup (added the import and the error Immer throws without it).",
+        "Why It Matters / Interview Q&A — Immer 'natively' handles Map/Set → only after `enableMapSet()`; Zustand's `immer` middleware does not enable it.",
+        "Coding Challenge — `useMultiSelectStore` solution now calls `enableMapSet()` first."
+      ]
+    },
+    {
+      "lesson": "day-12/10-react-tanstack-query-zustand-architecture-boundaries",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "The summary said Map/Set work natively with Immer; they need `enableMapSet()`.",
+      "changes": [
+        "Mental Model — 'In-memory + Immer: Set/Map work natively' → 'work after a one-time enableMapSet()'."
+      ]
+    }
+  ]
+}

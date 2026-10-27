@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-Tailwind's `dark:` variant applies styles when dark mode is active. In v4.3, dark mode is configured via the `@variant dark` rule in CSS — supporting `prefers-color-scheme`, class-based, and attribute-based strategies. The **CSS variable strategy** is the cleanest approach: define tokens in `:root` and override them in `dark:`, then use those variables in your Tailwind utilities.
+Tailwind's `dark:` variant applies styles when dark mode is active. In v4.3, dark mode is configured via the `@custom-variant dark` rule in CSS — supporting `prefers-color-scheme`, class-based, and attribute-based strategies. The **CSS variable strategy** is the cleanest approach: define tokens in `:root` and override them in `dark:`, then use those variables in your Tailwind utilities.
 
 ---
 
@@ -18,14 +18,14 @@ Tailwind's `dark:` variant applies styles when dark mode is active. In v4.3, dar
 
 /* ─── Strategy 1: Media query (automatic, no JS needed) */
 /* This is the DEFAULT in v4 — no extra config needed */
-/* @variant dark (&:where(.dark, .dark *)); — NOT needed for media strategy */
+/* @custom-variant dark (&:where(.dark, .dark *)); — NOT needed for media strategy */
 
 /* ─── Strategy 2: Class-based (requires adding .dark to <html>) */
-@variant dark (&:where(.dark, .dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 /* In your app: document.documentElement.classList.toggle('dark') */
 
 /* ─── Strategy 3: Data-attribute-based */
-@variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 /* In your app: document.documentElement.setAttribute('data-theme', 'dark') */
 ```
 
@@ -137,10 +137,10 @@ export default function RootLayout({ children }) {
 {
   /* Or using Tailwind arbitrary value syntax to reference CSS vars */
 }
-<div className="bg-[--color-bg]">
-  <p className="text-[--color-text]">Auto dark mode ✅</p>
-  <p className="text-[--color-text-muted]">Muted text ✅</p>
-  <div className="border border-[--color-border]">
+<div className="bg-(--color-bg)">
+  <p className="text-(--color-text)">Auto dark mode ✅</p>
+  <p className="text-(--color-text-muted)">Muted text ✅</p>
+  <div className="border border-(--color-border)">
     Border adapts automatically ✅
   </div>
 </div>;
@@ -310,7 +310,7 @@ export function ThemeToggle() {
 
 ### Q2: Why is the CSS variable strategy preferred over explicit `dark:` classes on every element?
 
-**A:** Explicit `dark:` classes require duplicating every color decision in every component — `bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-200 dark:border-gray-700`. As the app grows, this becomes verbose, easy to miss, and hard to change (a design token change requires updating hundreds of `dark:` classes). The CSS variable strategy defines design tokens once in `:root` and `.dark`, then components reference the variable — `bg-[--color-surface] text-[--color-text]`. When the `.dark` class toggles on `<html>`, all variables update simultaneously across the entire app. Changing a dark mode color requires updating one line in CSS, not hunting through dozens of components.
+**A:** Explicit `dark:` classes require duplicating every color decision in every component — `bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-200 dark:border-gray-700`. As the app grows, this becomes verbose, easy to miss, and hard to change (a design token change requires updating hundreds of `dark:` classes). The CSS variable strategy defines design tokens once in `:root` and `.dark`, then components reference the variable — `bg-(--color-surface) text-(--color-text)`. When the `.dark` class toggles on `<html>`, all variables update simultaneously across the entire app. Changing a dark mode color requires updating one line in CSS, not hunting through dozens of components.
 
 ---
 
@@ -418,9 +418,9 @@ export default function RootLayout({ children }) {
 Build a complete dark mode system:
 
 1. `globals.css` with CSS variables for light and dark (background, surface, text, border, brand)
-2. `@variant dark` for class-based dark mode
+2. `@custom-variant dark` for class-based dark mode
 3. A `ThemeToggle` button using `dark:` variants for its own appearance
-4. A `<DarkCard>` component using ONLY CSS variable arbitrary values (`bg-[--color-surface]`) — zero `dark:` classes on the card itself
+4. A `<DarkCard>` component using ONLY CSS variable arbitrary values (`bg-(--color-surface)`) — zero `dark:` classes on the card itself
 5. A `<NavBar>` using explicit `dark:` classes for comparison
 6. FOUC-prevention inline script in root layout
 
@@ -431,7 +431,7 @@ Build a complete dark mode system:
 @import "tailwindcss";
 
 /* Class-based dark mode */
-@variant dark (&:where(.dark, .dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: var(--font-inter), system-ui, sans-serif;
@@ -622,35 +622,35 @@ export function DarkCard({ icon, title, body, badge }: DarkCardProps) {
   return (
     // All colors reference CSS variables — adapt automatically ✅
     <div
-      className="bg-[--color-surface] border border-[--color-border]
+      className="bg-(--color-surface) border border-(--color-border)
                      rounded-2xl p-6 shadow-sm
-                     hover:border-[--color-brand] transition-all duration-200"
+                     hover:border-(--color-brand) transition-all duration-200"
     >
       <div className="flex items-start justify-between mb-4">
         <span className="text-3xl">{icon}</span>
         {badge && (
           <span
             className="px-2.5 py-0.5 text-xs font-semibold rounded-full
-                            bg-[--color-brand-light] text-[--color-brand-text]
-                            border border-[--color-brand]/20"
+                            bg-(--color-brand-light) text-(--color-brand-text)
+                            border border-(--color-brand)/20"
           >
             {badge}
           </span>
         )}
       </div>
 
-      <h3 className="text-[--color-text] font-semibold text-lg mb-2 leading-snug">
+      <h3 className="text-(--color-text) font-semibold text-lg mb-2 leading-snug">
         {title}
       </h3>
 
-      <p className="text-[--color-text-muted] text-sm leading-relaxed text-pretty">
+      <p className="text-(--color-text-muted) text-sm leading-relaxed text-pretty">
         {body}
       </p>
 
-      <div className="mt-5 pt-4 border-t border-[--color-border]">
+      <div className="mt-5 pt-4 border-t border-(--color-border)">
         <button
-          className="text-[--color-brand] text-sm font-semibold
-                            hover:text-[--color-brand-text] transition-colors"
+          className="text-(--color-brand) text-sm font-semibold
+                            hover:text-(--color-brand-text) transition-colors"
         >
           Learn more →
         </button>
@@ -703,18 +703,18 @@ const CARDS = [
 
 export default function DemoPage() {
   return (
-    // bg-[--color-bg] adapts automatically to dark mode via CSS variables
-    <div className="min-h-screen bg-[--color-bg]">
+    // bg-(--color-bg) adapts automatically to dark mode via CSS variables
+    <div className="min-h-screen bg-(--color-bg)">
       <NavBar />
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-16">
         <div className="text-center mb-12">
           <h1
-            className="text-4xl font-extrabold text-[--color-text]
+            className="text-4xl font-extrabold text-(--color-text)
                           leading-tight tracking-tight text-balance"
           >
             Tailwind v4.3 Features
           </h1>
-          <p className="mt-3 text-lg text-[--color-text-muted] text-pretty max-w-xl mx-auto">
+          <p className="mt-3 text-lg text-(--color-text-muted) text-pretty max-w-xl mx-auto">
             Toggle dark mode with the button in the nav. All cards adapt via CSS
             variables — zero dark: classes on the cards themselves.
           </p>

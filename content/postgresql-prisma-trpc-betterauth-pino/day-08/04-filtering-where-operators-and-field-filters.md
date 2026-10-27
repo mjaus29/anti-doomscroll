@@ -247,7 +247,7 @@ Write a `searchOrders` function with a flexible filter interface: `customerId?`,
 
 ```typescript
 import { prisma } from "@/lib/prisma";
-import { Prisma, Order } from "@prisma/client";
+import { Prisma, Order } from "@/generated/prisma/client";
 
 interface SearchOrdersInput {
   customerId?: number;

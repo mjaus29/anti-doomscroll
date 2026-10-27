@@ -103,7 +103,7 @@ function UserSearch({ role, limit }: { role: string; limit: number }) {
     queryKey: ['users', { role, limit }],   // wait — this is actually fine!
     queryFn:  ({ signal }) => searchUsers({ role, limit }, signal),
   })
-  // TanStack Query serializes keys with JSON.stringify — {role,limit} is stable ✅
+  // TanStack Query hashes keys deterministically (object key order is ignored) — {role,limit} is stable ✅
   // This is FINE — TanStack Query compares keys by value, not reference
 }
 

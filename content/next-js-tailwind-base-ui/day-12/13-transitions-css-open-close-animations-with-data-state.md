@@ -85,7 +85,7 @@ data-[ending-style]:    Applied just BEFORE the element unmounts
 ">
 ```
 
-### `origin-[--transform-origin]` — Correct Scale Origin
+### `origin-(--transform-origin)` — Correct Scale Origin
 
 ```tsx
 {/* ─── Base UI sets --transform-origin CSS variable on the positioner */}
@@ -96,7 +96,7 @@ data-[ending-style]:    Applied just BEFORE the element unmounts
   transition-all duration-200 ease-out
 
   {/* Use the CSS variable set by Positioner for correct scale origin */}
-  origin-[--transform-origin]
+  origin-(--transform-origin)
 
   data-[starting-style]:opacity-0 data-[starting-style]:scale-95
   data-[ending-style]:opacity-0   data-[ending-style]:scale-95
@@ -109,7 +109,7 @@ data-[ending-style]:    Applied just BEFORE the element unmounts
 // ─── Recipe 1: Fade + scale (Popover, Menu, Select)
 const FADE_SCALE = `
   transition-all duration-200 ease-out
-  origin-[--transform-origin]
+  origin-(--transform-origin)
   data-[starting-style]:opacity-0 data-[starting-style]:scale-95
   data-[ending-style]:opacity-0   data-[ending-style]:scale-95
 `;
@@ -220,7 +220,7 @@ const TOAST_SLIDE = `
 ## W — Why It Matters
 
 - `data-[starting-style]` and `data-[ending-style]` solve the enter/exit animation problem that has plagued React for years — React removes elements from the DOM immediately on state change, so exit animations never played without animation libraries like Framer Motion or React Spring. Base UI keeps the element mounted during the exit transition and removes it only when the CSS transition ends.
-- `origin-[--transform-origin]` is the detail that makes scale animations feel polished — without it, a menu that appears below-left of its trigger would scale from the center (visually popping in from the wrong corner). Base UI's Positioner calculates the correct `transform-origin` and exposes it as a CSS variable.
+- `origin-(--transform-origin)` is the detail that makes scale animations feel polished — without it, a menu that appears below-left of its trigger would scale from the center (visually popping in from the wrong corner). Base UI's Positioner calculates the correct `transform-origin` and exposes it as a CSS variable.
 - `prefers-reduced-motion` support is an accessibility requirement for animations — users with vestibular disorders, migraines, or ADHD can be adversely affected by motion. Always add a reduced-motion override.
 
 ---
@@ -257,7 +257,7 @@ const TOAST_SLIDE = `
 ">
 ```
 
-### ❌ Pitfall: Scale animation visually pops from wrong corner — missing `origin-[--transform-origin]`
+### ❌ Pitfall: Scale animation visually pops from wrong corner — missing `origin-(--transform-origin)`
 
 ```tsx
 {/* ❌ Default transform-origin is "center" — popup appears to grow from middle */}
@@ -272,10 +272,10 @@ const TOAST_SLIDE = `
 **Fix:** Use the CSS variable set by the Positioner:
 
 ```tsx
-{/* ✅ origin-[--transform-origin] — Base UI sets the correct corner */}
+{/* ✅ origin-(--transform-origin) — Base UI sets the correct corner */}
 <Popup className="
   transition-all duration-200
-  origin-[--transform-origin]
+  origin-(--transform-origin)
   data-[starting-style]:scale-95
   data-[ending-style]:scale-95
 ">
@@ -289,7 +289,7 @@ const TOAST_SLIDE = `
 
 Implement 4 distinct transitions for 4 different components on a demo page:
 
-1. **Menu** — fade + scale with `origin-[--transform-origin]`
+1. **Menu** — fade + scale with `origin-(--transform-origin)`
 2. **Dialog** — backdrop fade + popup scale with separate durations (backdrop 300ms, popup 200ms)
 3. **Toast** — slides in from the right
 4. **Tooltip** — fast directional slide (side-aware) + fade
@@ -314,10 +314,10 @@ Implement 4 distinct transitions for 4 different components on a demo page:
 // src/components/transition-showcase.tsx
 "use client";
 
-import * as MenuPrimitive from "@base-ui/react/menu";
-import * as DialogPrimitive from "@base-ui/react/dialog";
-import * as TooltipPrimitive from "@base-ui/react/tooltip";
-import * as ToastPrimitive from "@base-ui/react/toast";
+import { Menu as MenuPrimitive } from "@base-ui/react/menu";
+import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
+import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
+import { Toast as ToastPrimitive } from "@base-ui/react/toast";
 import { cn } from "@/lib/cn";
 
 // ─── 1. Menu — fade + scale with correct origin
@@ -343,7 +343,7 @@ function TransitionMenu() {
               "rounded-2xl shadow-xl z-50 outline-none",
               // Transition — fade + scale from correct origin
               "motion-safe:transition-all motion-safe:duration-150 motion-safe:ease-out",
-              "origin-[--transform-origin]",
+              "origin-(--transform-origin)",
               "data-[starting-style]:opacity-0 data-[starting-style]:scale-95",
               "data-[ending-style]:opacity-0   data-[ending-style]:scale-95"
             )}

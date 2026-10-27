@@ -44,7 +44,7 @@ error.tsx       ← error boundary — shown when an error is thrown in the segm
 not-found.tsx   ← shown when notFound() is called or no route matches
 template.tsx    ← like layout but re-mounts on every navigation (rare)
 route.ts        ← API endpoint (replaces pages/api/) — no UI rendered
-middleware.ts   ← runs before every request (authentication, redirects)
+proxy.ts        ← runs before every request (authentication, redirects) — Next 16 name; was middleware.ts
 ```
 
 ### Server Components vs Client Components

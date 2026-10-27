@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-Zod schemas are composable — build a base schema and derive variants using `.extend()`, `.merge()`, `.pick()`, `.omit()`, and `.partial()`. This enables a DRY schema hierarchy: one base `UserSchema` that spawns `CreateUserSchema`, `UpdateUserSchema`, and `PublicUserSchema`.
+Zod schemas are composable — build a base schema and derive variants using `.extend()`, `.pick()`, `.omit()`, and `.partial()`. This enables a DRY schema hierarchy: one base `UserSchema` that spawns `CreateUserSchema`, `UpdateUserSchema`, and `PublicUserSchema`.
 
 ---
 
@@ -14,9 +14,9 @@ Zod schemas are composable — build a base schema and derive variants using `.e
 import { z } from 'zod'
 
 const BaseUserSchema = z.object({
-  id:        z.string().uuid(),
+  id:        z.uuid(),
   name:      z.string().min(1),
-  email:     z.string().email(),
+  email:     z.email(),
   role:      z.enum(['admin', 'user']).default('user'),
   createdAt: z.date()
 })
@@ -24,7 +24,7 @@ const BaseUserSchema = z.object({
 // ─── extend — add fields to an existing schema
 const UserWithProfileSchema = BaseUserSchema.extend({
   bio:       z.string().max(160).optional(),
-  avatarUrl: z.string().url().nullable()
+  avatarUrl: z.url().nullable()
 })
 // Extends BaseUserSchema + adds bio + avatarUrl
 
@@ -47,16 +47,18 @@ const PatchUserSchema = BaseUserSchema.partial({ name: true, role: true })
 // ─── required — inverse of partial (make all optional fields required)
 const StrictSchema = UpdateUserSchema.required()
 
-// ─── merge — combine two object schemas
+// ─── combine two object schemas
+// Before Zod 4 this was BaseUserSchema.merge(AddressSchema) — .merge() is now deprecated
 const AddressSchema = z.object({ street: z.string(), city: z.string() })
-const UserAddressSchema = BaseUserSchema.merge(AddressSchema)
+const UserAddressSchema = BaseUserSchema.extend(AddressSchema.shape)
+// or: z.object({ ...BaseUserSchema.shape, ...AddressSchema.shape })
 // All fields from both schemas (AddressSchema overwrites if keys clash)
 ```
 
 ```ts
 // ─── Practical: full CRUD schema hierarchy
 const ProductSchema = z.object({
-  id:          z.string().uuid(),
+  id:          z.uuid(),
   name:        z.string().min(1),
   price:       z.number().positive(),
   description: z.string().optional(),
@@ -86,7 +88,7 @@ type ProductListItem = z.infer<typeof ProductListItemSchema>
 ## W — Why It Matters
 
 - The CRUD schema hierarchy (base → omit for create → partial for patch) is the most common real-world Zod pattern. It eliminates repeated field definitions and keeps validation consistent across endpoints.
-- `.extend()` is safer than `.merge()` for most cases — `.extend()` on a Zod object produces a new object schema while preserving the original. `.merge()` is best when combining two independently defined schemas.
+- `.extend()` is the one tool for adding fields in Zod 4 — pass new fields directly, or `Other.shape` to combine two independently defined schemas (this replaces the now-deprecated `.merge()`). It returns a new schema and leaves the original untouched. Note: `.extend()` throws on schemas that already have `.refine()` checks; use `.safeExtend()` or extend first and refine last.
 - `partial()` with specific keys (`.partial({ name: true })`) is exactly the TypeScript `Partial<Pick<T, 'name'>>` equivalent in schema form — precise field optionality for PATCH endpoints.
 
 ---
@@ -105,15 +107,15 @@ type ProductListItem = z.infer<typeof ProductListItemSchema>
 
 ```ts
 // ❌ email defined twice — can drift if one is updated
-const CreateSchema = z.object({ name: z.string(), email: z.string().email() })
-const UpdateSchema = z.object({ name: z.string(), email: z.string().email() })
+const CreateSchema = z.object({ name: z.string(), email: z.email() })
+const UpdateSchema = z.object({ name: z.string(), email: z.email() })
 ```
 
 **Fix:** Derive from a base schema:
 
 ```ts
 // ✅ Single definition — both schemas stay in sync automatically
-const BaseSchema   = z.object({ name: z.string(), email: z.string().email() })
+const BaseSchema   = z.object({ name: z.string(), email: z.email() })
 const CreateSchema = BaseSchema
 const UpdateSchema = BaseSchema.partial()
 ```
@@ -133,12 +135,12 @@ import { z } from 'zod'
 
 // ─── Base schema
 const PostSchema = z.object({
-  id:        z.string().uuid(),
+  id:        z.uuid(),
   title:     z.string().min(3, 'Min 3 chars').max(100, 'Max 100 chars'),
   body:      z.string().min(10, 'Body must be at least 10 characters'),
   tags:      z.array(z.string().min(1)).max(5).default([]),
   published: z.boolean().default(false),
-  authorId:  z.string().uuid(),
+  authorId:  z.uuid(),
   createdAt: z.date()
 })
 

@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-Zod's primitives (`z.string()`, `z.number()`, `z.boolean()`, `z.date()`) are the building blocks of every schema. Each has chainable validation methods — `min`, `max`, `email`, `url`, `int`, `positive` — and each accepts a custom error message as an option.
+Zod's primitives (`z.string()`, `z.number()`, `z.boolean()`, `z.date()`) are the building blocks of every schema. Each has chainable validation methods — `min`, `max`, `int`, `positive` — and each accepts a custom error message as an option. In Zod 4, string formats such as email, URL and UUID are top-level schemas: `z.email()`, `z.url()`, `z.uuid()`.
 
 ---
 
@@ -18,10 +18,10 @@ z.string()
 z.string().min(2)                          // min 2 chars
 z.string().max(100)                        // max 100 chars
 z.string().length(10)                      // exactly 10 chars
-z.string().email()                         // valid email format
-z.string().url()                           // valid URL
-z.string().uuid()                          // valid UUID
-z.string().cuid()                          // CUID format
+z.email()                                  // valid email format (top-level in Zod 4)
+z.url()                                    // valid URL
+z.uuid()                                   // valid UUID (RFC 9562/4122; use z.guid() for any 8-4-4-4-12 hex)
+z.cuid()                                   // CUID format
 z.string().regex(/^[A-Z]{2}\d{4}$/)        // custom regex
 z.string().startsWith('https://')
 z.string().endsWith('.pdf')
@@ -29,11 +29,11 @@ z.string().includes('@')
 z.string().trim()                          // trim whitespace before validation
 z.string().toLowerCase()                   // transform to lowercase
 z.string().toUpperCase()
-z.string().nonempty()                      // min(1) shorthand
+z.string().min(1)                          // non-empty string
 
 // Custom error messages (second argument or .min(n, 'message'))
 z.string().min(8, 'Password must be at least 8 characters')
-z.string().email({ message: 'Invalid email address' })
+z.email({ error: 'Invalid email address' })   // `error` replaces v3's `message` (still works, deprecated)
 ```
 
 ```ts
@@ -46,8 +46,7 @@ z.number().negative()       // < 0
 z.number().nonnegative()    // >= 0
 z.number().nonpositive()    // <= 0
 z.number().int()            // integer (no decimals)
-z.number().finite()         // not Infinity
-z.number().safe()           // within Number.MIN/MAX_SAFE_INTEGER
+z.int()                     // safe-integer-only shortcut (Zod 4); z.number() already rejects Infinity
 z.number().multipleOf(5)    // divisible by 5
 z.number().gt(0)            // > 0 (exclusive)
 z.number().gte(0)           // >= 0 (inclusive)
@@ -56,7 +55,7 @@ z.number().lte(100)
 
 // Custom message
 z.number().int('Must be a whole number')
-z.number().positive({ message: 'Price must be positive' })
+z.number().positive({ error: 'Price must be positive' })
 ```
 
 ```ts
@@ -65,8 +64,8 @@ z.boolean()   // true | false only — rejects 0, 1, 'true', 'false'
 
 // ─── z.date()
 z.date()
-z.date().min(new Date('2000-01-01'), { message: 'Too old' })
-z.date().max(new Date(),             { message: 'Cannot be in the future' })
+z.date().min(new Date('2000-01-01'), { error: 'Too old' })
+z.date().max(new Date(),             { error: 'Cannot be in the future' })
 
 // ─── z.bigint()
 z.bigint().min(0n)
@@ -79,7 +78,7 @@ z.any()        // any value, no narrowing required
 
 // ─── Coercion (v4) — convert string → target type
 z.coerce.number()   // "42" → 42     (Number("42"))
-z.coerce.boolean()  // "true" → true
+z.coerce.boolean()  // Boolean(input): "false" → true too (any non-empty string is truthy)
 z.coerce.date()     // "2024-01-01" → Date object
 // Use for form inputs where all values arrive as strings
 ```
@@ -88,7 +87,7 @@ z.coerce.date()     // "2024-01-01" → Date object
 
 ## W — Why It Matters
 
-- `z.string().email()` does not just check `@` — it validates the full email format including TLD, double dots, and invalid characters. Replacing regex-based email validation with `.email()` is more reliable.
+- `z.email()` does not just check `@` — it validates the full email format including TLD, double dots, and invalid characters. Replacing regex-based email validation with `z.email()` is more reliable.
 - `z.coerce.number()` is the Zod equivalent of RHF's `valueAsNumber` — form inputs always produce strings, so you need coercion to get numbers. Use `z.coerce.number()` in schemas paired with RHF for numeric inputs.
 - Custom error messages on each rule (`.min(8, 'Too short')`) appear in `result.error.issues[].message` — they map directly to RHF's `errors.field.message` when using `zodResolver`.
 
@@ -135,10 +134,10 @@ import { z } from 'zod'
 
 const ContactSchema = z.object({
   name:    z.string().trim().min(2, 'Name must be at least 2 characters'),
-  email:   z.string().email('Invalid email address'),
+  email:   z.email('Invalid email address'),
   phone:   z.string().regex(/^\+?[\d\s-]{7,15}$/, 'Invalid phone number').optional(),
   age:     z.coerce.number().int('Must be a whole number').min(13, 'Must be 13+').max(120),
-  website: z.string().url('Invalid URL').optional()
+  website: z.url('Invalid URL').optional()
 })
 
 type Contact = z.infer<typeof ContactSchema>

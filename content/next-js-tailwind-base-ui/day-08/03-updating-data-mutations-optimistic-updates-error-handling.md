@@ -46,7 +46,7 @@ export async function toggleTodo(id: string, completed: boolean) {
 
   // Step 4: Revalidate cache
   revalidatePath("/todos");
-  revalidateTag("todos");
+  revalidateTag("todos", "max");
 }
 ```
 
@@ -354,14 +354,14 @@ export async function toggleTodo(
   const todo = TODOS.find((t) => t.id === id);
   if (!todo) throw new Error("Todo not found");
   TODOS = TODOS.map((t) => (t.id === id ? { ...t, completed } : t));
-  revalidateTag("todos");
+  revalidateTag("todos", "max");
   revalidatePath("/todos");
 }
 
 export async function deleteTodo(id: string): Promise<void> {
   await new Promise((r) => setTimeout(r, 200));
   TODOS = TODOS.filter((t) => t.id !== id);
-  revalidateTag("todos");
+  revalidateTag("todos", "max");
   revalidatePath("/todos");
 }
 ```

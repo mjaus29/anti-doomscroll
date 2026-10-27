@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-`prisma generate` reads `schema.prisma` and produces the Prisma Client — a fully-typed database client specific to your schema. Each model gets CRUD methods (`findMany`, `create`, `update`, `delete`, etc.). The client is instantiated as `new PrismaClient()` and should be used as a singleton in Node.js. The generated types make every query type-safe: wrong fields, wrong types, and missing required fields all produce TypeScript errors at compile time.
+`prisma generate` reads `schema.prisma` and produces the Prisma Client — a fully-typed database client specific to your schema. Each model gets CRUD methods (`findMany`, `create`, `update`, `delete`, etc.). The client is instantiated as `new PrismaClient({ adapter })` and should be used as a singleton in Node.js. The generated types make every query type-safe: wrong fields, wrong types, and missing required fields all produce TypeScript errors at compile time.
 
 ---
 
@@ -15,7 +15,7 @@
 npx prisma generate
 
 # Output:
-# ✔ Generated Prisma Client (v7.x.x) to ./node_modules/.prisma/client
+# ✔ Generated Prisma Client (v7.x.x) to ./src/generated/prisma
 # You can now start using Prisma Client in your code.
 
 # With custom schema path:
@@ -23,6 +23,8 @@ npx prisma generate --schema=./prisma/schema.prisma
 
 # Watch mode (re-generates on schema change):
 npx prisma generate --watch
+
+# Prisma 7: 'migrate dev' and 'db push' no longer run generate for you — run it explicitly.
 ```
 
 ```typescript
@@ -53,7 +55,10 @@ npx prisma generate --watch
 // ── PrismaClient instantiation — singleton pattern ────────────────────────
 // src/lib/prisma.ts
 
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@/generated/prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'   // Prisma 7: a driver adapter is required
+
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
 
 // The global variable trick prevents multiple instances in hot-reload environments
 const globalForPrisma = globalThis as unknown as {
@@ -62,7 +67,7 @@ const globalForPrisma = globalThis as unknown as {
 
 export const prisma =
   globalForPrisma.prisma ??
-  new PrismaClient({
+  new PrismaClient({ adapter,
     log: process.env.NODE_ENV === 'development'
       ? ['query', 'error', 'warn']
       : ['error'],
@@ -244,7 +249,7 @@ const [user, profile] = await prisma.$transaction([
 
 ### Q: What does `prisma generate` produce and why does it need to be re-run after schema changes?
 
-**A:** `prisma generate` reads `schema.prisma` and produces the Prisma Client — a set of TypeScript types, query-builder code, and a compiled query engine binary in `node_modules/.prisma/client`. The generated code includes: a `PrismaClient` class with a property for each model (`prisma.user`, `prisma.order`), CRUD method overloads for each model (`findMany`, `create`, `update`, etc.), TypeScript types for every model (the full model type, create/update input types, where filter types, select/include types), and enum types. It must be re-run after schema changes because the generated code is specific to the schema — if you add a field `phoneNumber` to the `User` model, the existing generated types don't include it. TypeScript will not see `user.phoneNumber` until you regenerate. This is why the `postinstall` hook (`"postinstall": "prisma generate"`) is important — it ensures CI and deployment always have up-to-date generated code.
+**A:** `prisma generate` reads `schema.prisma` and produces the Prisma Client — a set of TypeScript types and query-builder code written to the `output` folder from your generator block (for example `src/generated/prisma`; before Prisma 7 it went to `node_modules/.prisma/client` together with a Rust query-engine binary). The generated code includes: a `PrismaClient` class with a property for each model (`prisma.user`, `prisma.order`), CRUD method overloads for each model (`findMany`, `create`, `update`, etc.), TypeScript types for every model (the full model type, create/update input types, where filter types, select/include types), and enum types. It must be re-run after schema changes because the generated code is specific to the schema — if you add a field `phoneNumber` to the `User` model, the existing generated types don't include it. TypeScript will not see `user.phoneNumber` until you regenerate. This is why the `postinstall` hook (`"postinstall": "prisma generate"`) is important — it ensures CI and deployment always have up-to-date generated code.
 
 ---
 
@@ -255,8 +260,8 @@ const [user, profile] = await prisma.$transaction([
 ```typescript
 // ❌ New PrismaClient on every module import — hot reload creates N pools
 // src/app/api/users/route.ts
-import { PrismaClient } from '@prisma/client'
-const prisma = new PrismaClient()  // ← new pool every hot reload ❌
+import { PrismaClient } from '@/generated/prisma/client'
+const prisma = new PrismaClient({ adapter })  // ← new pool every hot reload ❌
 
 export async function GET() {
   const users = await prisma.user.findMany()
@@ -268,11 +273,13 @@ export async function GET() {
 
 ```typescript
 // src/lib/prisma.ts — singleton
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@/generated/prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient()
+export const prisma = globalForPrisma.prisma ?? new PrismaClient({ adapter })
 
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma  // reuse across hot reloads in dev
@@ -299,13 +306,15 @@ Using the models from this day's subtopics (User, Post, Order, OrderItem), write
 
 ```typescript
 // src/lib/prisma.ts
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@/generated/prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
 
 export const prisma =
   globalForPrisma.prisma ??
-  new PrismaClient({
+  new PrismaClient({ adapter,
     log: process.env.NODE_ENV === 'development'
       ? ['query', 'warn', 'error']
       : ['error'],
@@ -319,7 +328,7 @@ if (process.env.NODE_ENV !== 'production') {
 ```typescript
 // src/services/order.service.ts
 import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
+import { Prisma } from '@/generated/prisma/client'
 
 // ── (2) createOrderWithItems — atomic transaction ──────────────────────────
 interface OrderItemInput {
@@ -525,23 +534,23 @@ export { createOrderWithItems, getUserDashboard, paginateOrders }
 
 ```
 SCHEMA.PRISMA STRUCTURE
-  generator client { ... }   → what to generate (prisma-client-js)
-  datasource db { ... }      → where is the database (postgresql + url)
+  generator client { ... }   → what to generate (prisma-client + output)
+  datasource db { ... }      → which database engine (postgresql); URL lives in prisma.config.ts
   model ModelName { ... }    → each table
   enum EnumName { ... }      → categorical value sets
   Order: generator → datasource → enums → models (convention)
 
 DATASOURCE
   provider  = "postgresql"
-  url       = env("DATABASE_URL")     never hardcode credentials
-  directUrl = env("DIRECT_URL")       for PgBouncer / Supabase pooler
   schemas   = ["public", "auth"]      multi-schema support
+  (url / directUrl / shadowDatabaseUrl moved to prisma.config.ts in Prisma 7;
+   runtime URL goes to the driver adapter: new PrismaPg({ connectionString }))
 
 GENERATOR
-  provider        = "prisma-client-js"
-  output          = "../src/lib/db"   optional custom path
-  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]  ← set for Docker!
-  previewFeatures = ["multiSchema", "relationJoins"]
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"   required in Prisma 7
+  (no binaryTargets needed — no Rust engine binary in Prisma 7)
+  previewFeatures = ["relationJoins"]  (multiSchema is GA)
   postinstall: "prisma generate"  in package.json scripts
 
 MODELS
@@ -594,7 +603,7 @@ MAPPING (Prisma ↔ PostgreSQL)
 
 PRISMA CLIENT
   npx prisma generate                → generates types + client
-  new PrismaClient()                 → creates connection pool
+  new PrismaClient({ adapter })      → needs a driver adapter (PrismaPg); creates pool
   SINGLETON: use globalThis trick    → prevents pool exhaustion in Next.js
   prisma.model.findMany(...)         → typed query
   prisma.model.findUnique(...)       → returns T | null
@@ -606,11 +615,11 @@ PRISMA CLIENT
   prisma.$transaction(async (tx) => { ... })  → interactive transaction
 
 KEY RULES
-  NEVER hardcode DB credentials — always env()
+  NEVER hardcode DB credentials — always env() / process.env
   ALWAYS @@map() and @map() — snake_case in PG, camelCase in TypeScript
   ALWAYS @db.Timestamptz for event timestamps
   ALWAYS @db.Decimal(p,s) for money — NEVER Float
-  ALWAYS set binaryTargets for Docker deployments
+  ALWAYS run prisma generate explicitly (migrate dev no longer does)
   ALWAYS postinstall: prisma generate in package.json
   ONE PrismaClient singleton per process — use globalThis pattern
 ```

@@ -232,7 +232,7 @@ export default defineConfig({
   test: {
     setupFiles: ['./src/test/setup-db.ts'],
     pool:       'forks',          // isolated processes — safe for DB tests
-    poolOptions: { forks: { singleFork: true } },  // serial — shared DB
+    fileParallelism: false,       // serial — shared DB (Vitest 4; was poolOptions.forks.singleFork)
   },
 })
 ```

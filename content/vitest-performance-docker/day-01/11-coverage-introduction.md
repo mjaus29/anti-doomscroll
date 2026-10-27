@@ -41,7 +41,7 @@ export default defineConfig({
       // json:  machine-readable (for CI reporting tools)
       // lcov:  for Codecov, Coveralls, GitHub Actions integrations
 
-      include: ['src/**/*.ts', 'src/**/*.tsx'],  // what to measure
+      include: ['src/**/*.ts', 'src/**/*.tsx'],  // what to measure (also decides which untested files show up as 0%)
       exclude: [
         'src/**/*.test.ts',
         'src/**/*.test.tsx',
@@ -61,8 +61,9 @@ export default defineConfig({
       // Generate coverage report even when tests fail
       reportOnFailure: true,
 
-      // Show all files (including untested ones) not just covered ones
-      all: true,
+      // Vitest 4: `coverage.all` was removed. Coverage now only reports files loaded during the run,
+      // so untested files are listed only if they match `coverage.include` above (that is how you
+      // surface 0%-covered files). Before Vitest 4 this was `all: true`.
     },
   },
 })

@@ -200,7 +200,7 @@ YES parallel:   layout + page fetch data at the same time → faster
 - Nested layouts are what enable the "shell loads instantly, content streams in" experience — the outer layout renders first, then page content arrives progressively.
 - Route groups + separate layouts per group is the correct architecture for apps with fundamentally different chrome (marketing site vs authenticated dashboard) — understanding this prevents the common mistake of a massive root layout trying to handle both cases.
 - Parallel data fetching across layout levels is automatic — layouts and pages within a request all fetch data concurrently, not sequentially, which means deep nesting doesn't add latency.
-- Authentication in the layout (not just middleware) is a defense-in-depth pattern — middleware handles the redirect, layout handles the server-side user data for the UI.
+- Authentication in the layout (not just proxy) is a defense-in-depth pattern — proxy handles the redirect, layout handles the server-side user data for the UI.
 
 ---
 

@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-The Playwright provider for Vitest Browser Mode runs each test file in a fresh browser context (like a new incognito tab). Vitest injects the test runner into the page, executes tests, and streams results back. You get full Playwright `page` access via `vi.importActual`, can screenshot on failure, and can interact with your real dev server or test fixtures. Tests are async by nature — always `await` interactions.
+The Playwright provider for Vitest Browser Mode runs each test file in a fresh browser context (like a new incognito tab). Vitest injects the test runner into the page, executes tests, and streams results back. You get Vitest's own `page` API (locators, screenshots, viewport) by importing from `vitest/browser` — it is not the raw Playwright `Page`, which lives on the server side and is only reachable through custom commands. You can screenshot on failure, and can interact with your real dev server or test fixtures. Tests are async by nature — always `await` interactions.
 
 ---
 
@@ -25,72 +25,70 @@ The Playwright provider for Vitest Browser Mode runs each test file in a fresh b
 ```typescript
 // vitest.config.ts — full Playwright configuration
 import { defineConfig } from 'vitest/config'
+import { playwright } from '@vitest/browser-playwright'   // Vitest 4
 
 export default defineConfig({
   test: {
     browser: {
       enabled:     true,
-      name:        'chromium',
-      provider:    'playwright',
-      headless:    true,
-
-      providerOptions: {
-        launch: {
-          // Playwright LaunchOptions
+      headless:    true,              // set here, NOT in launchOptions (Vitest ignores launch.headless)
+      instances:   [{ browser: 'chromium' }],
+      provider: playwright({
+        // Playwright LaunchOptions (was providerOptions.launch before Vitest 4)
+        launchOptions: {
           slowMo: 0,         // 0 = fast, 500 = slow-mo for debugging
-          devtools: false,   // open DevTools automatically
           args: [
             '--no-sandbox',            // needed in some CI environments
             '--disable-dev-shm-usage', // needed in Docker
           ]
         },
-        context: {
-          // Playwright BrowserContextOptions — per test file
+        // Playwright BrowserContextOptions — per test file (was providerOptions.context)
+        contextOptions: {
           viewport:       { width: 1280, height: 720 },
           locale:         'en-US',
           timezoneId:     'Asia/Manila',
           permissions:    ['geolocation'],
         }
-      }
+      }),
     }
   }
 })
 ```
 
 ```typescript
-// ── Accessing the Playwright page object ──────────────────────────────────
-// @vitest/browser/context exposes the page for advanced interactions
-import { page, userEvent } from '@vitest/browser/context'
+// ── Vitest's `page` object (browser-side API) ─────────────────────────────
+// 'vitest/browser' exposes `page` and `userEvent` (before Vitest 4: '@vitest/browser/context').
+// `page` is NOT the Playwright Page — Playwright runs on the server; `page` is Vitest's
+// browser-side API with Playwright-like helpers (getByRole, getByText, screenshot, viewport...).
+import { page, userEvent } from 'vitest/browser'
 
-it('takes a screenshot on assertion', async () => {
+it('takes a screenshot', async () => {
   document.body.innerHTML = '<h1>Hello World</h1>'
 
-  // page is the Playwright Page object
-  const screenshot = await page.screenshot()
-  expect(screenshot).toBeDefined()
-  // screenshot is a Buffer of PNG data
+  const path = await page.screenshot()   // resolves to the saved screenshot's file path
+  expect(path).toBeDefined()
 })
 
-it('checks element visibility with Playwright locators', async () => {
-  document.body.innerHTML = '<button id="btn" style="display:none">Hidden</button>'
+it('checks element visibility with locators', async () => {
+  document.body.innerHTML = '<button style="display:none">Hidden</button>'
 
-  const btn = page.locator('#btn')
-  await expect(btn).not.toBeVisible()   // Playwright's own assertions ✅
+  const btn = page.getByRole('button', { name: 'Hidden', includeHidden: true })
+  await expect.element(btn).not.toBeVisible()   // expect.element retries until the assertion passes ✅
 })
 ```
 
 ```typescript
-// ── Playwright locators vs querySelector ─────────────────────────────────
-import { page } from '@vitest/browser/context'
+// ── Locators vs querySelector ─────────────────────────────────────────────
+import { page } from 'vitest/browser'
 
 // querySelector — DOM API, synchronous, returns element or null
 const el = document.querySelector('#my-button')
 
-// Playwright locator — lazy, retries until found, async
-const locator = page.locator('#my-button')
-await locator.click()               // waits for element, then clicks
-await locator.fill('typed text')    // clears then types
-await expect(locator).toBeVisible() // assertion with auto-retry
+// Vitest locator — lazy, retries until found, async
+const locator = page.getByRole('button', { name: 'Save' })
+await locator.click()                                  // waits for element, then clicks
+await page.getByLabelText('Name').fill('typed text')   // clears then types
+await expect.element(locator).toBeVisible()            // assertion with auto-retry
 
 // When to use locators:
 // ✅ Elements that appear asynchronously (after fetch, animation)
@@ -103,25 +101,31 @@ await expect(locator).toBeVisible() // assertion with auto-retry
 // ── Cross-browser testing ─────────────────────────────────────────────────
 // Run against multiple browsers in CI:
 
-// package.json scripts:
-// "test:chromium": "vitest --browser.name=chromium",
-// "test:firefox":  "vitest --browser.name=firefox",
-// "test:webkit":   "vitest --browser.name=webkit",
-// "test:browsers": "npm run test:chromium && npm run test:firefox && npm run test:webkit"
+// Vitest 4: list one entry per browser in `browser.instances` and they run in parallel.
+// (Before Vitest 4 you used `name: 'chromium'` plus one workspace entry per browser.)
+// vitest.config.ts:
+import { playwright } from '@vitest/browser-playwright'
 
-// Or use Vitest workspace to run all three in parallel:
-// vitest.workspace.ts:
-export default defineWorkspace([
-  { test: { name: 'chromium', browser: { enabled: true, name: 'chromium', provider: 'playwright', headless: true } } },
-  { test: { name: 'firefox',  browser: { enabled: true, name: 'firefox',  provider: 'playwright', headless: true } } },
-  { test: { name: 'webkit',   browser: { enabled: true, name: 'webkit',   provider: 'playwright', headless: true } } },
-])
+export default defineConfig({
+  test: {
+    browser: {
+      enabled:   true,
+      headless:  true,
+      provider:  playwright(),
+      instances: [
+        { browser: 'chromium' },
+        { browser: 'firefox' },
+        { browser: 'webkit' },
+      ],
+    },
+  },
+})
 ```
 
 ```typescript
 // ── Screenshot on test failure ─────────────────────────────────────────────
 import { afterEach } from 'vitest'
-import { page }      from '@vitest/browser/context'
+import { page }      from 'vitest/browser'
 
 afterEach(async (ctx) => {
   if (ctx.task.result?.state === 'fail') {
@@ -137,7 +141,7 @@ afterEach(async (ctx) => {
 ## W — Why It Matters
 
 - Each test file getting a fresh browser context is isolation at the browser level — cookies, localStorage, IndexedDB, and service workers from one test file don't bleed into another. This is stricter isolation than jsdom (which shares process globals unless cleaned up).
-- The `providerOptions.launch.args` for Docker/CI is not optional — `--no-sandbox` and `--disable-dev-shm-usage` are required for Chromium in containerised environments. Without them, Playwright fails to launch with a cryptic error about sandboxing.
+- The `launchOptions.args` for Docker/CI (`providerOptions.launch.args` before Vitest 4) is not optional — `--no-sandbox` and `--disable-dev-shm-usage` are required for Chromium in containerised environments. Without them, Playwright fails to launch with a cryptic error about sandboxing.
 - Screenshots on failure are free debugging information in CI — when a browser test fails in a headless environment, the screenshot shows exactly what the page looked like at the moment of failure. This turns 30-minute debugging sessions into 2-minute fixes.
 
 ---
@@ -160,15 +164,15 @@ afterEach(async (ctx) => {
 # Consider disabling the sandbox
 ```
 
-**Fix:** Add browser launch args in config:
+**Fix:** Add browser launch args in config (`launchOptions` on the `playwright()` provider):
 
 ```typescript
 // ✅
-providerOptions: {
-  launch: {
+provider: playwright({
+  launchOptions: {
     args: ['--no-sandbox', '--disable-dev-shm-usage']
   }
-}
+})
 ```
 
 ---
@@ -177,19 +181,19 @@ providerOptions: {
 
 ### Challenge
 
-Write a browser test using `page.locator` for an element that appears asynchronously (after a 100ms delay simulating a fetch). Test: (1) element is not present initially; (2) element appears after the async operation; (3) element contains the expected text. Use `await expect(locator).toBeVisible()`.
+Write a browser test using Vitest locators (`page.getByTestId`) for an element that appears asynchronously (after a 100ms delay simulating a fetch). Test: (1) element is not present initially; (2) element appears after the async operation; (3) element contains the expected text. Use `await expect.element(locator).toBeVisible()`.
 
 ### Solution
 
 ```typescript
 // src/async-content.browser.test.ts
 import { describe, it, expect, afterEach } from 'vitest'
-import { page, userEvent }                 from '@vitest/browser/context'
+import { page, userEvent }                 from 'vitest/browser'
 
 function setupAsyncContent() {
   document.body.innerHTML = `
     <button id="load-btn">Load Content</button>
-    <div id="content" hidden></div>
+    <div id="content" data-testid="content" hidden></div>
   `
 
   document.querySelector('#load-btn')!.addEventListener('click', () => {
@@ -206,21 +210,21 @@ describe('async content appearance', () => {
 
   it('content is not visible initially', async () => {
     setupAsyncContent()
-    const content = page.locator('#content')
-    await expect(content).not.toBeVisible()
+    const content = page.getByTestId('content')
+    await expect.element(content).not.toBeVisible()
   })
 
   it('content appears after clicking load', async () => {
     setupAsyncContent()
 
-    const btn     = page.locator('#load-btn')
-    const content = page.locator('#content')
+    const btn     = page.getByRole('button', { name: 'Load Content' })
+    const content = page.getByTestId('content')
 
     await userEvent.click(btn)
 
-    // Playwright locator auto-retries until visible (waits up to default timeout)
-    await expect(content).toBeVisible()
-    await expect(content).toHaveText('Loaded from server')
+    // expect.element auto-retries until the assertion passes (up to the default timeout)
+    await expect.element(content).toBeVisible()
+    await expect.element(content).toHaveTextContent('Loaded from server')
   })
 })
 ```

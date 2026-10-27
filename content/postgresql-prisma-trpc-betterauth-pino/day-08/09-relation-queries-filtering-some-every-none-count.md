@@ -174,7 +174,7 @@ const usersWithPosts = await prisma.user.findMany({
 });
 
 // "Users with at least 5 posts" — no direct Prisma API, use $queryRaw
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 const prolificUsers = await prisma.$queryRaw<
   { id: number; post_count: number }[]
 >`

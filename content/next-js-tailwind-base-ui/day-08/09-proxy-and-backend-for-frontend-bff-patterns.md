@@ -201,7 +201,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 
 export async function GET(request: NextRequest) {
-  // Read user context injected by Middleware (no DB call needed)
+  // Read user context injected by Proxy (no DB call needed)
   const headerStore = await headers();
   const userId = headerStore.get("x-user-id");
 

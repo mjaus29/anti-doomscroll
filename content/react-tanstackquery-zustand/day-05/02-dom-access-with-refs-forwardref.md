@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-Pass a ref to a DOM element with `ref={myRef}` — React sets `myRef.current` to the DOM node after mount and `null` on unmount. Use `forwardRef` to let parent components access a child component's internal DOM node.
+Pass a ref to a DOM element with `ref={myRef}` — React sets `myRef.current` to the DOM node after mount and `null` on unmount. To let a parent access a child component's internal DOM node, accept `ref` as a regular prop (React 19) — `forwardRef` is only needed before React 19.
 
 ---
 
@@ -59,26 +59,28 @@ const rect = divRef.current?.getBoundingClientRect()
 ```
 
 ```tsx
-// ── forwardRef: expose a child's DOM node to the parent ──────────────────
-import { forwardRef } from 'react'
-
-// Without forwardRef: parent can't access <input> inside FancyInput
-// ✅ With forwardRef: parent receives the internal <input> ref
-interface FancyInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+// ── ref as a prop (React 19): expose a child's DOM node to the parent ────
+// React 19: function components receive `ref` like any other prop — no wrapper needed.
+// (Before React 19 this required forwardRef — see the note below.)
+// ComponentProps<'input'> already includes `ref` in the React 19 types
+interface FancyInputProps extends React.ComponentProps<'input'> {
   label: string
 }
 
-const FancyInput = forwardRef<HTMLInputElement, FancyInputProps>(
-  function FancyInput({ label, ...props }, ref) {
-    return (
-      <label>
-        {label}
-        <input ref={ref} className="fancy-input" {...props} />
-      </label>
-    )
-  }
-)
-FancyInput.displayName = 'FancyInput'   // ✅ required for DevTools clarity
+function FancyInput({ label, ref, ...props }: FancyInputProps) {
+  return (
+    <label>
+      {label}
+      <input ref={ref} className="fancy-input" {...props} />
+    </label>
+  )
+}
+
+// Before React 19 (and still common in existing codebases / libraries):
+// const FancyInput = forwardRef<HTMLInputElement, FancyInputProps>(
+//   function FancyInput({ label, ...props }, ref) { ... <input ref={ref} .../> }
+// )
+// forwardRef still works in 19 but is deprecated and will be removed in a future major.
 
 // Parent uses ref as normal
 function LoginForm() {
@@ -121,7 +123,7 @@ function MeasuredBox() {
 
 ## W — Why It Matters
 
-- `forwardRef` is required any time a reusable input/button component needs to support focus management from outside — form libraries like React Hook Form (Day 5 group) use this extensively.
+- Passing `ref` through to the DOM element is required any time a reusable input/button component needs to support focus management from outside — form libraries like React Hook Form (Day 5 group) rely on it. In React 19 that is just a `ref` prop; before 19 it needed `forwardRef`.
 - Ref callbacks fire synchronously when the DOM node attaches/detaches — more precise than `useEffect` for one-time measurements because they don't wait for a render cycle.
 - Typing refs with the exact DOM element type (`useRef<HTMLInputElement>(null)`) gives TypeScript knowledge of which properties and methods are available — `HTMLInputElement` has `.value`, `.select()`, `.focus()` but not `.play()`.
 
@@ -129,9 +131,9 @@ function MeasuredBox() {
 
 ## I — Interview Q&A
 
-### Q: What is `forwardRef` and why is it needed?
+### Q: How does a parent get a ref to a DOM node inside a child component, and what is `forwardRef`?
 
-**A:** By default, the `ref` prop is not forwarded to the DOM node inside a function component — the component consumes it or ignores it. `forwardRef` is a wrapper that explicitly passes the `ref` received by the component to a specific internal DOM element. It's needed when: (1) A reusable component wraps a native element (like `FancyInput` wrapping `<input>`) and the parent needs DOM access — for focus, scroll, measurements. (2) Form libraries use it to register inputs without needing to pass extra props. Without `forwardRef`, `<FancyInput ref={myRef} />` does nothing — `myRef.current` stays `null` because the ref never reached the DOM node.
+**A:** In React 19, `ref` is an ordinary prop for function components: the child destructures `ref` from its props and passes it to the inner DOM element (`<input ref={ref} />`), so `<FancyInput ref={myRef} />` just works. Before React 19, `ref` was reserved — React did not pass it to function components — so you had to wrap the component in `forwardRef`, which hands the `ref` as a second argument. `forwardRef` still works in 19 but is deprecated, so you will meet it in existing codebases and libraries. It's needed (in either form) when: (1) A reusable component wraps a native element (like `FancyInput` wrapping `<input>`) and the parent needs DOM access — for focus, scroll, measurements. (2) Form libraries use it to register inputs without needing to pass extra props. If the child never forwards `ref` to an element, `myRef.current` stays `null`.
 
 ---
 
@@ -167,7 +169,7 @@ function AutoFocusFixed() {
 
 ### Challenge
 
-Build a `ScrollableList` component with a "Scroll to bottom" button. Use `forwardRef` to expose a `scrollToItem(index)` method via the ref from a parent component.
+Build a `ScrollableList` component with a "Scroll to bottom" button. Use the React 19 `ref` prop (with `useImperativeHandle`) to expose a `scrollToItem(index)` method via the ref from a parent component.
 
 ### Solution
 
@@ -179,34 +181,33 @@ interface ScrollableListHandle {
 
 interface ScrollableListProps {
   items: string[]
+  ref?:  React.Ref<ScrollableListHandle>   // React 19: ref is a normal prop
 }
 
-const ScrollableList = forwardRef<ScrollableListHandle, ScrollableListProps>(
-  function ScrollableList({ items }, ref) {
-    const listRef     = useRef<HTMLUListElement>(null)
-    const itemRefs    = useRef<(HTMLLIElement | null)[]>([])
+// Before React 19: const ScrollableList = forwardRef<ScrollableListHandle, {items: string[]}>(...)
+function ScrollableList({ items, ref }: ScrollableListProps) {
+  const listRef     = useRef<HTMLUListElement>(null)
+  const itemRefs    = useRef<(HTMLLIElement | null)[]>([])
 
-    useImperativeHandle(ref, () => ({
-      scrollToItem: (index: number) => {
-        itemRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-      },
-      scrollToBottom: () => {
-        listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' })
-      },
-    }), [])
+  useImperativeHandle(ref, () => ({
+    scrollToItem: (index: number) => {
+      itemRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    },
+    scrollToBottom: () => {
+      listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' })
+    },
+  }), [])
 
-    return (
-      <ul ref={listRef} style={{ height: 200, overflowY: 'auto' }}>
-        {items.map((item, i) => (
-          <li key={i} ref={el => { itemRefs.current[i] = el }}>
-            {item}
-          </li>
-        ))}
-      </ul>
-    )
-  }
-)
-ScrollableList.displayName = 'ScrollableList'
+  return (
+    <ul ref={listRef} style={{ height: 200, overflowY: 'auto' }}>
+      {items.map((item, i) => (
+        <li key={i} ref={el => { itemRefs.current[i] = el }}>
+          {item}
+        </li>
+      ))}
+    </ul>
+  )
+}
 
 function App() {
   const listRef = useRef<ScrollableListHandle>(null)

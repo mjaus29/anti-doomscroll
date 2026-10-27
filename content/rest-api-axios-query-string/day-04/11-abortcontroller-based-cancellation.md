@@ -17,7 +17,7 @@
 const controller = new AbortController();
 
 // 2. controller.signal is a read-only AbortSignal
-//    Axis listens to it: if abort() is called → request is cancelled
+//    Axios listens to it: if abort() is called → request is cancelled
 console.log(controller.signal.aborted); // false
 
 // 3. Attach signal to request

@@ -311,7 +311,7 @@ model ProjectMembership {
 ```
 
 ```typescript
-import { MemberRole } from "@prisma/client";
+import { MemberRole } from "@/generated/prisma/client";
 
 // Invite a user to a project
 await prisma.projectMembership.create({

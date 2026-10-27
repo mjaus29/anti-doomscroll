@@ -281,7 +281,7 @@ Build a complete `projectRouter` with all four access levels: (1) `list` — pub
 // src/server/routers/project.ts
 import { createTRPCRouter, publicProcedure, protectedProcedure, adminProcedure } from '@/server/trpc'
 import { TRPCError }  from '@trpc/server'
-import { Prisma }     from '@prisma/client'
+import { Prisma }     from '@/generated/prisma/client'
 import { z }          from 'zod'
 
 const paginationSchema = z.object({
@@ -398,7 +398,7 @@ export const projectRouter = createTRPCRouter({
 
 ```
 MIDDLEWARE
-  t.middleware(({ ctx, next, path, type, rawInput }) => { ... })
+  t.middleware(async ({ ctx, next, path, type, getRawInput }) => { ... })
   Must return: return next()  or  return await next()
   Modify context: return next({ ctx: { ...ctx, user: session.user } })
   TypeScript re-types ctx downstream after next({ ctx: newCtx }) ✅
@@ -410,7 +410,7 @@ STACKED .INPUT()
   Compose with: schema.merge(other) / schema.extend({ field }) / schema.and(other)
   Shared schemas: src/lib/schemas/ — use in procedure AND client form validation
   Tenant/workspace ID: inject from ctx (session) — never from client input
-  rawInput: unknown — pre-validation, for middleware logging/rate-limiting
+  await getRawInput(): unknown — pre-validation, for middleware logging/rate-limiting (v10: rawInput)
 
 AUTHORIZATION PATTERNS
   Ownership — in handler: fetch resource, check resource.userId === ctx.user.id
@@ -418,7 +418,7 @@ AUTHORIZATION PATTERNS
   Scoped query: WHERE id = $1 AND userId = $2 → 404 for both not-found and unauthorized
     (better than 403 — doesn't leak resource existence to attacker)
   assertOwnerOrAdmin(resource.userId, ctx.user.id, ctx.user.role) — helper
-  Workspace/tenant: middleware reads workspaceId from rawInput, checks membership
+  Workspace/tenant: middleware reads workspaceId from getRawInput(), checks membership
 
 PROCEDURE HIERARCHY
   publicProcedure    → no restrictions

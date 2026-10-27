@@ -63,7 +63,7 @@ const AccountSchema = z.object({
 }).superRefine((data, ctx) => {
   if (data.accountType === 'business' && !data.companyName?.trim()) {
     ctx.addIssue({
-      code:    z.ZodIssueCode.custom,
+      code:    'custom',
       message: 'Company name is required for business accounts',
       path:    ['companyName']
     })
@@ -180,11 +180,11 @@ const AccountSchema = z.object({
   taxId:       z.string().optional()
 }).superRefine((data, ctx) => {
   if (data.accountType === 'business' && !data.companyName?.trim()) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom,
+    ctx.addIssue({ code: 'custom',
       message: 'Company name is required', path: ['companyName'] })
   }
   if (data.accountType === 'nonprofit' && !data.taxId?.trim()) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom,
+    ctx.addIssue({ code: 'custom',
       message: 'Tax ID is required for nonprofits', path: ['taxId'] })
   }
 })

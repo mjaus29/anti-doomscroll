@@ -1,0 +1,60 @@
+{
+  "updates": [
+    {
+      "lesson": "day-06/07-iterators-next-protocol-return-throw",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "for...of calls the iterator's return() when the body throws; it never calls throw().",
+      "changes": [
+        "TL;DR — \"thrown errors inside the loop call `throw()`\" → they call `return()`; `for...of` never calls `throw()`.",
+        "Interview Q&A — return() is called on break, return, or an error thrown in the loop body; added that `throw()` is not called by `for...of`."
+      ]
+    },
+    {
+      "lesson": "day-11/07-reset-soft-mixed-hard-revert-cherry-pick",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "reset --hard discards uncommitted changes for good; only the old commits are recoverable via reflog, and unreachable entries expire after 30 days (not 90).",
+      "changes": [
+        "Key Concepts — `reset --hard` comment: \"recoverable via reflog ~90 days\" → uncommitted changes are discarded and not in the reflog; old commits recoverable (~30 days unreachable, 90 reachable)."
+      ]
+    },
+    {
+      "lesson": "day-10/10-head-detached-head-reflog-recovering-lost-commits",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Reflog expiry is 90 days for reachable entries but 30 days for unreachable ones, such as commits dropped by reset --hard.",
+      "changes": [
+        "Key Concepts — reflog expiry note: 90 days → 90 days reachable / 30 days unreachable.",
+        "Interview Q&A — recovery answer now notes the 30-day window after a `reset --hard`."
+      ]
+    },
+    {
+      "lesson": "day-12/08-github-actions-secrets-env-matrices-cache-concurrency-conditions",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "TL;DR said the cache saves node_modules, but the lesson's cache stores the npm download cache (~/.npm).",
+      "changes": [
+        "TL;DR — \"Cache saves `node_modules`\" → \"saves the npm download cache (`~/.npm`)\"."
+      ]
+    },
+    {
+      "lesson": "day-09/05-ts-expect-error-ts-ignore-ts-nocheck-non-null-assertion",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "There are three directive comments, not four.",
+      "changes": [
+        "TL;DR — \"four directive comments\" → \"three\"."
+      ]
+    },
+    {
+      "lesson": "day-01/09-date-basics-timestamps-parsing-gotchas",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Temporal is now TC39 Stage 4 and ships in Firefox 139 and Chrome 144.",
+      "changes": [
+        "TL;DR — `Temporal` (Stage 3) → Stage 4, shipped in Firefox 139 and Chrome 144; use a polyfill for older runtimes."
+      ]
+    }
+  ]
+}

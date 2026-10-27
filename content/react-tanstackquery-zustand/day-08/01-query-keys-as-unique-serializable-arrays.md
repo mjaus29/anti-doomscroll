@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-A query key is an **array that uniquely identifies a cached entry**. TanStack Query serializes it with `JSON.stringify` to produce a stable string key. The array can contain strings, numbers, objects, and booleans — but must be serializable and deterministic.
+A query key is an **array that uniquely identifies a cached entry**. TanStack Query hashes it deterministically (a `JSON.stringify` that sorts object keys, so property order doesn't matter) to produce a stable string key. The array can contain strings, numbers, objects, and booleans — but must be serializable and deterministic.
 
 ---
 

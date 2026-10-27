@@ -240,14 +240,14 @@ import { TextField, TextareaField, CheckboxField } from '@/components/ui/form-fi
 
 const ContactSchema = z.object({
   name:      z.string().min(2, 'Min 2 characters'),
-  email:     z.string().email('Invalid email'),
+  email:     z.email('Invalid email'),
   message:   z.string().min(20, 'Min 20 characters').max(500),
   subscribe: z.boolean().default(false)
 })
 type ContactForm = z.infer<typeof ContactSchema>
 
 export function ContactForm() {
-  const { control, handleSubmit, formState: { isSubmitting } } = useForm<ContactForm>({
+  const { control, handleSubmit, formState: { isSubmitting } } = useForm<z.input<typeof ContactSchema>, unknown, z.output<typeof ContactSchema>>({
     resolver:      zodResolver(ContactSchema),
     defaultValues: { name: '', email: '', message: '', subscribe: false }
   })

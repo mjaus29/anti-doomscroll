@@ -23,7 +23,7 @@ Day 9  — Next.js Core Concepts
   ✅ Route handlers (API routes)
   ✅ Metadata API, SEO
   ✅ Image, Font, Link optimisation
-  ✅ Middleware, environment variables
+  ✅ Proxy, environment variables
 
 Day 10 — Tailwind CSS v4.3 Fundamentals
   ✅ Utility-first mental model, @import "tailwindcss"
@@ -50,7 +50,7 @@ Day 12 — Base UI Integration
   ✅ @base-ui/react setup, headless philosophy
   ✅ Accessibility-first composition
   ✅ Anatomy pattern: Root/Trigger/Portal/Positioner/Popup
-  ✅ data-[state]:, data-[highlighted]:, data-[selected]: styling
+  ✅ data-[open]:, data-[highlighted]:, data-[selected]: styling
   ✅ Popover, Dialog, Menu, Select, Tabs, Tooltip, Toast
   ✅ CSS transitions with data-[starting-style] / data-[ending-style]
 
@@ -101,11 +101,11 @@ No order is prescribed. Each is a self-contained addition.
               install prompts, push notifications
    Est. time: 0.5–1 day
 
-4. Edge Patterns (Edge Runtime / Edge Middleware)
+4. Edge Patterns (Edge Runtime for route handlers; proxy.ts itself is Node.js-only in Next 16)
    Built-in:  Next.js Edge Runtime
-   When:      Geo-routing, A/B testing at edge, auth middleware,
+   When:      Geo-routing, A/B testing at edge, auth proxy,
               ultra-low latency API routes
-   Adds:      Edge-compatible middleware, edge route handlers,
+   Adds:      Edge route handlers (not proxy.ts — it can't use Edge runtime),
               edge-compatible ORMs (Prisma Accelerate, Neon HTTP)
    Est. time: 1 day
 
@@ -154,15 +154,15 @@ NEXT.JS 16 (App Router)
   Metadata:        export const metadata: Metadata = { title, description }
   Image:           <Image src fill sizes> — always specify sizes
   Font:            next/font/google — zero CLS, self-hosted
-  Middleware:      middleware.ts at project root, export config.matcher
+  Proxy:      proxy.ts at project root (Next 16; was middleware.ts), export config.matcher
 
 TAILWIND CSS v4.3
   Setup:           @import "tailwindcss" in globals.css — one line
   Config:          @theme {} in CSS — no tailwind.config.js needed
-  Dark mode:       @variant dark (&:where(.dark,.dark *)) — class strategy
-  CSS vars:        bg-[--color-surface], text-[--color-text]
+  Dark mode:       @custom-variant dark (&:where(.dark,.dark *)) — class strategy
+  CSS vars:        bg-(--color-surface), text-(--color-text)
   Arbitrary:       w-[340px], h-[calc(100vh-3.5rem)], [content-visibility:auto]
-  Selectors:       *:, has-[]:, not-[]:, group/{name}, data-[state=]:
+  Selectors:       *:, has-[]:, not-[]:, group/{name}, data-[open]:
   Conflicts:       cn() = twMerge(clsx()) — always on className prop
   Duplication:     Component extraction first, @apply last resort
   !important:      ! prefix — last resort for third-party CSS only
@@ -170,14 +170,14 @@ TAILWIND CSS v4.3
 BASE UI v1.4.1
   Install:         npm install @base-ui/react — no CSS needed
   Anatomy:         Root → Trigger → Portal → Positioner → Popup
-  State API:       data-[state=open/closed] + data-[highlighted] + data-[selected]
+  State API:       data-[open]/data-[closed] + data-[highlighted] + data-[selected] (data-[active] on Tabs.Tab)
   Transitions:     data-[starting-style]: (enter from) + data-[ending-style]: (exit to)
-  Scale origin:    origin-[--transform-origin] — always use with scale transitions
+  Scale origin:    origin-(--transform-origin) — always use with scale transitions
   Components:
     Popover:       floating panel, click to open, click outside to close
     Dialog:        modal, focus trap, body scroll lock, Backdrop + Popup
-    Menu:          command list, arrow key nav, typeahead, onSelect not onClick
-    Select:        styled dropdown, min-w-[--anchor-width], data-[selected]
+    Menu:          command list, arrow key nav, typeahead, onClick on items (no onSelect)
+    Select:        styled dropdown, min-w-(--anchor-width), data-[selected]
     Tabs:          Root → List → Tab → Panel, data-[hidden]:hidden on Panel
     Tooltip:       Provider at layout, read-only only, aria-describedby auto-wired
     Toast:         Provider + Viewport in layout, useToast() hook imperative API
@@ -214,7 +214,7 @@ BASE UI v1.4.1
 - **Next.js**: "How does data fetching work in the App Router?" — `fetch()` with `{ next: { revalidate } }` or `cache: 'no-store'` in Server Components
 - **Tailwind**: "How do you handle class conflicts when passing `className` to a component?" — `tailwind-merge` via `cn()` utility
 - **Tailwind**: "What does mobile-first mean in Tailwind?" — unprefixed = all sizes, `sm:` = 640px and above
-- **Base UI**: "How do you style Base UI components?" — `className` with Tailwind, `data-[state=]:` variants respond to component state
+- **Base UI**: "How do you style Base UI components?" — `className` with Tailwind, `data-[open]:`/`data-[closed]:`/`data-[highlighted]:` variants respond to component state
 - **Accessibility**: "What accessibility does Base UI provide vs what is your responsibility?" — ARIA/keyboard/focus = Base UI; color contrast/focus rings/labels = you
 
 ---
@@ -265,13 +265,13 @@ export default function ShowcasePage() {
 // src/components/component-showcase.tsx
 "use client";
 
-import * as PopoverP from "@base-ui/react/popover";
-import * as DialogP from "@base-ui/react/dialog";
-import * as MenuP from "@base-ui/react/menu";
-import * as SelectP from "@base-ui/react/select";
-import * as TabsP from "@base-ui/react/tabs";
-import * as TooltipP from "@base-ui/react/tooltip";
-import * as ToastP from "@base-ui/react/toast";
+import { Popover as PopoverP } from "@base-ui/react/popover";
+import { Dialog as DialogP } from "@base-ui/react/dialog";
+import { Menu as MenuP } from "@base-ui/react/menu";
+import { Select as SelectP } from "@base-ui/react/select";
+import { Tabs as TabsP } from "@base-ui/react/tabs";
+import { Tooltip as TooltipP } from "@base-ui/react/tooltip";
+import { Toast as ToastP } from "@base-ui/react/toast";
 import { useState } from "react";
 import { cn } from "@/lib/cn";
 
@@ -279,7 +279,7 @@ import { cn } from "@/lib/cn";
 const POPUP =
   "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl z-50 outline-none";
 const TRANS =
-  "motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out origin-[--transform-origin] data-[starting-style]:opacity-0 data-[starting-style]:scale-95 data-[ending-style]:opacity-0 data-[ending-style]:scale-95";
+  "motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out origin-(--transform-origin) data-[starting-style]:opacity-0 data-[starting-style]:scale-95 data-[ending-style]:opacity-0 data-[ending-style]:scale-95";
 const ITEM =
   "flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none outline-none transition-colors data-[highlighted]:bg-blue-50 dark:data-[highlighted]:bg-blue-900/20 data-[highlighted]:text-blue-700 data-[disabled]:opacity-40 data-[disabled]:pointer-events-none";
 const BTN =
@@ -490,10 +490,10 @@ export function ComponentShowcase() {
               <SelectP.Portal>
                 <SelectP.Positioner sideOffset={6}>
                   <SelectP.Popup
-                    className={cn(POPUP, TRANS, "p-1.5 min-w-[--anchor-width]")}
+                    className={cn(POPUP, TRANS, "p-1.5 min-w-(--anchor-width)")}
                   >
                     {["Next.js", "Remix", "Astro", "SvelteKit"].map((fw) => (
-                      <SelectP.Option
+                      <SelectP.Item
                         key={fw}
                         value={fw}
                         className={cn(
@@ -502,11 +502,11 @@ export function ComponentShowcase() {
                           "dark:data-[selected]:text-blue-300"
                         )}
                       >
-                        <span className="flex-1">{fw}</span>
-                        <span className="opacity-0 data-[selected]:opacity-100 text-blue-500 text-xs">
+                        <SelectP.ItemText className="flex-1">{fw}</SelectP.ItemText>
+                        <SelectP.ItemIndicator className="text-blue-500 text-xs">
                           ✓
-                        </span>
-                      </SelectP.Option>
+                        </SelectP.ItemIndicator>
+                      </SelectP.Item>
                     ))}
                   </SelectP.Popup>
                 </SelectP.Positioner>
@@ -534,9 +534,9 @@ export function ComponentShowcase() {
                     className="flex-1 py-1.5 text-xs font-medium rounded-lg
                                  capitalize text-gray-500 dark:text-gray-400
                                  transition-all cursor-pointer
-                                 data-[selected]:bg-white dark:data-[selected]:bg-gray-700
-                                 data-[selected]:text-gray-900 dark:data-[selected]:text-white
-                                 data-[selected]:shadow-sm
+                                 data-[active]:bg-white dark:data-[active]:bg-gray-700
+                                 data-[active]:text-gray-900 dark:data-[active]:text-white
+                                 data-[active]:shadow-sm
                                  focus-visible:outline-none focus-visible:ring-2
                                  focus-visible:ring-blue-500 focus-visible:ring-offset-1"
                   >
@@ -686,12 +686,13 @@ ANATOMY PATTERN (universal for ALL floating components)
   Trigger          → opens it (gets aria-expanded, aria-controls auto)
   Portal           → teleports to <body> → no z-index/overflow trap
   Positioner       → Floating UI positioning (side/align/sideOffset)
-  Popup            → visible content (gets aria-modal, role, data-state)
+  Popup            → visible content (gets aria-modal, role, data-open/data-closed)
   Arrow            → optional pointing arrow (auto-positioned)
 
 DATA ATTRIBUTES (the styling API)
-  data-[state=open]          → floating component is open
-  data-[state=closed]        → closing (during exit transition)
+  data-[open]                → floating component is open
+  data-[closed]              → floating component is closed (exit transition)
+  data-[active]              → the active Tabs.Tab
   data-[highlighted]         → keyboard/mouse hover on menu/select item
   data-[selected]            → currently selected option
   data-[checked]             → switch/checkbox is on
@@ -705,8 +706,8 @@ DATA ATTRIBUTES (the styling API)
 COMPONENT SUMMARY
   Popover:    contextual floating panel, interactive OK, click outside closes
   Dialog:     modal, focus trap, body scroll lock, Backdrop + Popup separate
-  Menu:       command list, arrow keys, typeahead, onSelect not onClick
-  Select:     styled dropdown, min-w-[--anchor-width], data-[selected] ✓ mark
+  Menu:       command list, arrow keys, typeahead, onClick on items (no onSelect)
+  Select:     styled dropdown, min-w-(--anchor-width), data-[selected] ✓ mark
   Tabs:       List → Tab → Panel, data-[hidden]:hidden, arrow key nav
   Tooltip:    Provider at root, read-only only, hover+focus shows, delay via Provider
   Toast:      Provider+Viewport in layout.tsx, useToastManager() imperative add()
@@ -715,7 +716,7 @@ TRANSITIONS RECIPE
   Entry:     data-[starting-style]:opacity-0 data-[starting-style]:scale-95
   Exit:      data-[ending-style]:opacity-0   data-[ending-style]:scale-95
   Always:    transition-all duration-200 ease-out
-  Scale fix: origin-[--transform-origin] — correct scale origin from positioner
+  Scale fix: origin-(--transform-origin) — correct scale origin from positioner
   Direction: data-[side=bottom]:data-[starting-style]:-translate-y-2
   Reduced:   @media (prefers-reduced-motion: reduce) { transition: none !important }
 

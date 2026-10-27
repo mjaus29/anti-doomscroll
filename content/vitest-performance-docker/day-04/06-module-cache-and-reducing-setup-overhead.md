@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-Every test file in Vitest reimports its modules fresh (when `isolate: true`). For expensive modules (DB clients, compiled WASM, config parsers), this setup cost multiplies across files. Use `globalSetup` for once-per-process setup (start test DB), `setupFiles` for once-per-worker setup (configure matchers), and `beforeAll` only for per-suite setup. Share expensive resources through globals.
+Every test file in Vitest reimports its modules fresh (when `isolate: true`). For expensive modules (DB clients, compiled WASM, config parsers), this setup cost multiplies across files. Use `globalSetup` for once-per-process setup (start test DB), `setupFiles` for cheap per-test-file setup (configure matchers; it re-runs before every test file), and `beforeAll` only for per-suite setup. Share expensive resources through globals.
 
 ---
 
@@ -18,7 +18,7 @@ export default defineConfig({
     globalSetup: './src/test/global-setup.ts',
     // Use for: start test database, launch test server, generate fixtures
 
-    // ── 2. setupFiles — runs ONCE per WORKER before each test file
+    // ── 2. setupFiles — runs before EVERY test file (inside that file's worker/module context)
     setupFiles: ['./src/test/setup.ts'],
     // Use for: configure testing-library, add custom matchers, mock globals
 
@@ -47,11 +47,11 @@ export async function setup(ctx: GlobalSetupContext) {
 ```
 
 ```typescript
-// src/test/setup.ts — runs in each worker before each test file
+// src/test/setup.ts — runs before each test file
 import { expect, vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'  // add custom matchers
 
-// Mock globals once per worker
+// Mock globals (re-applied for every test file)
 vi.stubGlobal('ResizeObserver', class {
   observe()    {}
   unobserve()  {}
@@ -129,14 +129,14 @@ export async function setup() {
 const start = performance.now()
 // ... setup code ...
 console.log(`setupFiles: ${(performance.now() - start).toFixed(0)}ms`)
-// This runs per worker — multiply by worker count for total overhead
+// This runs before every test file — multiply by the number of test files for total overhead
 ```
 
 ---
 
 ## W — Why It Matters
 
-- `globalSetup` vs `setupFiles` is a cost multiplier — `globalSetup` runs once, `setupFiles` runs once per worker thread (e.g. 8 times on an 8-core machine). If your `setupFiles` takes 500ms, it adds 4 seconds of overhead before the first test runs. Expensive setup belongs in `globalSetup`.
+- `globalSetup` vs `setupFiles` is a cost multiplier — `globalSetup` runs once, `setupFiles` runs before every test file (e.g. 200 times for 200 files, spread across the workers). If your `setupFiles` takes 500ms, it adds 100 seconds of CPU time across the run. Expensive setup belongs in `globalSetup`.
 - The transaction pattern for DB tests (`beforeEach: beginTransaction`, `afterEach: rollback`) is the gold standard for test isolation — it's 10–100× faster than re-seeding the database per test, provides perfect isolation, and leaves the database clean without any cleanup code.
 - `isolate: false` is a footgun — module-level variables (counters, caches, singletons) become shared across all test files in the same worker. One test modifying a module-level singleton corrupts every test that runs after it in the same worker. Use it only for stateless utility-only modules.
 
@@ -146,17 +146,17 @@ console.log(`setupFiles: ${(performance.now() - start).toFixed(0)}ms`)
 
 ### Q: What is the difference between `globalSetup`, `setupFiles`, and `beforeAll` in Vitest?
 
-**A:** They run at different scopes. `globalSetup` runs exactly once in the Vitest main process before any workers start — use it for process-wide setup like starting a test database server or generating shared fixtures. It has no access to test APIs (`expect`, `vi`). `setupFiles` runs in each worker process/thread once before every test file — use it for configuring test utilities, adding custom matchers, and stubbing browser globals that every test needs. It runs in the same environment as tests and has access to `vi`. `beforeAll` runs inside a test file before the describe block's tests — use it for suite-specific setup like creating test data. The hierarchy by cost: `globalSetup` (run once total) → `setupFiles` (run once per worker) → `beforeAll` (run once per file or describe) → `beforeEach` (run before every single test).
+**A:** They run at different scopes. `globalSetup` runs exactly once in the Vitest main process before any workers start — use it for process-wide setup like starting a test database server or generating shared fixtures. It has no access to test APIs (`expect`, `vi`). `setupFiles` runs before every test file, inside the worker that runs that file — use it for configuring test utilities, adding custom matchers, and stubbing browser globals that every test needs. It runs in the same environment as tests and has access to `vi`. `beforeAll` runs inside a test file before the describe block's tests — use it for suite-specific setup like creating test data. The hierarchy by cost: `globalSetup` (run once total) → `setupFiles` (run once per test file) → `beforeAll` (run once per file or describe) → `beforeEach` (run before every single test).
 
 ---
 
 ## C — Common Pitfalls + Fix
 
-### ❌ Expensive work in `setupFiles` — runs N times (once per worker)
+### ❌ Expensive work in `setupFiles` — runs N times (once per test file)
 
 ```typescript
 // src/test/setup.ts — setupFiles
-// ❌ Compiles 50MB WASM module — takes 2 seconds — runs once per worker
+// ❌ Compiles 50MB WASM module — takes 2 seconds — runs before every test file
 const wasm = await WebAssembly.instantiateStreaming(fetch('/heavy.wasm'))
 ```
 

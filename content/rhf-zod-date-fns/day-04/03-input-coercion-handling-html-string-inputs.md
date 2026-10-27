@@ -15,11 +15,11 @@ import { z } from 'zod'
 
 // ─── The coercion problem
 // <input type="number" value="25" />  → DOM value is "25" (string)
-// z.number().min(18).safeParse("25") → FAILS (expected number, got string)
+// z.number().min(18).safeParse("25") → FAILS (invalid input: expected number, received string)
 
 // ─── z.coerce — wraps value in the type's constructor before validating
 z.coerce.number()   // Number("25") = 25  → validates as number
-z.coerce.boolean()  // Boolean("true") = true
+z.coerce.boolean()  // Boolean(input): ANY non-empty string is true — Boolean("false") = true ⚠️
 z.coerce.string()   // String(42) = "42"
 z.coerce.date()     // new Date("2024-01-15") = Date object
 
@@ -41,14 +41,14 @@ const Schema = z.object({ age: z.coerce.number().int().min(18, 'Must be 18+') })
 // Schema handles coercion + validation ✅
 
 // ─── Coercion edge cases
-z.coerce.number().safeParse('')      // NaN → fails 'Expected number, received nan'
-z.coerce.number().safeParse('abc')   // NaN → fails
+z.coerce.number().safeParse('')      // Number('') is 0 → PASSES as 0 (blank looks like a real value!)
+z.coerce.number().safeParse('abc')   // NaN → fails 'Invalid input: expected number, received NaN'
 z.coerce.number().safeParse(null)    // 0 → passes if min(0) or above
 z.coerce.number().safeParse(true)    // 1 → passes
 z.coerce.number().safeParse(false)   // 0
 
 // ─── Fix for empty optional number input
-// Empty string "" coerces to NaN, not undefined
+// Empty string "" coerces to 0, not undefined — a blank field silently becomes 0
 // Solution: preprocess empty string to undefined before coercion
 const OptionalNumberSchema = z.preprocess(
   val => (val === '' || val === null ? undefined : val),
@@ -70,8 +70,9 @@ const EventSchema = z.object({
 // "2024-06-15" → new Date('2024-06-15') → valid Date ✅
 
 // ─── Checkbox coercion
-// <input type="checkbox" /> returns "on" when checked, undefined when unchecked
-// z.boolean() rejects "on" — use z.coerce.boolean() or preprocess
+// A single checkbox registered with RHF already yields a real boolean → plain z.boolean() is enough.
+// ⚠️ Don't use z.coerce.boolean() here: Boolean('false') is true.
+// Only for raw FormData (value "on" when checked, missing when unchecked) do you need preprocess:
 const CheckboxSchema = z.preprocess(
   val => val === 'on' || val === true || val === '1',
   z.boolean()
@@ -84,7 +85,7 @@ const CheckboxSchema = z.preprocess(
 ## W — Why It Matters
 
 - Moving coercion into the Zod schema means `register` is clean (no `valueAsNumber`, no `setValueAs`), and the coercion logic is co-located with the validation rules — one place to look.
-- The empty string → NaN problem (`z.coerce.number().safeParse('')`) is the most common coercion bug in RHF + Zod forms. Optional number fields require `z.preprocess` to handle the empty string case before coercion.
+- The empty string → `0` problem (`z.coerce.number().safeParse('')` succeeds with `0`) is the most common coercion bug in RHF + Zod forms. Optional number fields require `z.preprocess` to handle the empty string case before coercion.
 - `z.coerce.date()` is more ergonomic than RHF's `valueAsDate: true` + manual date validation — you get date range validation (`.min`, `.max`) in the same chain.
 
 ---
@@ -93,7 +94,7 @@ const CheckboxSchema = z.preprocess(
 
 ### Q: What happens when you use `z.coerce.number()` with an empty string input, and how do you fix it?
 
-**A:** `z.coerce.number()` calls `Number('')` which returns `NaN`. Zod then validates `NaN` as a number and rejects it with "Expected number, received nan". For optional number fields where the user might leave the input blank, wrap with `z.preprocess`: `z.preprocess(val => val === '' ? undefined : val, z.coerce.number().optional())`. This converts empty strings to `undefined` before coercion runs, so blank inputs produce `undefined` (valid for optional) rather than failing with a cryptic NaN error.
+**A:** `z.coerce.number()` calls `Number('')`, which returns `0` — so a blank field passes validation as `0` (and `' '` does too), which is rarely what you want. Non-numeric text like `'abc'` gives `NaN` and is rejected with "Invalid input: expected number, received NaN". For optional number fields where the user might leave the input blank, wrap with `z.preprocess`: `z.preprocess(val => val === '' ? undefined : val, z.coerce.number().optional())`. This converts empty strings to `undefined` before coercion runs, so blank inputs produce `undefined` (valid for optional) instead of a silent `0`. Note that in Zod 4 the input type of `z.coerce.*` is `unknown`.
 
 ---
 
@@ -105,7 +106,7 @@ const CheckboxSchema = z.preprocess(
 // ❌ z.number() rejects strings — HTML inputs always produce strings
 const Schema = z.object({ price: z.number().positive() })
 Schema.safeParse({ price: '29.99' })
-// → { success: false } 'Expected number, received string'
+// → { success: false } 'Invalid input: expected number, received string'
 ```
 
 **Fix:**
@@ -142,14 +143,15 @@ const EventSchema = z.object({
   eventDate:    z.coerce.date().min(new Date(), 'Must be in the future'),
   agreeToTerms: z.preprocess(
                   v => v === 'on' || v === true,
-                  z.literal(true, { errorMap: () => ({ message: 'You must agree to continue' }) })
+                  z.literal(true, { error: 'You must agree to continue' })
                 )
 })
 
-type EventForm = z.infer<typeof EventSchema>
+type EventInput  = z.input<typeof EventSchema>
+type EventOutput = z.output<typeof EventSchema>
 
 export function EventBookingForm() {
-  const { register, handleSubmit, formState: { errors } } = useForm<EventForm>({
+  const { register, handleSubmit, formState: { errors } } = useForm<EventInput, unknown, EventOutput>({
     resolver:      zodResolver(EventSchema),
     defaultValues: { title: '', seats: 1, eventDate: undefined }
   })

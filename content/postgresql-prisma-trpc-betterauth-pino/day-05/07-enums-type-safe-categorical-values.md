@@ -115,7 +115,7 @@ export type UserRole = (typeof UserRole)[keyof typeof UserRole]
 // type UserRole = 'ADMIN' | 'MODERATOR' | 'USER' | 'GUEST'
 
 // Usage in application code:
-import { UserRole } from '@prisma/client'
+import { UserRole } from '@/generated/prisma/client'
 
 const user = await prisma.user.create({
   data: {
@@ -284,9 +284,9 @@ model Shipment {
 
 ```typescript
 // TypeScript usage — type-safe enum filtering
-import { PrismaClient, ShippingCarrier, OrderStatus } from '@prisma/client'
+import { PrismaClient, ShippingCarrier, OrderStatus } from '@/generated/prisma/client'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter })
 
 // Filter by carrier
 const lalamoveShipments = await prisma.shipment.findMany({

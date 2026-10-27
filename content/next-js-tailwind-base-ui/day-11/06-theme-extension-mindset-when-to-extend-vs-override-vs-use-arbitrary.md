@@ -128,7 +128,7 @@ Ask three questions:
 }
 <div
   style={{ "--progress": `${percentage}%` } as React.CSSProperties}
-  className="w-[--progress] h-2 bg-blue-600 rounded-full"
+  className="w-(--progress) h-2 bg-blue-600 rounded-full"
 >
   {/* Width comes from data — arbitrary value is correct */}
 </div>;
@@ -176,8 +176,8 @@ Ask three questions:
 
 ```tsx
 {/* ─── Semantic usage — self-documenting */}
-<nav className="h-[--spacing-nav-height] sticky top-0 z-40">
-<aside className="w-[--spacing-sidebar]">
+<nav className="h-(--spacing-nav-height) sticky top-0 z-40">
+<aside className="w-(--spacing-sidebar)">
 <main className="h-[calc(100vh-var(--spacing-nav-height))]">
 {/* Reading the code tells you WHY, not just WHAT */}
 ```
@@ -325,7 +325,7 @@ export function ActionCard({
     // Uses: shadow-card, hover shadow-card-hover, color tokens via arbitrary var refs
     <div
       className="
-      bg-[--color-surface] border border-[--color-border] rounded-2xl p-6
+      bg-(--color-surface) border border-(--color-border) rounded-2xl p-6
       shadow-card hover:shadow-card-hover hover:-translate-y-0.5
       transition-all duration-200
     "
@@ -333,10 +333,10 @@ export function ActionCard({
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="space-y-1 min-w-0">
-          <h3 className="font-semibold text-[--color-text] text-lg leading-tight">
+          <h3 className="font-semibold text-(--color-text) text-lg leading-tight">
             {title}
           </h3>
-          <p className="text-sm text-[--color-text-muted] text-pretty">
+          <p className="text-sm text-(--color-text-muted) text-pretty">
             {description}
           </p>
         </div>
@@ -351,7 +351,7 @@ export function ActionCard({
       </div>
 
       {/* Action row */}
-      <div className="flex gap-3 mt-5 pt-4 border-t border-[--color-border]">
+      <div className="flex gap-3 mt-5 pt-4 border-t border-(--color-border)">
         <button
           onClick={onPrimary}
           className="
@@ -369,9 +369,9 @@ export function ActionCard({
           onClick={onDelete}
           className="
             px-4 py-2 rounded-xl text-sm font-semibold
-            text-destructive bg-[--color-surface-alt]
+            text-destructive bg-(--color-surface-alt)
             hover:bg-destructive hover:text-white
-            border border-[--color-border]
+            border border-(--color-border)
             active:scale-[0.98] transition-all duration-150
             focus-visible:outline-none focus-visible:ring-2
             focus-visible:ring-destructive focus-visible:ring-offset-2

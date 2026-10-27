@@ -20,7 +20,8 @@ import { z } from 'zod'
 // Simple field:  path: ['email']       → errors.email
 // Nested:        path: ['address', 'city'] → errors.address?.city
 // Array item:    path: ['items', 0, 'qty'] → errors.items?.[0]?.qty
-// Root refine:   path: []               → errors.root (mapped by RHF)
+// Pathless refine: path: []           → errors[''] (empty-string key) — NOT errors.root, so it's invisible in the UI
+// Form-level error:  path: ['root']      → errors.root ✅ (opt in explicitly)
 
 // ─── How zodResolver maps issues to RHF errors
 // issue.path → nested key path → set on formState.errors
@@ -46,12 +47,12 @@ const Schema = z.object({
 }).refine(
   data => data.password === data.confirmPassword,
   {
-    message: 'Passwords do not match',
-    path:    ['confirmPassword']  // ← error appears on confirmPassword field
+    error:   'Passwords do not match',   // Zod 4: `error` (v3: `message`, still works)
+    path:    ['confirmPassword']         // ← error appears on confirmPassword field
   }
 )
 
-// Without path: error goes to formState.errors.root (no field)
+// Without path: Zod issues path [] and zodResolver stores it under errors[''] — no field and not errors.root
 // With path: ['confirmPassword']: errors.confirmPassword.message === 'Passwords do not match'
 ```
 
@@ -69,8 +70,8 @@ const { formState: { errors } } = useForm<z.infer<typeof NestedSchema>>({
 {errors.items?.[0]?.name?.message}
 {errors.items?.[1]?.qty?.message}
 
-// Root-level refine error (no path → errors.root)
-// zodResolver maps path: [] → errors.root
+// Form-level refine error: opt in with path: ['root']
+// (a refine with NO path ends up under errors[''], not errors.root)
 {errors.root?.message}
 ```
 
@@ -78,7 +79,7 @@ const { formState: { errors } } = useForm<z.infer<typeof NestedSchema>>({
 
 ## W — Why It Matters
 
-- The `path` on `.refine()` is essential — without it, cross-field errors (like "passwords don't match") go to `errors.root` and don't highlight the specific field. Setting `path: ['confirmPassword']` makes the error appear inline next to the confirm field.
+- The `path` on `.refine()` is essential — without it, cross-field errors (like "passwords don't match") get an empty path, land under `errors['']` (not `errors.root`), and never show up in the UI. Setting `path: ['confirmPassword']` makes the error appear inline next to the confirm field.
 - Understanding path mapping lets you debug missing errors — if `errors.confirmPassword.message` is undefined but the schema should have an error, check that the `.refine()` path matches exactly the field name registered in RHF.
 - Array path segments (`path: ['items', 0, 'name']`) map automatically to `errors.items[0].name` — nested array field errors work without any extra configuration when using `useFieldArray`.
 
@@ -88,16 +89,16 @@ const { formState: { errors } } = useForm<z.infer<typeof NestedSchema>>({
 
 ### Q: A `.refine()` cross-field error isn't showing next to the field in the form — why?
 
-**A:** The `.refine()` probably has no `path` option or the wrong path. Without `path`, Zod issues the error with `path: []` — an empty array — which `zodResolver` maps to `errors.root`, not to any specific field. To show the error next to a specific field, add `path: ['fieldName']` to the refine options. The path must match the exact string used in `register('fieldName')` for the error to appear at `errors.fieldName.message`.
+**A:** The `.refine()` probably has no `path` option or the wrong path. Without `path`, Zod issues the error with `path: []` — an empty array — which `zodResolver` stores under the empty-string key `errors['']`, not on any field (and not on `errors.root` either), so nothing renders. For a form-level message, set `path: ['root']` explicitly. To show the error next to a specific field, add `path: ['fieldName']` to the refine options. The path must match the exact string used in `register('fieldName')` for the error to appear at `errors.fieldName.message`.
 
 ---
 
 ## C — Common Pitfalls + Fix
 
-### ❌ `.refine()` without `path` — error goes to `errors.root`, not the field
+### ❌ `.refine()` without `path` — error is stored under `errors['']`, not the field
 
 ```tsx
-// ❌ Error ends up in errors.root — not shown next to confirmPassword field
+// ❌ Error ends up in errors[''] — not shown next to confirmPassword field
 const Schema = z.object({
   password: z.string(), confirmPassword: z.string()
 }).refine(d => d.password === d.confirmPassword, 'Passwords do not match')
@@ -112,8 +113,8 @@ const Schema = z.object({
 const Schema = z.object({
   password: z.string(), confirmPassword: z.string()
 }).refine(d => d.password === d.confirmPassword, {
-  message: 'Passwords do not match',
-  path:    ['confirmPassword']
+  error: 'Passwords do not match',
+  path:  ['confirmPassword']
 })
 // errors.confirmPassword.message === 'Passwords do not match' ✅
 ```
@@ -124,7 +125,7 @@ const Schema = z.object({
 
 ### Challenge
 
-Build a shipping schema with nested address object. Add two `.refine()` checks — one with `path` (city/state mismatch → error on `state` field) and one without `path` (terms acceptance → error on root). Render both errors in the form.
+Build a shipping schema with nested address object. Add two `.refine()` checks — one with `path` (city/state mismatch → error on `state` field) and one with `path: ['root']` (terms acceptance → form-level error on `errors.root`). Render both errors in the form.
 
 ### Solution
 
@@ -145,11 +146,11 @@ const ShippingSchema = z.object({
 })
 .refine(
   d => !(d.address.city === 'Los Angeles' && d.address.state !== 'CA'),
-  { message: 'LA is in California — state should be CA', path: ['address', 'state'] }
+  { error: 'LA is in California — state should be CA', path: ['address', 'state'] }
 )
 .refine(
   d => d.agreeToShipping === true,
-  { message: 'You must agree to shipping terms' } // no path → errors.root
+  { error: 'You must agree to shipping terms', path: ['root'] } // explicit 'root' → errors.root
 )
 
 type Shipping = z.infer<typeof ShippingSchema>

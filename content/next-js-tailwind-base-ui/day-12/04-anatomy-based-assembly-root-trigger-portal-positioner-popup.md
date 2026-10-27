@@ -138,13 +138,13 @@ Root
 
 ```tsx
 {
-  /* ─── Popup receives data-state from Base UI */
+  /* ─── Popup receives data-open / data-closed from Base UI */
 }
 {
-  /* data-state="open" when visible */
+  /* data-open is present when visible */
 }
 {
-  /* data-state="closed" when hidden (during exit animation) */
+  /* data-closed is present when hidden (Base UI has no data-state attribute) */
 }
 {
   /* data-[starting-style] — initial CSS for enter animation */
@@ -243,7 +243,7 @@ Build a reusable `<FloatingCard>` primitive that wraps the anatomy pattern, acce
 // src/components/ui/floating-card.tsx
 "use client";
 
-import * as Popover from "@base-ui/react/popover";
+import { Popover } from "@base-ui/react/popover";
 import { cn } from "@/lib/cn";
 
 interface FloatingCardProps {
@@ -278,7 +278,7 @@ export function FloatingCard({
               "rounded-2xl shadow-xl z-50",
               "min-w-[200px] max-w-xs",
               // Transition
-              "transition-all duration-200 ease-out origin-[--transform-origin]",
+              "transition-all duration-200 ease-out origin-(--transform-origin)",
               // Enter: starting state → current state
               "data-[starting-style]:opacity-0",
               "data-[starting-style]:scale-95",

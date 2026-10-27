@@ -191,7 +191,7 @@ import { headers } from "next/headers";
 export default async function ServerNav() {
   const headersList = await headers();
   const pathname = headersList.get("x-current-path") ?? "/";
-  // ← Only works if middleware sets this header
+  // ← Only works if proxy sets this header
 
   // Better: pass pathname as a prop from a Client Component parent
   // OR: use usePathname in a 'use client' component
@@ -221,7 +221,7 @@ export default async function ServerNav() {
 
 ### Q3: Can you use `usePathname` in Server Components?
 
-**A:** No — `usePathname` is a React hook and hooks only work in Client Components. For Server Components that need the current path, options are: read the `x-pathname` header (if set by middleware), accept the path as a prop passed down from a Client Component ancestor, or restructure so that the route-aware logic lives in a `'use client'` component.
+**A:** No — `usePathname` is a React hook and hooks only work in Client Components. For Server Components that need the current path, options are: read the `x-pathname` header (if set by proxy), accept the path as a prop passed down from a Client Component ancestor, or restructure so that the route-aware logic lives in a `'use client'` component.
 
 ---
 

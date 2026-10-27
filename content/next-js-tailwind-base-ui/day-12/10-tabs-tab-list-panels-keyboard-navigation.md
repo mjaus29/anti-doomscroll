@@ -16,7 +16,7 @@
 // src/components/ui/tabs.tsx
 "use client";
 
-import * as TabsPrimitive from "@base-ui/react/tabs";
+import { Tabs as TabsPrimitive } from "@base-ui/react/tabs";
 import { cn } from "@/lib/cn";
 import { cva } from "class-variance-authority";
 
@@ -71,9 +71,9 @@ function TabsTab({
             "px-4 py-1.5 rounded-lg",
             "text-gray-600 dark:text-gray-400",
             "hover:text-gray-900 dark:hover:text-white",
-            "data-[selected]:bg-white dark:data-[selected]:bg-gray-700",
-            "data-[selected]:text-gray-900 dark:data-[selected]:text-white",
-            "data-[selected]:shadow-sm"
+            "data-[active]:bg-white dark:data-[active]:bg-gray-700",
+            "data-[active]:text-gray-900 dark:data-[active]:text-white",
+            "data-[active]:shadow-sm"
           ),
         // Standalone pills
         variant === "pills" &&
@@ -81,8 +81,8 @@ function TabsTab({
             "px-4 py-2 rounded-xl",
             "text-gray-600 dark:text-gray-400",
             "hover:bg-gray-100 dark:hover:bg-gray-800",
-            "data-[selected]:bg-blue-600 data-[selected]:text-white",
-            "data-[selected]:shadow-sm data-[selected]:hover:bg-blue-700"
+            "data-[active]:bg-blue-600 data-[active]:text-white",
+            "data-[active]:shadow-sm data-[active]:hover:bg-blue-700"
           ),
         // Underline
         variant === "underline" &&
@@ -91,8 +91,8 @@ function TabsTab({
             "text-gray-500 dark:text-gray-400",
             "hover:text-gray-900 dark:hover:text-white",
             "hover:border-gray-300 dark:hover:border-gray-600",
-            "data-[selected]:border-blue-600 data-[selected]:text-blue-600",
-            "dark:data-[selected]:border-blue-400 dark:data-[selected]:text-blue-400"
+            "data-[active]:border-blue-600 data-[active]:text-blue-600",
+            "dark:data-[active]:border-blue-400 dark:data-[active]:text-blue-400"
           ),
         className
       )}
@@ -181,7 +181,7 @@ export function TabsDemo() {
 
 - Tabs keyboard navigation (arrow keys to move between tabs) is mandated by the WAI-ARIA Tabs pattern — Base UI implements it correctly. A custom tab implementation using `onClick` only fails keyboard users who expect arrow key navigation.
 - `data-[hidden]:hidden` on `Tabs.Panel` ensures inactive panels are hidden from both display and accessibility tree — Base UI sets the `hidden` attribute, but you must apply the CSS to visually hide it.
-- `data-[selected]:` on `Tabs.Tab` drives the active tab styling — no `isActive` prop or conditional class needed.
+- `data-[active]:` on `Tabs.Tab` drives the active tab styling — no `isActive` prop or conditional class needed.
 
 ---
 
@@ -189,7 +189,7 @@ export function TabsDemo() {
 
 ### Q1: How does Base UI's Tabs handle keyboard navigation and what does this mean for your implementation?
 
-**A:** Base UI's Tabs implements the WAI-ARIA Tabs pattern — arrow keys navigate between tabs in the Tab List, activating a tab with Enter or Space (or automatically on arrow key, depending on `activateOnFocus` prop) shows the corresponding panel. Home/End keys jump to first/last tab. Tab key moves focus from the Tab List to the active panel's content. This means you don't add any keyboard event handlers — Base UI handles all of it. Your only responsibility is to style `data-[selected]:` on `Tabs.Tab` for the active visual state and ensure the `Tabs.Panel` value attributes match the `Tabs.Tab` value attributes.
+**A:** Base UI's Tabs implements the WAI-ARIA Tabs pattern — arrow keys navigate between tabs in the Tab List, activating a tab with Enter or Space (or automatically on arrow key, depending on `activateOnFocus` prop) shows the corresponding panel. Home/End keys jump to first/last tab. Tab key moves focus from the Tab List to the active panel's content. This means you don't add any keyboard event handlers — Base UI handles all of it. Your only responsibility is to style `data-[active]:` on `Tabs.Tab` for the active visual state and ensure the `Tabs.Panel` value attributes match the `Tabs.Tab` value attributes.
 
 ---
 

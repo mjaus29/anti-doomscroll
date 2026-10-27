@@ -26,12 +26,12 @@ export const CreatePostSchema = PostBaseSchema
 
 // Edit: same fields + id required for PUT/PATCH route
 export const EditPostSchema = PostBaseSchema.extend({
-  id: z.string().uuid()
+  id: z.uuid()
 })
 
 // Patch: everything optional except id
 export const PatchPostSchema = PostBaseSchema.partial().extend({
-  id: z.string().uuid()
+  id: z.uuid()
 })
 
 type CreatePost = z.infer<typeof CreatePostSchema>

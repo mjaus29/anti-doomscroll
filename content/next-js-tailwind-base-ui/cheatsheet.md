@@ -213,7 +213,7 @@ Lessons: [Route handlers](/group/next-js-tailwind-base-ui/day/08/04-route-handle
 | Feature | Syntax / file | Note |
 | --- | --- | --- |
 | Fonts | `const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })` | self-hosted at build |
-| Images | `<Image src alt width height />` or `fill` + `sizes` | `priority` for the LCP image |
+| Images | `<Image src alt width height />` or `fill` + `sizes` | `preload` for the LCP image (Next 16; `priority` is deprecated) |
 | Remote images | `images.remotePatterns` in `next.config.ts` | required for external hosts |
 | Static metadata | `export const metadata: Metadata = {...}` | layouts merge down |
 | Dynamic metadata | `export async function generateMetadata({ params })` | `await params` |
@@ -315,11 +315,12 @@ import { Popover } from '@base-ui/react/popover'   // in a 'use client' file
 | Styling hook | Example |
 | --- | --- |
 | Open state | `data-[open]:`, trigger gets `data-[popup-open]:` |
-| Item state | `data-[highlighted]:bg-gray-100`, `data-[selected]:`, `data-[disabled]:` |
+| Item state | `data-[highlighted]:bg-gray-100`, `data-[selected]:` (Select.Item), `data-[active]:` (Tabs.Tab), `data-[disabled]:` |
 | Enter / exit | `data-[starting-style]:opacity-0 data-[ending-style]:opacity-0` + `transition` |
 | Placement | `data-[side=top]:`, `origin-(--transform-origin)` |
 | Custom element | `render={<a href="/x" />}` instead of a wrapper |
 | Controlled | `open` + `onOpenChange`, `value` + `onValueChange` |
+| Menu item action | `<Menu.Item onClick={...}>` (there is no `onSelect`) |
 
 Lessons: [Installing Base UI](/group/next-js-tailwind-base-ui/day/12/01-installing-base-ui-react-setup-peer-deps-css-strategy) · [Anatomy](/group/next-js-tailwind-base-ui/day/12/04-anatomy-based-assembly-root-trigger-portal-positioner-popup) · [Dialog](/group/next-js-tailwind-base-ui/day/12/07-dialog-modal-with-overlay-focus-trap-accessible-anatomy) · [Transitions](/group/next-js-tailwind-base-ui/day/12/13-transitions-css-open-close-animations-with-data-state)
 

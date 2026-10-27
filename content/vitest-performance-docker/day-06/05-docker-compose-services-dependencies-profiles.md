@@ -88,7 +88,7 @@ services:
 # ── Compose CLI ───────────────────────────────────────────────────────────
 docker compose up -d                    # start all services (detached)
 docker compose up --build               # rebuild images before starting
-docker compose up --profile tools       # include profile services
+docker compose --profile tools up       # include profile services (--profile goes BEFORE `up`)
 docker compose down                     # stop + remove containers and networks
 docker compose down -v                  # also remove volumes ⚠️
 docker compose ps                       # service status

@@ -71,7 +71,7 @@
 
 <div className="[--card-gap:1.5rem] [--card-cols:3]">
   {/* Sets CSS variables on this element */}
-  {/* Children can reference: grid-cols-[--card-cols] */}
+  {/* Children can reference: grid-cols-(--card-cols) */}
 </div>;
 
 {
@@ -84,7 +84,7 @@
   "
 >
   <div
-    className="absolute inset-y-0 left-0 w-[--progress]
+    className="absolute inset-y-0 left-0 w-(--progress)
                    bg-blue-600 rounded-full transition-all duration-500"
   />
 </div>;
@@ -102,7 +102,7 @@
   [0, 1, 2, 3].map((i) => (
     <div
       key={i}
-      className="[--delay:calc(var(--i)*100ms)] animation-delay-[--delay]
+      className="[--delay:calc(var(--i)*100ms)] animation-delay-(--delay)
                animate-fade-in"
       style={{ "--i": i } as React.CSSProperties}
     >
@@ -228,7 +228,7 @@
 
 ### Q2: How do you set CSS custom properties inline in Tailwind without using `style={{}}`?
 
-**A:** Use the arbitrary property syntax: `[--variable-name:value]`. For example, `className="[--progress:65%]"` sets `--progress: 65%` on that element, which children can then reference via arbitrary value syntax: `w-[--progress]`. This approach is superior to `style={{ '--progress': '65%' }}` because it participates in Tailwind's variant system — you can write `hover:[--progress:80%]` or `dark:[--color:#fff]`, which is impossible with inline styles.
+**A:** Use the arbitrary property syntax: `[--variable-name:value]`. For example, `className="[--progress:65%]"` sets `--progress: 65%` on that element, which children can then reference via arbitrary value syntax: `w-(--progress)`. This approach is superior to `style={{ '--progress': '65%' }}` because it participates in Tailwind's variant system — you can write `hover:[--progress:80%]` or `dark:[--color:#fff]`, which is impossible with inline styles.
 
 ---
 
@@ -366,7 +366,7 @@ export function SnapCarousel() {
                     dark:bg-gray-700 rounded-full overflow-hidden`}
       >
         <div
-          className="absolute inset-y-0 left-0 w-[--progress]
+          className="absolute inset-y-0 left-0 w-(--progress)
                          bg-blue-600 rounded-full
                          transition-all duration-300 ease-out"
         />

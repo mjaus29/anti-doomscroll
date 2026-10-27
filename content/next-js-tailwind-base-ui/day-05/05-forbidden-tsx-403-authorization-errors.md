@@ -10,6 +10,23 @@
 
 ## K — Key Concepts
 
+### Enable It First — `experimental.authInterrupts`
+
+`forbidden()` and `forbidden.tsx` are still experimental. Without this flag, calling `forbidden()` throws an error and the file is ignored:
+
+``ts
+// next.config.ts
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  experimental: {
+    authInterrupts: true,
+  },
+};
+
+export default nextConfig;
+``
+
 ### `forbidden()` vs `notFound()` vs `redirect()`
 
 ```

@@ -16,7 +16,7 @@
 // src/components/ui/menu.tsx
 "use client";
 
-import * as MenuPrimitive from "@base-ui/react/menu";
+import { Menu as MenuPrimitive } from "@base-ui/react/menu";
 import { cn } from "@/lib/cn";
 
 const MenuRoot = MenuPrimitive.Root;
@@ -47,7 +47,7 @@ function MenuContent({
             "bg-white dark:bg-gray-800",
             "border border-gray-200 dark:border-gray-700",
             "rounded-2xl shadow-xl z-50 outline-none",
-            "transition-all duration-150 ease-out origin-[--transform-origin]",
+            "transition-all duration-150 ease-out origin-(--transform-origin)",
             "data-[starting-style]:opacity-0 data-[starting-style]:scale-95",
             "data-[ending-style]:opacity-0   data-[ending-style]:scale-95",
             className
@@ -180,23 +180,23 @@ export function ActionMenu() {
       <Menu.Content>
         <Menu.Group>
           <Menu.GroupLabel>File</Menu.GroupLabel>
-          <Menu.Item icon="📄" shortcut="⌘N" onSelect={() => {}}>
+          <Menu.Item icon="📄" shortcut="⌘N" onClick={() => {}}>
             New file
           </Menu.Item>
-          <Menu.Item icon="📂" shortcut="⌘O" onSelect={() => {}}>
+          <Menu.Item icon="📂" shortcut="⌘O" onClick={() => {}}>
             Open
           </Menu.Item>
-          <Menu.Item icon="💾" shortcut="⌘S" onSelect={() => {}}>
+          <Menu.Item icon="💾" shortcut="⌘S" onClick={() => {}}>
             Save
           </Menu.Item>
         </Menu.Group>
         <Menu.Separator />
         <Menu.Group>
           <Menu.GroupLabel>Edit</Menu.GroupLabel>
-          <Menu.Item icon="✂️" shortcut="⌘X" onSelect={() => {}}>
+          <Menu.Item icon="✂️" shortcut="⌘X" onClick={() => {}}>
             Cut
           </Menu.Item>
-          <Menu.Item icon="📋" shortcut="⌘C" onSelect={() => {}}>
+          <Menu.Item icon="📋" shortcut="⌘C" onClick={() => {}}>
             Copy
           </Menu.Item>
         </Menu.Group>
@@ -206,7 +206,7 @@ export function ActionMenu() {
           className="text-red-600 dark:text-red-400
                                          data-[highlighted]:bg-red-50
                                          dark:data-[highlighted]:bg-red-900/20"
-          onSelect={() => {}}
+          onClick={() => {}}
         >
           Delete
         </Menu.Item>
@@ -221,26 +221,26 @@ export function ActionMenu() {
 ## W — Why It Matters
 
 - `Menu` vs a custom dropdown built with `useState` + `onClick`: Base UI's menu implements all keyboard navigation (arrow keys, Home/End, typeahead) and ARIA (`role="menu"`, `role="menuitem"`) automatically. A custom dropdown that looks like a menu but isn't one is inaccessible by default — screen readers can't navigate it with menu keyboard patterns.
-- `onSelect` on `Menu.Item` (not `onClick`) is the correct handler — Base UI calls `onSelect` after keyboard activation, mouse click, and touch, ensuring consistent behaviour across all input modalities.
+- `onClick` on `Menu.Item` is the correct handler — Base UI has no `onSelect` prop on menu items. Its `onClick` also fires when the item is activated with Enter/Space, so keyboard, mouse and touch behave consistently.
 - Destructive items should be visually differentiated (`text-red-600`) and placed after a `Separator` to prevent accidental activation.
 
 ---
 
 ## I — Interview Q&A
 
-### Q1: What is the difference between `Menu.Item`'s `onSelect` and a regular `onClick` handler?
+### Q1: Which handler do you use for `Menu.Item` actions — `onClick` or `onSelect`?
 
-**A:** `onClick` fires only on mouse click events. `onSelect` is Base UI's cross-input handler — it fires when the item is activated by any input method: mouse click, Enter or Space key on a focused item, or touch tap. It also receives the original event and handles the menu close behaviour correctly. Using `onClick` on menu items means keyboard users who navigate with arrow keys and press Enter get no response, and touch users on some devices may get inconsistent behaviour. Always use `onSelect` for menu item actions in Base UI.
+**A:** `onClick`. `Menu.Item` documents `onClick` (it receives a `BaseUIEvent` wrapping the React mouse event) and a `closeOnClick` prop (default `true`) that controls whether the menu closes after activation. Base UI items are focusable `role="menuitem"` elements, and activating one with Enter or Space dispatches the same click, so you do not need a separate keyboard handler. `onSelect` is a Radix UI prop name (and the DOM `select` event for text selection) — it is not a Base UI menu item prop, so it is silently ignored.
 
 ---
 
 ## C — Common Pitfalls + Fix
 
-### ❌ Pitfall: Using `onClick` instead of `onSelect` on Menu.Item
+### ❌ Pitfall: Using `onSelect` (Radix habit) instead of `onClick` on Menu.Item
 
 ```tsx
 {
-  /* ❌ onClick doesn't fire for keyboard activation */
+  /* ❌ onSelect is not a Base UI Menu.Item prop — handleDelete never runs */
 }
 <Menu.Item onClick={handleDelete}>Delete</Menu.Item>;
 ```
@@ -249,9 +249,9 @@ export function ActionMenu() {
 
 ```tsx
 {
-  /* ✅ onSelect fires for all input methods */
+  /* ✅ onClick fires for mouse, touch and keyboard (Enter/Space) activation */
 }
-<Menu.Item onSelect={handleDelete}>Delete</Menu.Item>;
+<Menu.Item onClick={handleDelete}>Delete</Menu.Item>;
 ```
 
 ---
@@ -295,19 +295,19 @@ export function RowActionsMenu({
         ⋯
       </Menu.Trigger>
       <Menu.Content side="bottom" align="end">
-        <Menu.Item icon="✏️" onSelect={onEdit}>
+        <Menu.Item icon="✏️" onClick={onEdit}>
           Edit
         </Menu.Item>
-        <Menu.Item icon="📋" onSelect={onDuplicate}>
+        <Menu.Item icon="📋" onClick={onDuplicate}>
           Duplicate
         </Menu.Item>
-        <Menu.Item icon="🔗" onSelect={() => navigator.clipboard.writeText(id)}>
+        <Menu.Item icon="🔗" onClick={() => navigator.clipboard.writeText(id)}>
           Copy ID
         </Menu.Item>
         <Menu.Separator />
         <Menu.Item
           icon="🗑️"
-          onSelect={onDelete}
+          onClick={onDelete}
           className="text-red-600 dark:text-red-400
                       data-[highlighted]:bg-red-50 dark:data-[highlighted]:bg-red-900/20
                       data-[highlighted]:text-red-700"

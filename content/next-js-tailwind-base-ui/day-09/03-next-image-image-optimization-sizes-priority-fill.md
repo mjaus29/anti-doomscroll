@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-`next/image` automatically optimizes images: serves modern formats (WebP/AVIF), resizes to the exact display dimensions, lazy-loads off-screen images, and prevents Cumulative Layout Shift with reserved space. The three critical props to understand are `sizes`, `priority`, and `fill`.
+`next/image` automatically optimizes images: serves modern formats (WebP/AVIF), resizes to the exact display dimensions, lazy-loads off-screen images, and prevents Cumulative Layout Shift with reserved space. The three critical props to understand are `sizes`, `preload`, and `fill`.
 
 ---
 
@@ -39,7 +39,7 @@ export function HeroSection() {
     <Image
       src={heroImage} // ← static import: width/height auto-inferred
       alt="Hero image showing our product in action" // ← always required
-      priority // ← LCP image: preload, don't lazy-load
+      preload // ← LCP image: preload, don't lazy-load
       quality={85} // ← default is 75; 85 for hero images
       placeholder="blur" // ← show blurred placeholder while loading
       className="rounded-2xl object-cover"
@@ -135,21 +135,23 @@ export default config;
 />
 ```
 
-### `priority` — Above-the-Fold Images
+### `preload` — Above-the-Fold Images
+
+> **Next.js 16:** the `priority` prop was deprecated in favour of `preload` (same effect: a `<link rel="preload">` in `<head>`). Before 16 you wrote `priority`; it still works but is deprecated. The docs also suggest `loading="eager"` or `fetchPriority="high"` for most cases.
 
 ```tsx
-// priority={true}:
+// preload={true}:
 //   → Disables lazy loading
 //   → Adds <link rel="preload"> in <head>
 //   → Eliminates LCP (Largest Contentful Paint) delay
 
-// Use priority for:
+// Use preload for:
 // ✅ Hero images visible on first paint
 // ✅ Above-the-fold product images
 // ✅ Logo in the navigation
 // ✅ The FIRST image in a list (rest should be lazy)
 
-// Never use priority for:
+// Never use preload for:
 // ❌ Images below the fold (defeats lazy loading)
 // ❌ Carousel slides 2-N (only first matters)
 // ❌ Images in modals or tabs
@@ -158,17 +160,17 @@ export default config;
   src="/hero.jpg"
   alt="Hero"
   fill
-  priority              // ← preloads this image ✅
+  preload              // ← preloads this image ✅
   sizes="100vw"
 />
 
-// Images without priority are lazy by default:
+// Images without preload are lazy by default:
 <Image
   src={product.image}
   alt={product.name}
   width={400}
   height={300}
-  // ← lazy loaded by default (no priority prop needed) ✅
+  // ← lazy loaded by default (no preload prop needed) ✅
 />
 ```
 
@@ -203,7 +205,7 @@ export default config;
     fill
     sizes="(max-width: 768px) 100vw, 800px"
     className="object-cover rounded-xl"
-    priority                                      // ← if above fold
+    preload                                      // ← if above fold
   />
 </div>
 
@@ -269,7 +271,7 @@ const config: NextConfig = {
 ## W — Why It Matters
 
 - The `sizes` prop is the single biggest performance impact of `next/image` — without it, the browser might download a 1200px image for a 400px thumbnail. Correct `sizes` can reduce image download size by 60-80% on mobile.
-- `priority` on the LCP (Largest Contentful Paint) image is a Core Web Vitals direct improvement — it adds a `<link rel="preload">` in the HTML `<head>`, telling the browser to download the image before JavaScript runs.
+- `preload` on the LCP (Largest Contentful Paint) image is a Core Web Vitals direct improvement — it adds a `<link rel="preload">` in the HTML `<head>`, telling the browser to download the image before JavaScript runs.
 - The `fill` + `relative container` pattern is how you handle images with unknown or variable dimensions — it's more flexible than specifying fixed `width` and `height`, and essential for responsive designs where images must fill their grid cells.
 
 ---
@@ -280,9 +282,9 @@ const config: NextConfig = {
 
 **A:** The `sizes` prop provides CSS media query hints that tell the browser what physical width the image will be at each viewport size. Next.js uses this to generate an optimal `srcset` attribute with multiple image sizes. When the browser selects which srcset entry to download, it uses `sizes` to pick the smallest image that still looks good at the current viewport. Without `sizes`, the browser conservatively downloads the largest srcset variant. Correct `sizes` can reduce image download size by 60-80% on mobile — a 400px image in a grid doesn't need to download the 1200px version.
 
-### Q2: When should you use `priority={true}` on a `next/image`?
+### Q2: When should you use `preload={true}` on a `next/image`?
 
-**A:** Use `priority` for images that are visible on the initial viewport without scrolling — particularly the Largest Contentful Paint (LCP) element. This includes hero images, above-the-fold product photos, and the first image in a list. `priority` disables lazy loading and adds a `<link rel="preload">` in the HTML head, ensuring the browser starts downloading the image before JavaScript executes. Only one or two images per page should have `priority` — adding it to all images defeats its purpose and can actually slow initial load by preloading too many assets.
+**A:** Use `preload` for images that are visible on the initial viewport without scrolling — particularly the Largest Contentful Paint (LCP) element. This includes hero images, above-the-fold product photos, and the first image in a list. `preload` disables lazy loading and adds a `<link rel="preload">` in the HTML head, ensuring the browser starts downloading the image before JavaScript executes. Only one or two images per page should have `preload` — adding it to all images defeats its purpose and can actually slow initial load by preloading too many assets.
 
 ### Q3: How does `next/image` prevent Cumulative Layout Shift (CLS)?
 
@@ -313,7 +315,7 @@ const config: NextConfig = {
 </div>
 ```
 
-### ❌ Pitfall: Setting `priority` on ALL images
+### ❌ Pitfall: Setting `preload` on ALL images
 
 ```tsx
 // ❌ Every image prioritized = no image actually prioritized
@@ -325,14 +327,14 @@ const config: NextConfig = {
       alt={p.name}
       width={300}
       height={300}
-      priority
+      preload
     />
   ));
 }
 // Browser preloads 20 images simultaneously → slows initial page load ❌
 ```
 
-**Fix:** Only first visible image gets `priority`:
+**Fix:** Only first visible image gets `preload`:
 
 ```tsx
 {
@@ -343,7 +345,7 @@ const config: NextConfig = {
       alt={p.name}
       width={300}
       height={300}
-      priority={index === 0} // ← only first image ✅
+      preload={index === 0} // ← only first image ✅
     />
   ));
 }
@@ -378,9 +380,9 @@ images: {
 
 Build a `ProductGrid` component with:
 
-1. A hero product image using `fill` in a `aspect-square` container, `priority`, and `placeholder="blur"`
+1. A hero product image using `fill` in a `aspect-square` container, `preload`, and `placeholder="blur"`
 2. Grid of 4 product thumbnails with correct `sizes` for a 2-col mobile / 4-col desktop grid
-3. Only the first thumbnail has `priority`
+3. Only the first thumbnail has `preload`
 4. `next.config.ts` configured for `cdn.example.com` remote images
 5. All images use `object-cover`
 
@@ -447,13 +449,13 @@ export function ProductGrid() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10">
-      {/* Hero product — fill + priority + aspect-square */}
+      {/* Hero product — fill + preload + aspect-square */}
       <div className="relative aspect-square w-full max-w-md mx-auto mb-8 rounded-2xl overflow-hidden">
         <Image
           src={hero.imageUrl}
           alt={`Photo of ${hero.name}`}
           fill
-          priority // ← LCP image ✅
+          preload // ← LCP image ✅
           sizes="(max-width: 768px) 100vw, 448px" // ← max-w-md = 448px
           className="object-cover"
           placeholder="blur"
@@ -486,7 +488,7 @@ export function ProductGrid() {
                        (max-width: 1024px) 25vw,    /* 4 columns on tablet */
                        25vw" /* 4 columns on desktop */
                 className="object-cover"
-                priority={index === 0} // ← only first thumbnail ✅
+                preload={index === 0} // ← only first thumbnail ✅
               />
             </div>
             <div className="p-3">

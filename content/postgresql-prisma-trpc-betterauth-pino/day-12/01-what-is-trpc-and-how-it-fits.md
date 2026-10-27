@@ -107,7 +107,7 @@ npm install zod@^4
 
 ```typescript
 // ❌ Importing the actual router (not just the type) into a client component
-import { appRouter } from '@/server/root'   // ← imports Prisma, bcrypt, server secrets!
+import { appRouter } from '@/server/root'   // ← imports Prisma, password hashing, server secrets!
 // This bundles server code into the browser ❌
 ```
 
@@ -139,7 +139,7 @@ Draw (in comments) the complete request flow for `trpc.post.getById.query({ id: 
 
   2. @trpc/react-query
      Serializes to: GET /api/trpc/post.getById?input={"id":5}
-     (or POST depending on config — GET for queries with superjson)
+     (GET for queries by default, POST for mutations; a transformer like superjson does not change the method)
 
   3. Next.js Route Handler
      src/app/api/trpc/[trpc]/route.ts

@@ -4,91 +4,95 @@
 
 ## T — TL;DR
 
-The `generator` block tells Prisma what code to generate from your schema. The standard generator is `prisma-client-js` which produces the typed Prisma Client, TypeScript types, and DMMF (Data Model Meta Format). You can configure the output directory, add preview features, and even run multiple generators (e.g. also generating Zod schemas or JSON Schema). Run `prisma generate` to execute all generators.
+The `generator` block tells Prisma what code to generate from your schema. In Prisma 7 the standard generator is `prisma-client` (the old `prisma-client-js` is deprecated), and `output` is **required** — the client is generated as plain TypeScript into your own source tree, no longer into `node_modules`. You import `PrismaClient` from that output path, and pass a driver adapter to its constructor. Run `prisma generate` explicitly: `migrate dev` and `db push` no longer run it for you.
 
 ---
 
 ## K — Key Concepts
 
 ```prisma
-// ── Standard generator ─────────────────────────────────────────────────────
+// ── Standard generator (Prisma 7) ──────────────────────────────────────────
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"            // before Prisma 7: "prisma-client-js"
+  output   = "../src/generated/prisma"  // REQUIRED, relative to schema.prisma
 }
 
-// Default output: node_modules/.prisma/client
-// Re-exported from: node_modules/@prisma/client
-// Usage: import { PrismaClient } from '@prisma/client'
+// Generated files: src/generated/prisma/client.ts (+ models, enums, internal/)
+// Usage: import { PrismaClient } from '@/generated/prisma/client'
+// Before Prisma 7 the client was generated into node_modules/.prisma/client
+// and imported from '@prisma/client'.
+```
+
+```ts
+// ── Using the generated client: a driver adapter is mandatory ──────────────
+// npm i @prisma/adapter-pg   (PostgreSQL)
+import { PrismaClient } from '@/generated/prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+export const prisma = new PrismaClient({ adapter })
 ```
 
 ```prisma
 // ── Generator fields ───────────────────────────────────────────────────────
 generator client {
-  provider        = "prisma-client-js"   // required: which generator to use
-  output          = "../src/generated/prisma"  // optional: custom output path
-  binaryTargets   = ["native"]           // optional: OS targets for query engine
-  previewFeatures = ["multiSchema"]      // optional: enable preview features
+  provider        = "prisma-client"            // required
+  output          = "../src/generated/prisma"  // required in Prisma 7
+  previewFeatures = ["views"]                  // optional: enable preview features
+  runtime         = "nodejs"                   // optional: target runtime (nodejs, bun, deno, workerd ...)
+  moduleFormat    = "esm"                      // optional: esm | cjs (inferred from your project by default)
 }
 ```
 
+```
+── Prisma 7 is ESM-first ──────────────────────────────────────────────────
+
+Prisma 7 ships as ES modules:
+  package.json  → "type": "module"
+  tsconfig.json → "module": "ESNext", "moduleResolution": "bundler", "target": "ES2023"
+Minimum Node.js 20.19, TypeScript 5.4.
+```
+
 ```prisma
-// ── binaryTargets — deployment target configuration ───────────────────────
-generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native"]
-  // "native" = detect current OS automatically (dev machines)
-}
-
-// For Docker (linux) + local dev (macOS or Windows):
-generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
-  // "linux-musl-openssl-3.0.x" = Alpine Linux (common Docker base image)
-}
-
-// For Vercel Edge / AWS Lambda (linux arm64):
-generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "rhel-openssl-3.0.x"]
-}
-
-// Common targets:
-// native                    → auto-detect (development)
-// linux-musl-openssl-3.0.x  → Alpine Linux (Docker alpine:3.x)
-// linux-musl-arm64-openssl-3.0.x → Alpine ARM64 (M1/M2 Mac Docker)
-// rhel-openssl-3.0.x        → Amazon Linux 2023, RHEL, Vercel, Lambda
-// debian-openssl-3.0.x      → Debian/Ubuntu (default Dockerfile FROM node)
+// ── binaryTargets — mostly gone ─────────────────────────────────────────────
+// Prisma 6 and earlier shipped a Rust query-engine binary, so you had to list
+// binaryTargets = ["native", "linux-musl-openssl-3.0.x", "rhel-openssl-3.0.x"]
+// for Docker / Vercel / Lambda.
+//
+// Prisma 7 drops the Rust engine from the default setup: queries run through a
+// TypeScript/WASM query compiler plus your driver adapter (pg).
+// There is no platform-specific engine binary to download or mismatch, so you
+// normally do NOT set binaryTargets at all.
 ```
 
 ```prisma
 // ── previewFeatures ────────────────────────────────────────────────────────
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["multiSchema", "postgresqlExtensions", "views"]
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["views", "relationJoins"]
 }
 
-// Preview features as of Prisma 7:
-// multiSchema          → use multiple PostgreSQL schemas in one schema file
+// Status (verify at https://pris.ly/d/preview-features):
+// multiSchema          → GA since Prisma 6.13 — no flag needed
+// tracing              → GA since Prisma 6.1 — no flag needed
+// driverAdapters       → GA since Prisma 6.16 — no flag needed (and required in Prisma 7)
+// views                → still preview: map Prisma models to SQL views (read-only)
+// relationJoins        → listed as preview in the reference: SQL JOINs for relation loading
 // postgresqlExtensions → manage PostgreSQL extensions in schema.prisma
-// views                → map Prisma models to SQL views (read-only)
-// tracing              → OpenTelemetry tracing for Prisma queries
-// relationJoins        → use SQL JOINs instead of separate queries for relations (performance)
-
-// Check stable vs preview status at: https://pris.ly/d/preview-features
 ```
 
 ```prisma
 // ── Custom output path ────────────────────────────────────────────────────
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
   output   = "../src/lib/prisma-client"
-  // Useful when: monorepos, custom module resolution, avoiding node_modules pollution
+  // Useful when: monorepos, shared packages, custom module resolution
 }
 
 // Import changes to match:
-import { PrismaClient } from '../lib/prisma-client'
-// instead of:
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@/lib/prisma-client/client'
+// Add the output folder to .gitignore if you don't want to commit generated code.
 ```
 
 ```prisma
@@ -96,19 +100,14 @@ import { PrismaClient } from '@prisma/client'
 // Run multiple generators simultaneously with prisma generate
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 // Generate Zod validation schemas from Prisma models
 generator zod {
   provider = "zod-prisma-types"
   output   = "./src/generated/zod"
-}
-
-// Generate JSON Schema
-generator jsonSchema {
-  provider = "prisma-json-schema-generator"
-  output   = "./src/generated/json-schema"
 }
 
 // All generators run when you execute: npx prisma generate
@@ -121,38 +120,36 @@ npx prisma generate
 
 1. Reads schema.prisma (all .prisma files if multi-file)
 2. Validates the schema (syntax + semantic checks)
-3. Runs each generator block in parallel
-4. For prisma-client-js:
-   a. Generates TypeScript types for all models and enums
-   b. Compiles the Prisma Client runtime
-   c. Downloads the query engine binary for the target platform
-   d. Outputs to node_modules/.prisma/client (default)
-5. The @prisma/client package re-exports from .prisma/client
+3. Runs each generator block
+4. For prisma-client:
+   a. Generates TypeScript source for all models, enums and the client
+   b. Writes it to the `output` folder you configured
+   c. (No query-engine binary download in the default Prisma 7 setup)
 
 Run after:
   - Any schema change
-  - Fresh npm install (postinstall hook recommended)
-  - Changing binaryTargets or previewFeatures
+  - Fresh checkout / CI (the generated folder isn't in node_modules any more)
+  - `migrate dev` / `db push` — Prisma 7 no longer runs generate for you
+    (the --skip-generate flag was removed along with that behaviour)
 ```
 
 ```json
-// package.json — auto-run prisma generate after npm install
+// package.json — generate after npm install (still a good habit in CI/Vercel)
 {
   "scripts": {
     "postinstall": "prisma generate"
   }
 }
-// This ensures the Prisma Client is always regenerated after dependencies are installed
-// Required in CI/CD and Vercel deployments
 ```
 
 ---
 
 ## W — Why It Matters
 
-- `binaryTargets` is the most common deployment footgun — if you develop on macOS and deploy to a Linux Docker container without setting the correct target, the query engine binary won't work in the container and Prisma throws a cryptic "Query engine binary not found" error at runtime. Set both `"native"` and your deployment target explicitly.
-- The `postinstall` hook in `package.json` is essential for CI/CD and platforms like Vercel — without it, `@prisma/client` is installed but the generated client code is missing, causing import errors at runtime.
-- Multiple generators let you generate Zod schemas from Prisma models without maintaining two separate schemas — the Prisma model is the single source of truth for both database structure and TypeScript/Zod validation.
+- Because the client is generated into your own `src/` tree, your bundler, TypeScript and test runner treat it as ordinary source code — no `node_modules/.prisma` magic, better monorepo and edge/serverless support, and imports you can ctrl-click through.
+- The driver adapter (`PrismaPg`) means your app's connection pool is the standard `pg` pool. This replaces the old engine-managed pool and removes the engine-binary footgun (`binaryTargets` mismatches between macOS dev and Linux containers).
+- The `postinstall` hook (or an explicit `prisma generate` CI step) matters more now: the output folder is generated code that is usually git-ignored, so a fresh clone fails to compile until you generate.
+- Multiple generators let you generate Zod schemas from Prisma models without maintaining two separate schemas — the Prisma model is the single source of truth.
 
 ---
 
@@ -160,37 +157,48 @@ Run after:
 
 ### Q: Why do you need to run `prisma generate` after every schema change and after `npm install`?
 
-**A:** `prisma generate` produces the Prisma Client — a set of TypeScript types and runtime code specific to your exact schema. The generated client lives in `node_modules/.prisma/client` and is not checked into git (it's in `.gitignore`). If you change a model and don't regenerate, TypeScript will have stale types — it won't know about new fields or models. After `npm install` (e.g. in CI or on a new machine), `node_modules` is freshly populated but the generated client doesn't exist yet — only the base `@prisma/client` package is present. Running `prisma generate` (or the `postinstall` hook) creates the generated client. Without it, `import { PrismaClient } from '@prisma/client'` will fail or have incomplete types.
+**A:** `prisma generate` produces the Prisma Client — TypeScript code specific to your exact schema. In Prisma 7 it is written to the `output` folder you configure (for example `src/generated/prisma`), which is typically git-ignored. If you change a model and don't regenerate, TypeScript has stale types. On a fresh clone or CI run the folder doesn't exist, so `import { PrismaClient } from '@/generated/prisma/client'` fails until you run `prisma generate` (or a `postinstall` hook). Also, since Prisma 7 `migrate dev` and `db push` no longer trigger generation automatically, you run it yourself.
+
+### Q: What changed between `prisma-client-js` and `prisma-client`?
+
+**A:** `prisma-client` is the new generator that outputs plain TypeScript into a required `output` directory instead of `node_modules/.prisma/client`, supports ESM/CJS and multiple runtimes, and works with driver adapters and no Rust engine. `prisma-client-js` is deprecated. You import from the generated path rather than `@prisma/client`.
 
 ---
 
 ## C — Common Pitfalls + Fix
 
-### ❌ Missing binaryTarget for Docker deployment
+### ❌ Using the old generator and import path
 
 ```prisma
-// ❌ Only "native" — works on dev machine but fails in Docker
+// ❌ Prisma 5/6 style — deprecated in Prisma 7
 generator client {
   provider = "prisma-client-js"
-  // binaryTargets not set — defaults to ["native"]
 }
 ```
 
-```dockerfile
-# ❌ In Docker: Prisma can't find the Linux query engine binary
-# Error: "Query engine binary for current platform 'linux-musl' not found"
+```ts
+// ❌ new PrismaClient() with no adapter fails in Prisma 7
+import { PrismaClient } from '@prisma/client'
+const prisma = new PrismaClient()
 ```
 
-**Fix:** Add the Docker target:
+**Fix:**
 
 ```prisma
-// ✅ Include both dev (native) and production (linux) targets
+// ✅ Prisma 7
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
-  // linux-musl = Alpine Linux (common in Docker FROM node:alpine)
-  // debian-openssl-3.0.x for Debian/Ubuntu-based images
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
+```
+
+```ts
+import { PrismaClient } from '@/generated/prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+})
 ```
 
 ---
@@ -199,7 +207,7 @@ generator client {
 
 ### Challenge
 
-Write the `generator` block for a production app that: (1) uses `prisma-client-js` with a custom output to `src/lib/db/client`, (2) includes binary targets for local macOS/Windows development AND Alpine Linux Docker deployment AND Vercel (RHEL), (3) enables the `relationJoins` preview feature for better JOIN performance, (4) add the `postinstall` script to `package.json`. Show the resulting import path.
+Write the setup for a production app that: (1) uses the `prisma-client` generator with a custom output to `src/lib/db/client`, (2) enables the `relationJoins` preview feature, (3) connects to PostgreSQL through the `pg` driver adapter, (4) adds the `postinstall` script to `package.json`. Show the resulting import path. (No `binaryTargets` needed — explain why.)
 
 ### Solution
 
@@ -207,27 +215,33 @@ Write the `generator` block for a production app that: (1) uses `prisma-client-j
 // prisma/schema.prisma
 
 generator client {
-  provider        = "prisma-client-js"
+  provider        = "prisma-client"
   output          = "../src/lib/db/client"
-  binaryTargets   = [
-    "native",                         // local dev (macOS, Windows, Linux)
-    "linux-musl-openssl-3.0.x",       // Docker Alpine (node:alpine)
-    "linux-musl-arm64-openssl-3.0.x", // Docker Alpine ARM64 (M1/M2 Mac)
-    "rhel-openssl-3.0.x"              // Vercel, AWS Lambda, Amazon Linux 2023
-  ]
   previewFeatures = ["relationJoins"]
+  // No binaryTargets: Prisma 7 has no Rust engine binary to match to the OS.
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
+```
+
+```ts
+// prisma.config.ts
+import 'dotenv/config'
+import { defineConfig, env } from 'prisma/config'
+
+export default defineConfig({
+  schema: 'prisma/schema.prisma',
+  datasource: { url: env('DATABASE_URL') },
+})
 ```
 
 ```json
 // package.json
 {
   "name": "my-app",
+  "type": "module",
   "scripts": {
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
@@ -239,7 +253,8 @@ datasource db {
 
 ```typescript
 // src/lib/db/prisma.ts — singleton pattern
-import { PrismaClient } from './client'  // ← custom output path
+import { PrismaClient } from './client/client'  // ← custom output path + /client
+import { PrismaPg } from '@prisma/adapter-pg'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
@@ -248,6 +263,7 @@ const globalForPrisma = globalThis as unknown as {
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
+    adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
     log: process.env.NODE_ENV === 'development'
       ? ['query', 'error', 'warn']
       : ['error'],
@@ -257,7 +273,3 @@ if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma
 }
 ```
-
----
-
----

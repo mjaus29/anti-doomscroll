@@ -45,7 +45,7 @@ const StockSchema = z.object({
     skus.forEach((sku, index) => {
       if (skus.indexOf(sku) !== index) {
         ctx.addIssue({
-          code:    z.ZodIssueCode.custom,
+          code:    'custom',
           message: `Duplicate SKU: ${sku}`,
           path:    [index, 'sku']  // path relative to the array item
         })
@@ -55,7 +55,7 @@ const StockSchema = z.object({
     const total = items.reduce((sum, i) => sum + i.quantity, 0)
     if (total > 1000) {
       ctx.addIssue({
-        code:    z.ZodIssueCode.custom,
+        code:    'custom',
         message: `Total quantity (${total}) exceeds warehouse limit of 1000`,
         path:    []  // no specific item — appears as array root error
       })
@@ -153,13 +153,13 @@ const InventorySchema = z.object({
     const skus = items.map(i => i.sku.trim().toLowerCase())
     skus.forEach((sku, i) => {
       if (sku && skus.indexOf(sku) !== i) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom,
+        ctx.addIssue({ code: 'custom',
           message: 'Duplicate SKU', path: [i, 'sku'] })
       }
     })
     const total = items.reduce((s, i) => s + (i.quantity || 0), 0)
     if (total > 500) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom,
+      ctx.addIssue({ code: 'custom',
         message: `Total ${total} exceeds limit of 500 units`, path: [] })
     }
   })
@@ -167,7 +167,7 @@ const InventorySchema = z.object({
 type InventoryForm = z.infer<typeof InventorySchema>
 
 export function InventoryForm() {
-  const { register, control, handleSubmit, formState: { errors } } = useForm<InventoryForm>({
+  const { register, control, handleSubmit, formState: { errors } } = useForm<z.input<typeof InventorySchema>, unknown, z.output<typeof InventorySchema>>({
     resolver:      zodResolver(InventorySchema),
     defaultValues: { warehouseId: '', items: [{ sku: '', quantity: 1 }] }
   })

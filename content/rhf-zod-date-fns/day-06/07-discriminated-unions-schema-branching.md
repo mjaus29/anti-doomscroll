@@ -29,7 +29,7 @@ const PaymentSchema = z.discriminatedUnion('method', [
   }),
   z.object({
     method: z.literal('paypal'),
-    paypalEmail: z.string().email('Valid PayPal email required')
+    paypalEmail: z.email('Valid PayPal email required')
   })
 ])
 
@@ -50,7 +50,7 @@ PaymentSchema.safeParse({ method: 'bank', accountName: 'Mark', bsb: '123456', ac
 ```tsx
 // ─── Wrapping in a parent schema
 const CheckoutSchema = z.object({
-  cartId:  z.string().uuid(),
+  cartId:  z.uuid(),
   payment: PaymentSchema        // discriminated union as a nested field
 })
 ```
@@ -147,7 +147,7 @@ const PaymentSchema = z.discriminatedUnion('method', [
     bsb:           z.string().regex(/^\d{6}$/, '6 digits'),
     accountNumber: z.string().regex(/^\d{6,10}$/, '6–10 digits') }),
   z.object({ method: z.literal('paypal'),
-    paypalEmail: z.string().email('Valid PayPal email') })
+    paypalEmail: z.email('Valid PayPal email') })
 ])
 type PaymentForm = z.infer<typeof PaymentSchema>
 

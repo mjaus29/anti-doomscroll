@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-**Secrets** store sensitive values. **Env** sets variables at workflow/job/step level. **Matrices** run one job across multiple configurations (Node versions, OS) in parallel. **Cache** saves `node_modules` between runs. **Concurrency** cancels outdated runs. **Conditions** (`if:`) skip steps/jobs based on context.
+**Secrets** store sensitive values. **Env** sets variables at workflow/job/step level. **Matrices** run one job across multiple configurations (Node versions, OS) in parallel. **Cache** saves the npm download cache (`~/.npm`) between runs. **Concurrency** cancels outdated runs. **Conditions** (`if:`) skip steps/jobs based on context.
 
 ---
 

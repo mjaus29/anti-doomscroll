@@ -15,7 +15,7 @@ The baseline migration mindset is the mental shift from "Prisma owns the schema 
 
 Scenario 1: NEW Prisma adoption on existing DB
   Problem:  DB has tables; no prisma/migrations/ directory exists
-  Solution: db pull → clean schema → empty baseline → resolve --applied
+  Solution: db pull → clean schema → baseline (full SQL via migrate diff) → resolve --applied
 
 Scenario 2: Migration history lost / migrations folder deleted
   Problem:  DB exists; migrations folder was deleted or corrupted
@@ -38,8 +38,9 @@ npx prisma db pull
 
 # 3. Create baseline migration
 mkdir -p prisma/migrations/20250615000000_baseline
-touch prisma/migrations/20250615000000_baseline/migration.sql
-# The .sql file is intentionally EMPTY — DB already has the schema
+# Fill it with the FULL schema SQL (not empty!) — needed so fresh DBs / the shadow DB can replay history
+npx prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script > prisma/migrations/20250615000000_baseline/migration.sql
+# We will NOT run this SQL on the existing DB — only mark it applied (next step)
 
 # 4. Mark as applied
 npx prisma migrate resolve --applied "20250615000000_baseline"
@@ -58,7 +59,7 @@ npx prisma migrate status
 # Generate the full SQL for the current schema state
 npx prisma migrate diff \
   --from-empty \
-  --to-schema-datamodel prisma/schema.prisma \
+  --to-schema prisma/schema.prisma \
   --script \
   > /tmp/current_schema.sql
 
@@ -81,9 +82,11 @@ npx prisma migrate status
 # ── Scenario 3: Environment divergence — staging has extra manual changes ──
 
 # Check what's different between staging and your schema.prisma
-npx prisma migrate diff \
-  --from-url $STAGING_DATABASE_URL \
-  --to-schema-datamodel prisma/schema.prisma \
+# Prisma 7: --from-url was removed; --from-config-datasource uses datasource.url from prisma.config.ts,
+# so point DATABASE_URL at staging for this one command
+DATABASE_URL=$STAGING_DATABASE_URL npx prisma migrate diff \
+  --from-config-datasource \
+  --to-schema prisma/schema.prisma \
   --script
 
 # Output (example):
@@ -109,9 +112,13 @@ Think of the migration history as a timeline:
   Everything LEFT of the baseline: already in the DB, Prisma doesn't touch it
   Everything RIGHT of the baseline: managed by Prisma migrations going forward
 
-  The baseline file can be:
-  - EMPTY (most common for existing DBs): "I trust the DB already matches the schema"
-  - Full schema SQL (for recovery): "here's exactly what the DB should look like"
+  The baseline file contains:
+  - Full schema SQL (migrate diff --from-empty --to-schema ... --script):
+    "here's exactly what the DB looks like at the starting point"
+  - It is applied to NEW/empty databases (dev, CI, shadow DB) but only RECORDED
+    (migrate resolve --applied) on the existing database.
+  - An empty baseline breaks `migrate dev` / `migrate reset`: the shadow DB replays the
+    empty file, has no tables, and later migrations fail.
 
   @@map / @map are the bridge:
   - The baseline snapshot describes the DB as it WAS (snake_case columns)
@@ -139,25 +146,25 @@ Think of the migration history as a timeline:
 
 - The baseline is a contract — it says "Prisma and the database agree on what exists right now." Without a baseline, every `migrate dev` or `migrate deploy` command fails because Prisma thinks it needs to CREATE things that already exist. The baseline is the foundation the entire migration history is built on.
 - Scenario 3 (environment divergence) is more common than expected in team projects — a senior developer "just runs a quick ALTER" directly on staging, and now staging's schema differs from production's and from the migration history. Detecting this early with `migrate diff` prevents the divergence from silently compounding.
-- An empty baseline file (0 bytes) is intentionally correct — it's not a mistake or placeholder. It means "0 SQL statements need to be run to reach this state" because the state already exists. The `applied_steps_count = 0` in `_prisma_migrations` confirms this.
+- The baseline must contain the real schema SQL, even though it is never executed on the existing database. Fresh databases (new developers, CI, the shadow DB) replay the migration history from the start, so an empty baseline leaves them without tables and every later migration fails. `migrate resolve --applied` records it in `_prisma_migrations` without running it.
 
 ---
 
 ## I — Interview Q&A
 
-### Q: Why would you create an empty migration file and immediately mark it as applied with `--applied`?
+### Q: Why do you generate a full-schema baseline migration and immediately mark it as applied with `--applied`?
 
-**A:** An empty migration file in Prisma is a baseline marker — a timestamp in the migration history that says "the database already contains everything up to this point." When you run `prisma migrate resolve --applied "migration_name"`, Prisma adds a record in `_prisma_migrations` with `applied_steps_count = 0`, meaning no SQL was executed. This is necessary when adopting Prisma on an existing database because Prisma uses the migration history to compute what SQL to generate next — it diffs the schema against the most recent applied migration state. Without a baseline, Prisma either tries to re-create all existing tables (failing with "already exists") or has no reference point to compute diffs from. The empty baseline says "start computing diffs from the current schema as the zero point, not from an empty database."
+**A:** A baseline migration is the first entry in the migration history and holds the full SQL (`migrate diff --from-empty --to-schema ... --script`) to recreate the schema as it is today. When you run `prisma migrate resolve --applied "migration_name"`, Prisma adds a record in `_prisma_migrations` without executing the SQL, because the existing database already has those tables. This is necessary when adopting Prisma on an existing database because Prisma uses the migration history to compute what SQL to generate next — it diffs the schema against the most recent applied migration state. Without a baseline, Prisma either tries to re-create all existing tables (failing with "already exists") or has no reference point to compute diffs from. Because the file holds the real SQL, new databases and the shadow DB can replay history correctly, while the existing database treats it as the zero point.
 
 ---
 
 ## C — Common Pitfalls + Fix
 
-### ❌ Creating a baseline with the full schema SQL and running it — drops/recreates existing data
+### ❌ Creating a baseline (empty, or full SQL) and letting migrate dev run it on the existing DB
 
 ```bash
 # ❌ Generated full SQL and applied it as if the DB were empty
-npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script \
+npx prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script \
   > prisma/migrations/20250615000000_baseline/migration.sql
 
 npx prisma migrate dev   # ← Tries to CREATE TABLE "users" — already exists!
@@ -168,8 +175,8 @@ npx prisma migrate dev   # ← Tries to CREATE TABLE "users" — already exists!
 **Fix:** Mark the baseline as applied WITHOUT running the SQL:
 
 ```bash
-# ✅ Create the file (can contain full SQL for documentation purposes)
-npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script \
+# ✅ Create the file with the full SQL (required — not just documentation)
+npx prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script \
   > prisma/migrations/20250615000000_baseline/migration.sql
 
 # Mark as applied WITHOUT executing the SQL
@@ -202,7 +209,7 @@ mkdir -p prisma/migrations
 # We use this as documentation and as the baseline content
 npx prisma migrate diff \
   --from-empty \
-  --to-schema-datamodel prisma/schema.prisma \
+  --to-schema prisma/schema.prisma \
   --script \
   > /tmp/full_schema.sql
 

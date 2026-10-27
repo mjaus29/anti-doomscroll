@@ -188,12 +188,12 @@ Define Prisma models for a task management system: `Workspace`, `Project`, `Task
 // prisma/schema.prisma
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model Workspace {

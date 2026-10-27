@@ -1,0 +1,215 @@
+{
+  "updates": [
+    {
+      "lesson": "day-01/03-config-file-basics-vitest-config-ts",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Vitest 4 replaced vitest.workspace.ts / defineWorkspace with test.projects in the main config.",
+      "changes": [
+        "Key Concepts — \"Workspace config\" example (`vitest.workspace.ts`, `defineWorkspace`) → `test.projects` in `vitest.config.ts` with `extends: true`; `vitest --project unit` unchanged."
+      ]
+    },
+    {
+      "lesson": "day-01/08-setup-files-and-global-hooks",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "setupFiles run before every test file, not once.",
+      "changes": [
+        "TL;DR — \"Setup files run once before test files\" → they run before each test file."
+      ]
+    },
+    {
+      "lesson": "day-01/10-node-environment-configuration",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Vitest 4 removed environmentMatchGlobs; per-directory environments now use test.projects.",
+      "changes": [
+        "TL;DR — mention of `environmentMatchGlobs` → `test.projects`.",
+        "Key Concepts — `environmentMatchGlobs` example replaced by `projects` entries with `environment` + `include`.",
+        "Coding Challenge — challenge text and solution use `projects` (node and jsdom) instead of `environmentMatchGlobs`; comment in the test file updated."
+      ]
+    },
+    {
+      "lesson": "day-01/11-coverage-introduction",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "coverage.all was removed in Vitest 4; coverage.include now decides which untested files appear.",
+      "changes": [
+        "Key Concepts — `all: true` removed from the coverage config, with a note that `coverage.include` controls whether untested files show up as 0%."
+      ]
+    },
+    {
+      "lesson": "day-02/08-module-mocking-vi-mock",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "In Vitest 4 a mock called with `new` needs a function/class implementation, not an arrow function.",
+      "changes": [
+        "Key Concepts — `PrismaClient: vi.fn().mockImplementation(() => ({...}))` → `mockImplementation(function () { return {...} })` with a note on the \"is not a constructor\" error."
+      ]
+    },
+    {
+      "lesson": "day-02/10-reset-vs-clear-vs-restore-and-test-isolation",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "In Vitest 4, vi.restoreAllMocks() only restores vi.spyOn spies and no longer clears or resets mock state.",
+      "changes": [
+        "Key Concepts — `restoreAllMocks` section: removed \"Clears call tracking / Resets implementations\"; spy.mock.calls is no longer cleared by it.",
+        "Key Concepts — global-methods comment `= mockRestore() on every spy` replaced with the Vitest 4 behaviour.",
+        "Interview Q&A — \"restoreAllMocks does everything reset does, plus restore\" → it only restores spyOn originals (Vitest 4).",
+        "Coding Challenge / recap — RESET VS CLEAR VS RESTORE summary line updated."
+      ]
+    },
+    {
+      "lesson": "day-03/06-browser-mode-setup-vitest-real-browser",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Vitest 4 browser mode: playwright() provider factory, instances, vitest/browser imports, and projects instead of a workspace file.",
+      "changes": [
+        "Key Concepts — install is `@vitest/browser-playwright`; config uses `provider: playwright()` and `instances: [{ browser: \"chromium\" }]` instead of `provider: \"playwright\"` + `name`.",
+        "Key Concepts — \"Workspace config\" (`vitest.workspace.ts`) → `test.projects` in `vitest.config.ts`; `import { userEvent } from \"@vitest/browser/context\"` → `\"vitest/browser\"`.",
+        "Why It Matters / Common Pitfalls — \"workspace\" wording and the `userEvent` import updated.",
+        "Coding Challenge — challenge and solution rewritten for `projects`, `playwright()`, and `vitest/browser`."
+      ]
+    },
+    {
+      "lesson": "day-03/07-real-browser-execution-playwright-provider-deep-dive",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Vitest's `page` is its own browser-side locator API, not the Playwright Page; page.locator() and Playwright-style assertions do not exist.",
+      "changes": [
+        "TL;DR — removed the claim of \"full Playwright `page` access via `vi.importActual`\"; `page` comes from `vitest/browser` and is not the raw Playwright Page.",
+        "Key Concepts — Playwright config updated for Vitest 4 (`playwright({ launchOptions, contextOptions })`, `headless` on `browser`, `instances`); `providerOptions.launch/context` removed.",
+        "Key Concepts — `page.locator(\"#x\")` / `expect(locator)` examples → `page.getByRole` / `getByTestId` with `await expect.element(...)`; `page.screenshot()` returns a file path, not a Buffer.",
+        "Key Concepts — cross-browser example uses `browser.instances` instead of a workspace with `name`.",
+        "Common Pitfalls / Coding Challenge — launch args via `launchOptions`; challenge solution uses `getByTestId`, `expect.element`, and `vitest/browser` imports."
+      ]
+    },
+    {
+      "lesson": "day-03/08-simulated-vs-real-browser-choosing-the-right-environment",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Browser-mode imports and locator usage updated for Vitest 4.",
+      "changes": [
+        "Key Concepts — \"(via workspace config)\" → a browser project via `test.projects`.",
+        "Coding Challenge — `@vitest/browser/context` → `vitest/browser`; `page.locator(\"#name\")` → `page.getByPlaceholder(...)` with `expect.element`."
+      ]
+    },
+    {
+      "lesson": "day-03/09-integration-style-frontend-tests-user-behaviour-flows",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "End-of-day browser-mode recap updated for Vitest 4.",
+      "changes": [
+        "Coding Challenge / recap — BROWSER MODE block: `provider: \"playwright\"` → `playwright()` + `instances`, `@vitest/browser playwright` → `@vitest/browser-playwright`, `@vitest/browser/context` → `vitest/browser`, `page.locator` / `expect(locator)` → `getByRole`/`expect.element`."
+      ]
+    },
+    {
+      "lesson": "day-04/03-worker-pools-and-parallel-execution",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Vitest 4 removed poolOptions (maxThreads/singleFork) in favour of top-level maxWorkers, and the default pool is forks, not threads.",
+      "changes": [
+        "TL;DR — default pool and sizing: `threads` default / `singleThread` → `forks` default, top-level `maxWorkers`, `maxWorkers: 1` or `fileParallelism: false` for serial runs.",
+        "Key Concepts — `poolOptions.threads/forks` config replaced by top-level `maxWorkers`; serial example no longer uses `singleThread`; \"choosing the right pool\" now lists forks as the default.",
+        "Why It Matters / Interview Q&A — `maxThreads` → `maxWorkers`; \"use threads (the default)\" corrected (forks is the default).",
+        "Coding Challenge — `vitest.workspace.ts` + `poolOptions` solution → `test.projects` with `maxWorkers` / `fileParallelism: false`."
+      ]
+    },
+    {
+      "lesson": "day-04/06-module-cache-and-reducing-setup-overhead",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "setupFiles run before every test file; the lesson contradicted itself by calling it once per worker.",
+      "changes": [
+        "TL;DR / Key Concepts — \"setupFiles once-per-worker\" → runs before each test file (cheap setup only).",
+        "Why It Matters / Interview Q&A — cost reasoning changed from \"once per worker thread (8 times on 8 cores)\" to \"once per test file\".",
+        "Common Pitfalls — heading and comment \"runs N times (once per worker)\" → once per test file."
+      ]
+    },
+    {
+      "lesson": "day-04/09-balancing-speed-confidence-and-maintainability",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Pool recap and challenge config updated to Vitest 4 top-level pool options.",
+      "changes": [
+        "Coding Challenge — config uses `pool: \"forks\"`, `maxWorkers`, `isolate` instead of `pool: \"threads\"` + `poolOptions.threads`; challenge text says \"projects\" for separate pools.",
+        "Coding Challenge / recap — WORKER POOLS block: default pool, `maxWorkers`, and serial execution (`maxWorkers: 1` / `fileParallelism: false`) updated; setupFiles line says \"before every test file\"."
+      ]
+    },
+    {
+      "lesson": "day-05/03-lcp-largest-contentful-paint",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "next/image `priority` is deprecated in Next.js 16 in favour of `preload`.",
+      "changes": [
+        "Coding Challenge — challenge text and `HeroBanner` solution: `priority` → `preload`, comment no longer claims it sets fetchpriority."
+      ]
+    },
+    {
+      "lesson": "day-05/10-next-js-optimization-image-font-script-and-caching",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "next/image `priority` is deprecated in Next.js 16 in favour of `preload` (which only adds the preload link).",
+      "changes": [
+        "Key Concepts — `priority` examples and decision table → `preload` (with `loading=\"eager\"` / `fetchPriority=\"high\"` as the usual alternatives).",
+        "Why It Matters — claim that `priority` sets fetchpriority and disables lazy loading replaced with what `preload` actually does.",
+        "Coding Challenge / recap — hero image solution and KEY RULES use `preload`."
+      ]
+    },
+    {
+      "lesson": "day-06/02-dockerfile-syntax-and-layer-cache",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "`npm ci --frozen-lockfile` is not an npm flag (it is yarn/pnpm); `npm ci` is already strict.",
+      "changes": [
+        "Key Concepts / Common Pitfalls / Coding Challenge — every `RUN npm ci --frozen-lockfile` → `RUN npm ci`."
+      ]
+    },
+    {
+      "lesson": "day-06/05-docker-compose-services-dependencies-profiles",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "`--profile` is a top-level docker compose flag and goes before `up`.",
+      "changes": [
+        "Key Concepts — `docker compose up --profile tools` → `docker compose --profile tools up`."
+      ]
+    },
+    {
+      "lesson": "day-06/06-environment-variables-env-arg-env-secrets",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "`npm ci --frozen-lockfile` is not an npm flag.",
+      "changes": [
+        "Coding Challenge — `RUN npm ci --frozen-lockfile` → `RUN npm ci`."
+      ]
+    },
+    {
+      "lesson": "day-06/08-database-containers-for-integration-tests",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Serial integration-test config uses Vitest 4 options instead of poolOptions.forks.singleFork.",
+      "changes": [
+        "Coding Challenge — `poolOptions: { forks: { singleFork: true } }` → `fileParallelism: false`."
+      ]
+    },
+    {
+      "lesson": "day-06/09-multi-stage-builds-smaller-safer-production-images",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "`npm ci --frozen-lockfile` is not an npm flag.",
+      "changes": [
+        "Key Concepts / Coding Challenge — `RUN npm ci --frozen-lockfile` → `RUN npm ci` in the multi-stage Dockerfiles."
+      ]
+    },
+    {
+      "lesson": "day-06/10-ci-cd-ready-reproducible-workflows",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "`npm ci --frozen-lockfile` is not an npm flag, and serial test config changed in Vitest 4.",
+      "changes": [
+        "Coding Challenge / recap — \"RUN npm ci --frozen-lockfile\" → \"RUN npm ci\" with a note that it already fails on lockfile drift.",
+        "Coding Challenge / recap — serial execution line: `poolOptions.forks.singleFork` → `fileParallelism: false` (or `maxWorkers: 1`)."
+      ]
+    }
+  ]
+}

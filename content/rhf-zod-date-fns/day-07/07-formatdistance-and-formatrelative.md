@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-`formatDistance(date, baseDate)` returns a human-readable relative string — "3 days ago", "in 2 months". `formatRelative(date, baseDate)` returns a contextual string — "yesterday at 2:30 PM", "next Tuesday". Use these for timestamps, activity feeds, and "due" indicators.
+`formatDistance(date, baseDate)` returns a human-readable relative string — "3 days ago", "in 2 months". `formatRelative(date, baseDate)` returns a contextual string — "yesterday at 2:30 PM", "Saturday at 2:30 PM". Use these for timestamps, activity feeds, and "due" indicators.
 
 ---
 
@@ -18,11 +18,11 @@ const past = new Date(2025, 5, 12, 10, 0)  // June 12, 2025 10:00
 const future = new Date(2025, 5, 18, 9, 0) // June 18, 2025 09:00
 
 // ─── formatDistance — relative between two dates
-formatDistance(past,   now)   // 'about 3 days'
-formatDistance(future, now)   // 'about 3 days'  (no direction by default)
+formatDistance(past,   now)   // '3 days'
+formatDistance(future, now)   // '3 days'  (no direction by default)
 
 formatDistance(past,   now,   { addSuffix: true }) // '3 days ago'
-formatDistance(future, now,   { addSuffix: true }) // 'in about 3 days'
+formatDistance(future, now,   { addSuffix: true }) // 'in 3 days'
 
 // ─── formatDistanceToNow — relative to right now (no second arg needed)
 formatDistanceToNow(past,   { addSuffix: true }) // '3 days ago'
@@ -47,7 +47,7 @@ const nextWeek  = addDays(new Date(), 6)
 formatRelative(yesterday, new Date())  // 'yesterday at 2:00 PM'
 formatRelative(new Date(), new Date()) // 'today at 2:00 PM'
 formatRelative(tomorrow,  new Date())  // 'tomorrow at 2:00 PM'
-formatRelative(nextWeek,  new Date())  // 'next Tuesday at 2:00 PM'
+formatRelative(nextWeek,  new Date())  // 'Saturday at 2:00 PM'  (weekday name within the next 6 days; past dates read 'last Saturday at …')
 // Beyond 6 days: falls back to full date — '06/25/2025'
 
 // ─── With locale
@@ -81,7 +81,7 @@ function ActivityTimestamp({ date }: { date: Date }) {
 
 - `formatDistanceToNow` with `addSuffix: true` is the standard pattern for notification timestamps and comment dates — "2 minutes ago" is more useful than "June 15, 2025 at 14:03" for recent activity.
 - The `<time dateTime={formatISO(date)}>` pattern combines machine-readable ISO (for SEO and screen readers) with human-readable display — accessibility best practice.
-- `formatRelative` for scheduled items ("next Tuesday at 9:00 AM") gives users better mental context than "June 17, 2025" for near-future dates.
+- `formatRelative` for scheduled items ("Tuesday at 9:00 AM") gives users better mental context than "June 17, 2025" for near-future dates.
 
 ---
 

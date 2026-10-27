@@ -68,7 +68,7 @@ import { z } from 'zod'
 const DateStringSchema = z.string()
   .min(1, 'Date is required')
   .transform(v => parseISO(v))
-  .refine(d => isValid(d), { message: 'Invalid date' })
+  .refine(d => isValid(d), { error: 'Invalid date' })
 
 // Or using z.coerce.date() (simpler for ISO strings)
 const CoercedDateSchema = z.coerce.date()
@@ -89,7 +89,7 @@ const CoercedDateSchema = z.coerce.date()
 
 ### Q: What is the difference between `new Date('2025-06-15')` and `parseISO('2025-06-15')`?
 
-**A:** `new Date('2025-06-15')` parses the string as UTC midnight — in a UTC+8 timezone, this renders as June 14 at 20:00 local time, causing an off-by-one-day bug in display. `parseISO('2025-06-15')` from date-fns parses it as local midnight — June 15 at 00:00 in whatever timezone the user's browser is in. For date-only strings from HTML inputs and form submissions, `parseISO` gives the behaviour users expect. Use `new Date(isoStringWithOffset)` or `parseISO(isoStringWithOffset)` when a timezone offset is present in the string.
+**A:** `new Date('2025-06-15')` parses the string as UTC midnight — in a timezone west of UTC (e.g. UTC-5), this renders as June 14 at 19:00 local time, causing an off-by-one-day bug in display (in UTC+8 it shows 08:00 on the 15th, so the bug hides there). `parseISO('2025-06-15')` from date-fns parses it as local midnight — June 15 at 00:00 in whatever timezone the user's browser is in. For date-only strings from HTML inputs and form submissions, `parseISO` gives the behaviour users expect. Use `new Date(isoStringWithOffset)` or `parseISO(isoStringWithOffset)` when a timezone offset is present in the string.
 
 ---
 
@@ -98,8 +98,8 @@ const CoercedDateSchema = z.coerce.date()
 ### ❌ Using `parse` without the reference date parameter
 
 ```ts
-// ❌ parse requires 3 arguments — TypeScript catches this but runtime also fails
-parse('15/06/2025', 'dd/MM/yyyy')  // TypeError: missing argument
+// ❌ parse requires 3 arguments — TypeScript flags this; at runtime you silently get Invalid Date
+parse('15/06/2025', 'dd/MM/yyyy')  // Invalid Date (no throw)
 ```
 
 **Fix:** Always provide the reference date:

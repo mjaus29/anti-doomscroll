@@ -726,9 +726,9 @@ export default async function ArticlePage({
 
 ```
 FETCH CACHE OPTIONS (in Server Components)
-  fetch(url)                              → default: cached indefinitely
+  fetch(url)                              → default: not cached (Next 15+)
   fetch(url, {cache:'no-store'})          → never cached, forces dynamic
-  fetch(url, {cache:'force-cache'})       → always cached (even in dynamic routes)
+  fetch(url, {cache:'force-cache'})       → cached indefinitely (even in dynamic routes)
   fetch(url, {next:{revalidate:N}})       → ISR: cached, refreshed after N seconds
   fetch(url, {next:{tags:['tag']}})       → tagged: on-demand via revalidateTag
   fetch(url, {next:{revalidate:N,tags}})  → ISR + on-demand (belt-and-suspenders)

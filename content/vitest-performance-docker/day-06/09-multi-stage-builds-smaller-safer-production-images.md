@@ -18,7 +18,7 @@ FROM node:22-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --frozen-lockfile
+RUN npm ci
 
 # ─── Stage 2: builder ─────────────────────────────────────────────────────
 FROM node:22-alpine AS builder
@@ -90,7 +90,7 @@ WORKDIR /app
 
 FROM base AS deps
 COPY package*.json ./
-RUN npm ci --frozen-lockfile
+RUN npm ci
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
@@ -180,7 +180,7 @@ WORKDIR /app
 # ── deps: install production + dev deps ───────────────────────────────────
 FROM base AS deps
 COPY package.json package-lock.json ./
-RUN npm ci --frozen-lockfile
+RUN npm ci
 
 # ── builder: compile ──────────────────────────────────────────────────────
 FROM base AS builder

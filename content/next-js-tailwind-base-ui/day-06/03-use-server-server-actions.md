@@ -240,7 +240,7 @@ export async function updateProduct(id: string, data: Partial<Product>) {
   revalidatePath(`/products/${id}`); // revalidate the specific product
 
   // ─── Option 2: revalidate by tag (more flexible)
-  revalidateTag("products"); // revalidates all fetches tagged 'products'
+  revalidateTag("products", "max"); // revalidates all fetches tagged 'products'
 }
 ```
 

@@ -20,7 +20,7 @@ import Image from 'next/image'
 // Fill parent container (responsive)
 <div style={{ position: 'relative', width: '100%', height: '400px' }}>
   <Image src="/hero.jpg" alt="Hero" fill style={{ objectFit: 'cover' }}
-    sizes="100vw" priority />  {/* priority = preload + fetchpriority=high */}
+    sizes="100vw" preload />  {/* Next.js 16: preload inserts <link rel=preload> in <head> (was `priority`, now deprecated) */}
 </div>
 
 // Responsive with srcset
@@ -36,8 +36,8 @@ import Image from 'next/image'
 
 ```typescript
 // next/image decisions table:
-// Is it the LCP element?          → add priority={true}
-// Is it below the fold?           → default (lazy, no priority)
+// Is it the LCP element?          → add preload (Next 16; `priority` before) and/or loading="eager" / fetchPriority="high"
+// Is it below the fold?           → default (lazy, no preload)
 // Is it a fill/background image?  → use fill + position:relative parent
 // Is it a fixed-size icon/avatar? → use width + height numbers
 // Is source external (CDN)?       → add domain to images.remotePatterns
@@ -150,7 +150,7 @@ export const dynamic   = 'force-dynamic'  // always SSR, never cached
 
 ## W — Why It Matters
 
-- `next/image` with `priority` on the hero image is the single highest-impact Next.js performance change — it generates a `<link rel="preload">` in the `<head>`, sets `fetchpriority="high"`, disables lazy loading, and serves AVIF/WebP. A single prop change can improve LCP by 500–1500ms.
+- `next/image` with `preload` (Next.js 16; named `priority` before, now deprecated) on the hero image is the single highest-impact Next.js performance change — it generates a `<link rel="preload">` in the `<head>` so the browser starts the download early (the docs say that in most cases `loading="eager"` or `fetchPriority="high"` is the better fit, and `preload` shouldn't be combined with them), and next/image serves AVIF/WebP. A single prop change can improve LCP by 500–1500ms.
 - `next/font` eliminates Google Fonts' two-network-request chain — Google Fonts requires a CSS request to `fonts.googleapis.com` followed by a font file request to `fonts.gstatic.com`. Next.js downloads the font at build time and serves it from your own origin with a `preload` link, removing 200–600ms of latency.
 - `strategy="afterInteractive"` for analytics scripts prevents them from blocking page interaction — analytics scripts are notorious for running long tasks during page load. Loading them after interactivity ensures they don't inflate TBT or INP scores.
 
@@ -234,7 +234,7 @@ export function HeroBanner() {
         src="/images/hero.jpg"
         alt="Featured products banner"
         fill
-        priority                         // ← LCP: preload + high priority ✅
+        preload                          // ← LCP: preload link in <head> (Next.js 16; was `priority`) ✅
         sizes="100vw"
         style={{ objectFit: 'cover' }}
         quality={85}
@@ -319,7 +319,7 @@ LCP
   Fix in order: CDN/server → defer non-critical → WebP/AVIF on CDN → SSR
   Never lazy-load the LCP image
   Use fetchpriority="high" + <link rel=preload> + eager loading
-  next/image priority={true} handles all of the above automatically
+  next/image `preload` (Next 16; `priority` before) adds the preload link; use loading="eager" / fetchPriority="high" for the rest
 
 INP
   3 phases: Input Delay | Processing Time | Presentation Delay
@@ -364,7 +364,7 @@ BUNDLE CONTROL
   Bundle Analyzer: ANALYZE=true npm run build → find large packages
 
 NEXT.JS OPTIMIZATION
-  next/image:  AVIF/WebP, lazy default, prevents CLS, priority for LCP
+  next/image:  AVIF/WebP, lazy default, prevents CLS, preload (was priority) for LCP
   next/font:   self-hosted, size-adjust fallback, zero CLS, zero external req
   next/script: afterInteractive (analytics), lazyOnload (widgets), worker (Partytown)
   Caching:     fetch() + next.revalidate + next.tags → ISR + on-demand revalidation
@@ -372,7 +372,7 @@ NEXT.JS OPTIMIZATION
                Static assets: immutable 1-year cache automatically
 
 KEY RULES
-  LCP image: never lazy-load, always priority={true} with next/image
+  LCP image: never lazy-load, use preload (Next 16; priority before) or fetchPriority="high" with next/image
   Fonts: always next/font — never @import, never <link> to Google Fonts
   Analytics: always afterInteractive — never beforeInteractive
   INP: scheduler.yield() for long loops, startTransition for React updates

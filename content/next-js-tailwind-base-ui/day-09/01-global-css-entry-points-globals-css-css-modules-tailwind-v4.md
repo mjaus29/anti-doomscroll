@@ -91,13 +91,12 @@ body {
 }
 
 /* ─── 6. Custom Tailwind v4 utilities */
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-  .text-pretty {
-    text-wrap: pretty;
-  }
+/* v4: register custom utilities with @utility (v3 used @layer utilities { .name {} }) */
+@utility text-balance {
+  text-wrap: balance;
+}
+@utility text-pretty {
+  text-wrap: pretty;
 }
 ```
 
@@ -411,13 +410,12 @@ body {
   outline-offset: 2px;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-  .text-pretty {
-    text-wrap: pretty;
-  }
+/* v4: register custom utilities with @utility (v3 used @layer utilities { .name {} }) */
+@utility text-balance {
+  text-wrap: balance;
+}
+@utility text-pretty {
+  text-wrap: pretty;
 }
 ```
 

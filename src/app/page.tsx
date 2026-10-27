@@ -1,5 +1,6 @@
 import { ResumeButton } from "@/components/ResumeButton";
-import { getAllGroups } from "@/lib/content";
+import { LessonUpdatesButton } from "@/components/LessonUpdates";
+import { getAllGroups, getLessonUpdates } from "@/lib/content";
 import Link from "next/link";
 
 export default function Home() {
@@ -34,6 +35,9 @@ export default function Home() {
           >
             Cheat Sheets
           </Link>
+          <LessonUpdatesButton
+            updateKeys={getLessonUpdates().map((update) => update.key)}
+          />
         </div>
       </header>
 

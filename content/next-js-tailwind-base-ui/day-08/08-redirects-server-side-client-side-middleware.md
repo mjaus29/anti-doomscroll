@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-Next.js 16 provides `redirect()` (Server Components/Actions), `permanentRedirect()` (301 SEO), `useRouter().push()` (Client), and `NextResponse.redirect()` (Middleware/Route Handlers). Each has a specific use case — choosing the right one prevents auth bypasses, broken back buttons, and SEO issues.
+Next.js 16 provides `redirect()` (Server Components/Actions), `permanentRedirect()` (301 SEO), `useRouter().push()` (Client), and `NextResponse.redirect()` (Proxy/Route Handlers). In Next.js 16 `middleware.ts` was renamed to `proxy.ts` (`export function proxy`); the old name still works but is deprecated. Each has a specific use case — choosing the right one prevents auth bypasses, broken back buttons, and SEO issues.
 
 ---
 
@@ -110,13 +110,13 @@ export function LoginForm() {
 // so the user cannot press Back to return to the login form
 ```
 
-### `NextResponse.redirect()` — Middleware and Route Handler Redirects
+### `NextResponse.redirect()` — Proxy and Route Handler Redirects
 
 ```tsx
-// src/middleware.ts — redirect before the page even renders
+// src/proxy.ts — redirect before the page even renders
 import { NextRequest, NextResponse } from "next/server";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // ─── Auth guard
@@ -268,7 +268,7 @@ Where are you redirecting from?
 │     → router.push('/path')           ← adds to history (normal navigation)
 │     → router.replace('/path')        ← replaces history (post-auth, post-form)
 │
-├── Middleware (before page renders)
+├── Proxy (before page renders)
 │     → NextResponse.redirect(url)     ← fastest: prevents page render entirely
 │     → Ideal for: auth guards, locale redirects, A/B tests
 │
@@ -285,7 +285,7 @@ Where are you redirecting from?
 
 ## W — Why It Matters
 
-- Middleware redirects are the most performant auth guard — they execute at the CDN edge before any page code runs, preventing the page from rendering at all. Server Component redirects execute after the component starts rendering. For auth-protected routes, Middleware is the right layer.
+- Proxy redirects are the most performant auth guard — they run before the request reaches your routes and before any page code runs (Proxy uses the Node.js runtime in Next.js 16, not the Edge runtime), preventing the page from rendering at all. Server Component redirects execute after the component starts rendering. For auth-protected routes, Proxy is the right layer.
 - `router.replace()` vs `router.push()` after login matters for UX — with `push()`, the user can press Back to return to the login form (confusing). With `replace()`, the login page is replaced in history so Back takes them to where they were before.
 - The open redirect vulnerability is a real risk — never redirect to a `callbackUrl` without validating it's a same-origin path. An attacker can craft `/login?callbackUrl=https://evil.com` and steal credentials if the callbackUrl is used without validation.
 
@@ -297,9 +297,9 @@ Where are you redirecting from?
 
 **A:** `redirect()` sends a 307 (Temporary Redirect) response — browsers and search engines treat this as temporary and continue to index the original URL. `permanentRedirect()` sends a 308 (Permanent Redirect) — search engines update their index to point to the new URL and pass the original page's SEO ranking to the new URL. Use `permanentRedirect()` when a URL has moved forever (e.g., `/blog/slug` → `/posts/slug` after a site restructure). Use `redirect()` for conditional navigation (auth guards, business logic routing) that may change in the future.
 
-### Q2: Why should `NextResponse.redirect()` in Middleware be preferred over `redirect()` in Server Components for auth guards?
+### Q2: Why should `NextResponse.redirect()` in Proxy be preferred over `redirect()` in Server Components for auth guards?
 
-**A:** Middleware runs at the CDN edge before any page code executes — if the session is missing, the redirect happens immediately without the page component, Server Actions, or database queries running at all. A `redirect()` in a Server Component runs after the component has started executing — the page request has already reached the server, any layout code has run, and resources have been consumed before the redirect fires. For auth guards, Middleware is correct: it's faster, more efficient, and provides a single enforcement point for all protected routes via the `matcher` config.
+**A:** Proxy runs before the request is routed to any page code (on the Node.js runtime in Next.js 16; the Edge runtime is not supported in `proxy.ts`) — if the session is missing, the redirect happens immediately without the page component, Server Actions, or database queries running at all. A `redirect()` in a Server Component runs after the component has started executing — the page request has already reached the server, any layout code has run, and resources have been consumed before the redirect fires. For auth guards, Proxy is correct: it's faster, more efficient, and provides a single enforcement point for all protected routes via the `matcher` config.
 
 ### Q3: How do you prevent open redirect attacks when using callback URLs?
 
@@ -394,7 +394,7 @@ export function SomeClientComponent() {
 
 Build a complete protected route system that:
 
-1. `middleware.ts` — redirects unauthenticated users to `/login?callbackUrl=/dashboard` for all `/dashboard/*` routes
+1. `proxy.ts` — redirects unauthenticated users to `/login?callbackUrl=/dashboard` for all `/dashboard/*` routes
 2. `loginAction` — authenticates, validates callbackUrl (same-origin only), sets session cookie, redirects
 3. A `LogoutButton` that calls `logoutAction` which deletes the cookie and uses `redirect('/login')`
 4. `permanentRedirect` in an `/old-dashboard` page that redirects to `/dashboard`
@@ -428,13 +428,13 @@ export default config;
 ```
 
 ```tsx
-// src/middleware.ts
+// src/proxy.ts
 import { NextRequest, NextResponse } from "next/server";
 
 const PROTECTED_PATHS = ["/dashboard"];
 const PUBLIC_PATHS = ["/login", "/register", "/api/auth"];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Skip public paths and static assets
@@ -678,7 +678,7 @@ export default function OldDashboardPage() {
   Result:
   GET /old-dashboard   → 308 → /dashboard ✅
   next.config.ts handles: /admin → /dashboard/admin (static, no code needed)
-  middleware.ts handles: /dashboard/* without session → /login?callbackUrl=/dashboard/*
+  proxy.ts handles: /dashboard/* without session → /login?callbackUrl=/dashboard/*
   loginAction: validates callbackUrl (same-origin only) → redirects after login
   logoutAction: deletes session cookie → redirects to /login ✅
 */

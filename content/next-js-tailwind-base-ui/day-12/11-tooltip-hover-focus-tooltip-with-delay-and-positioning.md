@@ -16,7 +16,7 @@
 {/* ─── Provider: wrap once at the app/layout level */}
 {/* Enables "group delay" — after hovering one tooltip, subsequent ones */}
 {/* open instantly (no delay) until the mouse rests for a moment */}
-import * as TooltipPrimitive from '@base-ui/react/tooltip'
+import { Tooltip as TooltipPrimitive } from '@base-ui/react/tooltip'
 
 // src/app/layout.tsx
 <TooltipPrimitive.Provider delay={400} closeDelay={100}>
@@ -42,7 +42,7 @@ import * as TooltipPrimitive from '@base-ui/react/tooltip'
 // src/components/ui/tooltip.tsx
 "use client";
 
-import * as TooltipPrimitive from "@base-ui/react/tooltip";
+import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
 import { cn } from "@/lib/cn";
 
 // ─── Provider — add to layout.tsx once
@@ -82,7 +82,7 @@ export function Tooltip({
               "shadow-lg max-w-xs text-center z-[60]",
               // Transition
               "transition-all duration-150 ease-out",
-              "origin-[--transform-origin]",
+              "origin-(--transform-origin)",
               "data-[starting-style]:opacity-0 data-[starting-style]:scale-95",
               "data-[ending-style]:opacity-0   data-[ending-style]:scale-95",
               className
@@ -127,7 +127,7 @@ function TooltipContent({
             "text-white dark:text-gray-900",
             "shadow-xl max-w-xs z-[60]",
             "transition-all duration-150 ease-out",
-            "origin-[--transform-origin]",
+            "origin-(--transform-origin)",
             "data-[starting-style]:opacity-0 data-[starting-style]:scale-95",
             "data-[ending-style]:opacity-0   data-[ending-style]:scale-95",
             className
@@ -153,7 +153,7 @@ export const TooltipCompound = {
 
 ```tsx
 // src/app/layout.tsx
-import * as TooltipPrimitive from "@base-ui/react/tooltip";
+import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
 
 export default function RootLayout({
   children,
@@ -369,7 +369,7 @@ Build a `<ToolbarWithTooltips>` — a row of 5 icon buttons, each with a tooltip
 // src/components/toolbar-with-tooltips.tsx
 'use client'
 
-import * as TooltipPrimitive from '@base-ui/react/tooltip'
+import { Tooltip as TooltipPrimitive } from '@base-ui/react/tooltip'
 import { cn }                from '@/lib/cn'
 
 // ─── Simple tooltip helper (inline for brevity)
@@ -404,7 +404,7 @@ function TT({
               'px-2.5 py-1.5 rounded-lg text-xs font-medium',
               'bg-gray-900 text-white shadow-lg z-[60]',
               'flex items-center gap-2',
-              'transition-all duration-150 origin-[--transform-origin]',
+              'transition-all duration-150 origin-(--transform-origin)',
               'data-[starting-style]:opacity-0 data-[starting-style]:scale-95',
               'data-[ending-style]:opacity-0   data-[ending-style]:scale-95'
             )}

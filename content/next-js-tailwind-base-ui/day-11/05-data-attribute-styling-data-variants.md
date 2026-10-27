@@ -54,8 +54,8 @@
 ### Integration with Headless UI Libraries
 
 ```tsx
-{/* ─── Radix UI / Base UI emit data-state attributes automatically */}
-{/* You style them with data-[state=*]: variants */}
+{/* ─── Radix UI emits data-state="open|closed"; Base UI and Headless UI emit boolean data-open / data-closed instead */}
+{/* You style them with data-[state=*]: (Radix) or data-[open]: / data-[closed]: (Base UI) variants */}
 
 {/* Radix Accordion */}
 <Accordion.Item
@@ -217,7 +217,7 @@ export function AsyncButton({ onSubmit }: { onSubmit: () => Promise<void> }) {
 
 ## W — Why It Matters
 
-- Data attributes are the standard communication channel between headless UI libraries (Radix UI, Base UI, Headless UI) and your styles — these libraries emit `data-state="open"`, `data-state="closed"`, `data-disabled`, `data-highlighted` etc. automatically based on their internal state machine. Tailwind's `data-[]:` variants let you respond to these with zero JavaScript.
+- Data attributes are the standard communication channel between headless UI libraries (Radix UI, Base UI, Headless UI) and your styles — these libraries emit `data-state="open"`/`"closed"` (Radix) or `data-open`/`data-closed` (Base UI, Headless UI), plus `data-disabled`, `data-highlighted` etc. automatically based on their internal state machine. Tailwind's `data-[]:` variants let you respond to these with zero JavaScript.
 - The `data-state` pattern with `data-[state=loading]:bg-blue-400` is cleaner than conditional class strings — instead of `className={isLoading ? 'bg-blue-400' : 'bg-blue-600'}`, you set `data-state={state}` once and all styles are colocated in the className, each clearly labeled by the state it belongs to.
 - Data attributes persist through React re-renders as HTML attributes — they're queryable by CSS, accessible in tests via `getByRole`, serializable as HTML, and usable in CSS `attr()` expressions. They're more semantic than toggled class names for state.
 
@@ -227,7 +227,7 @@ export function AsyncButton({ onSubmit }: { onSubmit: () => Promise<void> }) {
 
 ### Q1: What is the `data-[state=]:` variant in Tailwind and why is it used with headless UI libraries?
 
-**A:** The `data-[state=value]:` variant applies utility classes when an element has a specific `data-state` attribute value — for example, `data-[state=open]:block` shows the element when `data-state="open"`. Headless UI libraries like Radix UI and Base UI manage their own internal state (open/closed, checked/unchecked, focused/disabled) and communicate it to the DOM by setting `data-state`, `data-disabled`, `data-highlighted`, and similar attributes on their component elements. By using `data-[state=open]:` in Tailwind, you can style these states purely in CSS without querying state from the library's API, subscribing to events, or adding JavaScript-driven class toggling.
+**A:** The `data-[state=value]:` variant applies utility classes when an element has a specific `data-state` attribute value — for example, `data-[state=open]:block` shows the element when `data-state="open"`. Headless UI libraries like Radix UI and Base UI manage their own internal state (open/closed, checked/unchecked, focused/disabled) and communicate it to the DOM by setting attributes such as `data-state` (Radix) or `data-open`/`data-closed` (Base UI), plus `data-disabled`, `data-highlighted`, and similar on their component elements. By using `data-[state=open]:` (Radix) or `data-[open]:` (Base UI) in Tailwind, you can style these states purely in CSS without querying state from the library's API, subscribing to events, or adding JavaScript-driven class toggling.
 
 ---
 

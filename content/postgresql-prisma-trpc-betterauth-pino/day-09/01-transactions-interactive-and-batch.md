@@ -12,7 +12,7 @@ Prisma Client has two transaction modes. **Batch transactions** send multiple in
 
 ```typescript
 import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
+import { Prisma } from '@/generated/prisma/client'
 
 // ── Batch transaction — array of independent operations ───────────────────
 // All run in one round trip. No shared state between them.
@@ -192,7 +192,7 @@ Write a `transferCredits` function that: (1) debits credits from a sender accoun
 
 ```typescript
 import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
+import { Prisma } from '@/generated/prisma/client'
 
 class InsufficientCreditsError extends Error {
   constructor(available: number, requested: number) {

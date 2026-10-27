@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-Vitest runs tests in a `node` environment by default — no browser globals, no DOM. For backend/API code this is correct. Configure environment via `vitest.config.ts` (`environment: 'node'`), per-directory using `environmentMatchGlobs`, or per-file using the `@vitest-environment` comment. Always verify your env vars are loaded in tests — use `process.env` reads in `setup.ts`, not at module import time.
+Vitest runs tests in a `node` environment by default — no browser globals, no DOM. For backend/API code this is correct. Configure environment via `vitest.config.ts` (`environment: 'node'`), per-directory using `test.projects` (Vitest 4 removed `environmentMatchGlobs`), or per-file using the `@vitest-environment` comment. Always verify your env vars are loaded in tests — use `process.env` reads in `setup.ts`, not at module import time.
 
 ---
 
@@ -42,19 +42,20 @@ describe('DOM test', () => {
 ```
 
 ```typescript
-// ── environmentMatchGlobs — per-directory environments ────────────────────
+// ── Per-directory environments with `projects` ────────────────────────────
+// Vitest 4 removed `environmentMatchGlobs` (and `poolMatchGlobs`); use projects instead.
 // vitest.config.ts
 export default defineConfig({
   test: {
-    environmentMatchGlobs: [
-      ['src/**/*.test.ts',    'node'],    // backend code → node
-      ['src/**/*.test.tsx',   'jsdom'],   // React components → jsdom
-      ['src/app/**/*.test.ts','jsdom'],   // Next.js app dir → jsdom
+    projects: [
+      { extends: true, test: { name: 'node', environment: 'node',
+          include: ['src/**/*.test.ts'], exclude: ['src/app/**'] } },       // backend code → node
+      { extends: true, test: { name: 'jsdom', environment: 'jsdom',
+          include: ['src/**/*.test.tsx', 'src/app/**/*.test.ts'] } },       // React components + Next.js app dir → jsdom
     ],
-    // Single environment still works as fallback:
-    environment: 'node',
   },
 })
+// Before Vitest 4: environmentMatchGlobs: [['src/**/*.test.tsx', 'jsdom'], ...] with a fallback `environment`.
 ```
 
 ```typescript
@@ -159,7 +160,7 @@ export function getDb(): Db {
 
 ### Challenge
 
-Configure `vitest.config.ts` to: (1) use `node` for `.test.ts` files and `jsdom` for `.test.tsx` files via `environmentMatchGlobs`; (2) set `NODE_ENV=test` and `LOG_LEVEL=silent` via the `env` field; (3) load `src/test/setup.ts` as a setup file. Show a minimal `.test.tsx` file that uses the jsdom environment.
+Configure `vitest.config.ts` to: (1) use `node` for `.test.ts` files and `jsdom` for `.test.tsx` files via `test.projects` (Vitest 4 removed `environmentMatchGlobs`); (2) set `NODE_ENV=test` and `LOG_LEVEL=silent` via the `env` field; (3) load `src/test/setup.ts` as a setup file. Show a minimal `.test.tsx` file that uses the jsdom environment.
 
 ### Solution
 
@@ -171,13 +172,7 @@ import tsconfigPaths    from 'vite-tsconfig-paths'
 export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
-    environment: 'node',   // fallback
-
-    environmentMatchGlobs: [
-      ['**/*.test.ts',  'node'],
-      ['**/*.test.tsx', 'jsdom'],
-    ],
-
+    // Shared options are inherited by projects with `extends: true`
     setupFiles: ['./src/test/setup.ts'],
 
     env: {
@@ -185,15 +180,19 @@ export default defineConfig({
       LOG_LEVEL: 'silent',
     },
 
-    include: ['**/*.test.ts', '**/*.test.tsx'],
     exclude: ['**/node_modules/**', '**/.next/**'],
+
+    projects: [
+      { extends: true, test: { name: 'node',  environment: 'node',  include: ['**/*.test.ts']  } },
+      { extends: true, test: { name: 'jsdom', environment: 'jsdom', include: ['**/*.test.tsx'] } },
+    ],
   },
 })
 ```
 
 ```tsx
 // src/components/Badge.test.tsx
-// No @vitest-environment needed — environmentMatchGlobs handles it
+// No @vitest-environment needed — the `jsdom` project handles it
 import { describe, it, expect } from 'vitest'
 
 function Badge({ label }: { label: string }) {

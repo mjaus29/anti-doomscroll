@@ -38,7 +38,7 @@ The data layer should be organized in three layers: **repositories** encapsulate
 // src/repositories/order.repository.ts
 
 import { prisma }      from '@/lib/prisma'
-import { Prisma, Order } from '@prisma/client'
+import { Prisma, Order } from '@/generated/prisma/client'
 
 // Repository accepts the Prisma client (or tx) as a parameter
 // This makes it usable both standalone AND inside transactions
@@ -89,7 +89,7 @@ export const orderRepository = {
 import { prisma }            from '@/lib/prisma'
 import { orderRepository }   from '@/repositories/order.repository'
 import { productRepository } from '@/repositories/product.repository'
-import { Prisma }            from '@prisma/client'
+import { Prisma }            from '@/generated/prisma/client'
 
 interface PlaceOrderInput {
   customerId: number
@@ -246,9 +246,9 @@ test('placeOrder throws if product out of stock', async () => {
 // ── Prisma extension — reusable query logic as model methods ───────────────
 // Prisma 4.7+ Client Extensions: add custom methods to the Prisma Client
 
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@/generated/prisma/client'
 
-const prisma = new PrismaClient().$extends({
+const prisma = new PrismaClient({ adapter }).$extends({
   model: {
     user: {
       // Add a custom findActive method to prisma.user
@@ -353,7 +353,7 @@ Build a complete three-layer data access structure for a `Post` domain: (1) a `p
 ```typescript
 // ── src/repositories/post.repository.ts ───────────────────────────────────
 import { prisma }            from '@/lib/prisma'
-import { Prisma }            from '@prisma/client'
+import { Prisma }            from '@/generated/prisma/client'
 
 type Ctx = Prisma.TransactionClient | typeof prisma
 
@@ -396,7 +396,7 @@ export const postRepository = {
 // ── src/services/post.service.ts ───────────────────────────────────────────
 import { prisma }          from '@/lib/prisma'
 import { postRepository }  from '@/repositories/post.repository'
-import { Prisma }          from '@prisma/client'
+import { Prisma }          from '@/generated/prisma/client'
 
 class PostNotFoundError    extends Error { constructor() { super('Post not found') } }
 class NotAuthorError       extends Error { constructor() { super('Not the author') } }

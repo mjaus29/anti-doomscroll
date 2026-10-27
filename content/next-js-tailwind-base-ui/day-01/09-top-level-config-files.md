@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-Every file at the project root does one specific job. `next.config.ts` controls the framework. `tsconfig.json` controls TypeScript. `tailwind.config.ts` controls styling. `package.json` controls dependencies and scripts. Know what each does — and don't touch them randomly.
+Every file at the project root does one specific job. `next.config.ts` controls the framework. `tsconfig.json` controls TypeScript. `postcss.config.mjs` plugs Tailwind in, and `src/app/globals.css` (`@import "tailwindcss"` + `@theme`) holds the Tailwind v4 config — there is no `tailwind.config.ts` by default. `package.json` controls dependencies and scripts. Know what each does — and don't touch them randomly.
 
 ---
 
@@ -16,8 +16,7 @@ Every file at the project root does one specific job. `next.config.ts` controls 
 my-app/
 ├── next.config.ts         ← Next.js framework configuration
 ├── tsconfig.json          ← TypeScript compiler options
-├── tailwind.config.ts     ← Tailwind CSS theme + content
-├── postcss.config.mjs     ← PostCSS pipeline (Tailwind needs this)
+├── postcss.config.mjs     ← PostCSS pipeline (loads @tailwindcss/postcss; theme lives in globals.css via @theme)
 ├── eslint.config.mjs      ← ESLint rules (flat config)
 ├── .prettierrc            ← Prettier formatting rules (if used)
 ├── package.json           ← dependencies + scripts
@@ -127,8 +126,8 @@ export default nextConfig;
     "dev": "next dev --turbopack", // ← local development
     "build": "next build", // ← production build
     "start": "next start", // ← serve production build
-    "lint": "next lint", // ← ESLint check
-    "lint:fix": "next lint --fix", // ← auto-fix ESLint
+    "lint": "eslint", // ← ESLint check
+    "lint:fix": "eslint --fix", // ← auto-fix ESLint
     "type-check": "tsc --noEmit", // ← TypeScript check
     "format": "prettier --write src/", // ← format code (if Prettier)
     "test": "vitest", // ← unit tests
@@ -196,7 +195,7 @@ coverage/        ← test coverage reports
 
 ### Q1: What is the difference between `NEXT_PUBLIC_API_URL` and `API_URL` as environment variables?
 
-**A:** `NEXT_PUBLIC_API_URL` is bundled into the client-side JavaScript at build time — it's visible in the browser and accessible in both Server and Client Components. `API_URL` (without the prefix) is available only in Server Components, API routes, and `middleware.ts` — it's never sent to the browser. Use `NEXT_PUBLIC_` only for values that are safe to be public (API base URLs, public keys). Use unprefixed for secrets.
+**A:** `NEXT_PUBLIC_API_URL` is bundled into the client-side JavaScript at build time — it's visible in the browser and accessible in both Server and Client Components. `API_URL` (without the prefix) is available only in Server Components, API routes, and `proxy.ts` — it's never sent to the browser. Use `NEXT_PUBLIC_` only for values that are safe to be public (API base URLs, public keys). Use unprefixed for secrets.
 
 ### Q2: What does `next build` do vs `next dev`?
 

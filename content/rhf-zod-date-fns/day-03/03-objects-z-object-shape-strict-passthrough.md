@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-`z.object(shape)` validates a plain JavaScript object. By default Zod **strips** unknown keys from the output. Use `.strict()` to reject unknown keys, `.passthrough()` to keep them, and `.catchall(schema)` to validate all extra keys against a schema.
+`z.object(shape)` validates a plain JavaScript object. By default Zod **strips** unknown keys from the output. Use `z.strictObject()` to reject unknown keys, `z.looseObject()` to keep them, and `.catchall(schema)` to validate all extra keys against a schema.
 
 ---
 
@@ -15,9 +15,9 @@ import { z } from 'zod'
 
 // ─── Basic object
 const UserSchema = z.object({
-  id:    z.string().uuid(),
+  id:    z.uuid(),
   name:  z.string().min(1),
-  email: z.string().email(),
+  email: z.email(),
   role:  z.enum(['admin', 'user', 'guest'])
 })
 
@@ -33,12 +33,12 @@ strip.parse({ name: 'Mark', extra: 'ignored' })
 // → { name: 'Mark' }  (extra removed)
 
 // STRICT — unknown keys cause a validation ERROR
-const strict = z.object({ name: z.string() }).strict()
+const strict = z.strictObject({ name: z.string() })   // Before Zod 4: z.object({...}).strict()
 strict.safeParse({ name: 'Mark', extra: 'not allowed' })
-// → { success: false, error: ... 'Unrecognized key(s): extra' }
+// → { success: false, error: ... 'Unrecognized key: "extra"' }
 
 // PASSTHROUGH — unknown keys kept in output
-const pass = z.object({ name: z.string() }).passthrough()
+const pass = z.looseObject({ name: z.string() })      // Before Zod 4: .passthrough()
 pass.parse({ name: 'Mark', extra: 'kept' })
 // → { name: 'Mark', extra: 'kept' }
 
@@ -68,7 +68,7 @@ type Profile = z.infer<typeof ProfileSchema>
 
 // ─── keyof — get literal union of field names
 UserSchema.keyof()
-// ZodEnum<['id', 'name', 'email', 'role']>
+// ZodEnum<{ id: 'id', name: 'name', email: 'email', role: 'role' }>  (union of the field names)
 ```
 
 ---
@@ -85,7 +85,7 @@ UserSchema.keyof()
 
 ### Q: How does Zod handle unknown keys in `z.object` by default, and how do you change the behaviour?
 
-**A:** By default Zod **strips** unknown keys — they're silently removed from the parsed output. This is safe for user input (extra fields are dropped). Use `.strict()` to throw a validation error if any unknown key is present — good for internal configuration objects. Use `.passthrough()` to include unknown keys in the output unchanged. Use `.catchall(schema)` to validate that all extra keys conform to a specific schema.
+**A:** By default Zod **strips** unknown keys — they're silently removed from the parsed output. This is safe for user input (extra fields are dropped). Use `z.strictObject()` (Zod 3: `.strict()`) to fail validation if any unknown key is present — good for internal configuration objects. Use `z.looseObject()` (Zod 3: `.passthrough()`) to include unknown keys in the output unchanged. Use `.catchall(schema)` to validate that all extra keys conform to a specific schema.
 
 ---
 
@@ -100,13 +100,13 @@ const result = Schema.parse({ name: 'Mark', createdAt: '2024-01-01' })
 console.log(result.createdAt)  // undefined — stripped! ❌
 ```
 
-**Fix:** Use `.passthrough()` or add the key to the schema:
+**Fix:** Use `z.looseObject()` or add the key to the schema:
 
 ```ts
 // ✅ Add to schema
 const Schema = z.object({ name: z.string(), createdAt: z.string() })
 // or ✅ Keep all extra keys
-const Schema = z.object({ name: z.string() }).passthrough()
+const Schema = z.looseObject({ name: z.string() })
 ```
 
 ---
@@ -115,22 +115,22 @@ const Schema = z.object({ name: z.string() }).passthrough()
 
 ### Challenge
 
-Create a `ServerConfigSchema` (`.strict()`) with: `host` (string URL), `port` (integer 1–65535), `timeout` (number, default 30), `db` (nested object with `url` string and `poolSize` positive integer). Validate a valid config and one with an unknown key — prove strict mode rejects it.
+Create a `ServerConfigSchema` (`z.strictObject`) with: `host` (string URL), `port` (integer 1–65535), `timeout` (number, default 30), `db` (nested object with `url` string and `poolSize` positive integer). Validate a valid config and one with an unknown key — prove strict mode rejects it.
 
 ### Solution
 
 ```ts
 import { z } from 'zod'
 
-const ServerConfigSchema = z.object({
-  host:    z.string().url(),
+const ServerConfigSchema = z.strictObject({
+  host:    z.url(),
   port:    z.number().int().min(1).max(65535),
   timeout: z.number().positive().default(30),
   db: z.object({
-    url:      z.string().url(),
+    url:      z.url(),
     poolSize: z.number().int().positive()
   })
-}).strict()
+})
 
 type ServerConfig = z.infer<typeof ServerConfigSchema>
 
@@ -149,7 +149,7 @@ const r2 = ServerConfigSchema.safeParse({
   db: { url: 'postgres://localhost/app', poolSize: 10 }
 })
 console.log(r2.success)  // false
-console.log(r2.error?.issues[0].message)  // 'Unrecognized key(s): unknownKey'
+console.log(r2.error?.issues[0].message)  // 'Unrecognized key: "unknownKey"'
 ```
 
 ---

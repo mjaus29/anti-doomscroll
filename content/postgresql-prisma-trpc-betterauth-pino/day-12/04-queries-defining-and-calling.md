@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-Queries are read operations — they use `.query(handler)` on the server and `.useQuery()` (React) or `.query()` (vanilla) on the client. Queries are called with HTTP GET (or POST with superjson). They are cacheable, refetchable, and automatically integrated with TanStack Query for loading/error/data states.
+Queries are read operations — they use `.query(handler)` on the server and `.useQuery()` (React) or `.query()` (vanilla) on the client. Queries are called with HTTP GET by default (a data transformer such as superjson changes how input is serialized, not the HTTP method; only `methodOverride: 'POST'` on the link and server forces POST). They are cacheable, refetchable, and automatically integrated with TanStack Query for loading/error/data states.
 
 ---
 

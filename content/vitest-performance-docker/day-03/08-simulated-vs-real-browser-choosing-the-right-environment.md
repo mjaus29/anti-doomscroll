@@ -80,7 +80,7 @@ it('tooltip appears below target', () => {
 
 // AFTER (Browser Mode — real geometry):
 // Rename: tooltip.dom.test.ts → tooltip.browser.test.ts
-// Add: @vitest-environment chromium (via workspace config)
+// Add: a browser project (browser.enabled + playwright() provider) via `test.projects` in vitest.config.ts
 it('tooltip appears below target', async () => {
   // same test — but now getBoundingClientRect() returns real values ✅
 })
@@ -153,16 +153,16 @@ Categorisation:
 ```typescript
 // src/input.browser.test.ts — scenario 4
 import { describe, it, expect, afterEach } from 'vitest'
-import { userEvent, page }                 from '@vitest/browser/context'
+import { userEvent, page }                 from 'vitest/browser'
 
 describe('input placeholder behaviour (real browser)', () => {
   afterEach(() => { document.body.innerHTML = '' })
 
   it('placeholder is visible before focus', async () => {
     document.body.innerHTML = '<input id="name" placeholder="Enter your name" />'
-    const input = page.locator('#name')
+    const input = page.getByPlaceholder('Enter your name')
     // In real browser, placeholder is visible when input is empty and unfocused
-    await expect(input).toHaveAttribute('placeholder', 'Enter your name')
+    await expect.element(input).toHaveAttribute('placeholder', 'Enter your name')
   })
 
   it('input accepts typed text replacing placeholder', async () => {

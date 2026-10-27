@@ -206,7 +206,7 @@ export const metadata: Metadata = {
 
 ### Q2: Can a layout redirect users? Where should auth checks go?
 
-**A:** Yes — layouts are Server Components by default and can call `redirect()` from `next/navigation`. The recommended pattern is to put auth checks in the layout of protected segments: fetch the session, and if not authenticated, call `redirect('/login')`. This runs server-side before any page content renders — preventing flash of unauthorized content. For more granular control across many routes, use `middleware.ts` instead.
+**A:** Yes — layouts are Server Components by default and can call `redirect()` from `next/navigation`. The recommended pattern is to put auth checks in the layout of protected segments: fetch the session, and if not authenticated, call `redirect('/login')`. This runs server-side before any page content renders — preventing flash of unauthorized content. For more granular control across many routes, use `proxy.ts` instead.
 
 ### Q3: Why don't layouts receive `searchParams`?
 

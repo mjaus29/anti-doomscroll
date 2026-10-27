@@ -80,19 +80,20 @@ npx prisma migrate deploy
 # Diff between schema and empty database:
 npx prisma migrate diff \
   --from-empty \
-  --to-schema-datamodel prisma/schema.prisma \
+  --to-schema prisma/schema.prisma \
   --script > prisma/migrations/baseline.sql
 
 # Diff between two schema states:
 npx prisma migrate diff \
-  --from-schema-datamodel prisma/schema_old.prisma \
-  --to-schema-datamodel prisma/schema.prisma \
+  --from-schema prisma/schema_old.prisma \
+  --to-schema prisma/schema.prisma \
   --script
 
 # Diff between database and schema:
+# Prisma 7: --from-url was removed; the live DB comes from datasource.url in prisma.config.ts
 npx prisma migrate diff \
-  --from-url $DATABASE_URL \
-  --to-schema-datamodel prisma/schema.prisma \
+  --from-config-datasource \
+  --to-schema prisma/schema.prisma \
   --script
 ```
 
@@ -132,7 +133,7 @@ npx prisma migrate dev --name add_new_feature
 # Step 1: generate the consolidated SQL from the current schema
 npx prisma migrate diff \
   --from-empty \
-  --to-schema-datamodel prisma/schema.prisma \
+  --to-schema prisma/schema.prisma \
   --script > /tmp/consolidated.sql
 
 # Step 2: archive old migrations (don't delete — just for reference)
@@ -343,7 +344,7 @@ MIGRATIONS — CORE COMMANDS
   prisma migrate status                 check which migrations are applied / pending
   prisma migrate resolve --applied      mark failed/missing migration as applied
   prisma migrate resolve --rolled-back  mark migration as rolled back (re-run it)
-  prisma migrate diff --from-empty --to-schema-datamodel schema.prisma --script
+  prisma migrate diff --from-empty --to-schema schema.prisma --script
                                         generate SQL diff without migrating
   prisma db push                        sync schema to DB without migration files (dev/proto only)
 
@@ -392,7 +393,7 @@ BASELINING EXISTING DATABASE
 
 SQUASHING MIGRATIONS
   Only when: all envs have current schema applied, team agrees
-  npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > consolidated.sql
+  npx prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script > consolidated.sql
   Archive old migrations folder
   Create new baseline migration with consolidated.sql
   Mark baseline as applied on all environments with migrate resolve --applied

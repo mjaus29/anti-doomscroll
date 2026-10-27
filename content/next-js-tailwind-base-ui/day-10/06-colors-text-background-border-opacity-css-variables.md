@@ -131,9 +131,9 @@ Tailwind v4.3's color system uses CSS custom properties — every color utility 
 </div>
 
 {/* With Tailwind's arbitrary value syntax */}
-<div className="bg-[--color-surface]">    {/* reference a CSS variable */}
-<p  className="text-[--color-text]">
-<div className="border-[--color-border]">
+<div className="bg-(--color-surface)">    {/* reference a CSS variable */}
+<p  className="text-(--color-text)">
+<div className="border-(--color-border)">
 
 {/* ─── Status color patterns */}
 {/* Success */}

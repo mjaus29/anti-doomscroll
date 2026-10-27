@@ -12,7 +12,7 @@ Prisma's `$queryRaw` runs a raw `SELECT` and returns typed results. `$executeRaw
 
 ```typescript
 import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
+import { Prisma } from '@/generated/prisma/client'
 
 // ── $queryRaw — SELECT, returns typed rows ────────────────────────────────
 interface OrderSummaryRow {
@@ -241,7 +241,7 @@ Write three raw SQL functions: (1) `getTopSpendersByMonth` using a window functi
 
 ```typescript
 import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
+import { Prisma } from '@/generated/prisma/client'
 
 // ── (1) Top spenders by month — window function ────────────────────────────
 interface TopSpenderRow {

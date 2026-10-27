@@ -64,7 +64,7 @@ type Coerced = z.infer<typeof CoercedSchema>
 // ─── Using inferred types throughout the app
 const CreateOrderSchema = z.object({
   items:      z.array(z.object({ productId: z.string(), qty: z.number().int().positive() })).nonempty(),
-  customerId: z.string().uuid(),
+  customerId: z.uuid(),
   notes:      z.string().optional()
 })
 
@@ -84,7 +84,7 @@ const { register } = useForm<CreateOrder>()
 // Use in API route
 export async function POST(req: Request) {
   const result = CreateOrderSchema.safeParse(await req.json())
-  if (!result.success) return Response.json({ errors: result.error.flatten() }, { status: 400 })
+  if (!result.success) return Response.json({ errors: z.flattenError(result.error) }, { status: 400 })
   await createOrder(result.data)  // result.data is typed as CreateOrder ✅
   return Response.json({ ok: true })
 }
@@ -164,7 +164,7 @@ const PaymentSchema = z.object({
 })
 
 const OrderItemSchema = z.object({
-  productId: z.string().uuid(),
+  productId: z.uuid(),
   name:      z.string(),
   qty:       z.coerce.number().int().positive(),
   unitPrice: z.coerce.number().positive()
@@ -206,7 +206,7 @@ if (result.success) {
   console.log(result.data.items[0].qty)      // 1 (number, coerced from '1')
   console.log(result.data.items[0].unitPrice)// 999.99 (number, coerced)
 } else {
-  console.log(result.error.flatten())
+  console.log(z.flattenError(result.error))
 }
 ```
 
@@ -232,7 +232,8 @@ if (result.success) {
 
 ```
 PRIMITIVES
-  z.string()         .min() .max() .email() .url() .regex() .trim() .nonempty()
+  z.string()         .min() .max() .regex() .trim()
+  z.email() z.url() z.uuid()   top-level string formats (Zod 3: z.string().email())
   z.number()         .int() .min() .max() .positive() .negative()
   z.boolean()        true | false only (not 0, 1, 'true')
   z.date()           .min() .max()
@@ -241,8 +242,8 @@ PRIMITIVES
 
 OBJECTS
   z.object(shape)    default: strips unknown keys
-  .strict()          rejects unknown keys (errors)
-  .passthrough()     keeps unknown keys in output
+  z.strictObject()   rejects unknown keys (Zod 3: .strict())
+  z.looseObject()    keeps unknown keys in output (Zod 3: .passthrough())
   .catchall(schema)  validate all extra keys
   .shape.field       access individual field schema
   .keyof()           ZodEnum of field names
@@ -250,14 +251,14 @@ OBJECTS
 ARRAYS
   z.array(itemSchema)
   .min(n) .max(n) .length(n) .nonempty()
-  nonempty() → narrows type to [T, ...T[]]
+  nonempty() = min(1), type stays T[]; use z.tuple([T], T) for [T, ...T[]]
 
 ENUMS + LITERALS
   z.enum(['a','b'])  → 'a' | 'b'
   .options           → ['a', 'b'] (for UI select)
   .enum              → { a: 'a', b: 'b' }
   z.literal('x')     → exactly 'x'
-  z.nativeEnum(TsEnum) → wraps TypeScript enum
+  z.enum(TsEnum)     → wraps TypeScript enum (Zod 3: z.nativeEnum)
 
 MODIFIERS
   .optional()        adds | undefined to type
@@ -271,8 +272,8 @@ PARSE
   .safeParse(data)   returns { success, data } | { success, error }
   .parseAsync()      for async .refine() schemas
   error.issues       flat array of ZodIssue
-  error.flatten()    { fieldErrors: {}, formErrors: [] }
-  error.format()     nested object matching input shape
+  z.flattenError(error)  { fieldErrors: {}, formErrors: [] }   (Zod 3: error.flatten())
+  z.treeifyError(error)  nested tree matching input shape      (Zod 3: error.format())
 
 COMPOSITION
   .extend({ field })    add fields, keep originals
@@ -281,7 +282,7 @@ COMPOSITION
   .partial()            all fields → optional
   .partial({ f: true }) specific fields → optional
   .required()           all optional fields → required
-  .merge(otherSchema)   combine two object schemas
+  .extend(Other.shape)  combine two object schemas (Zod 3: .merge(), now deprecated)
 
 INFERENCE
   z.infer<typeof S>    output type (after parse + transforms)
@@ -298,7 +299,7 @@ PATTERNS
     One schema → zodResolver(schema) in RHF → same schema in API route
 
   Empty string URL field:
-    z.union([z.string().url(), z.literal('')]).optional()
+    z.union([z.url(), z.literal('')]).optional()
 
   Coerce form input:
     z.coerce.number() instead of z.number() + valueAsNumber

@@ -125,8 +125,8 @@ Lessons: [useEffect + cleanup](/group/react-tanstackquery-zustand/day/04/02-usee
 | Hook | Use | Note |
 | --- | --- | --- |
 | `useRef(init)` | DOM node or mutable value | `ref.current` changes do not re-render |
-| `forwardRef` | expose a child's DOM node | React 19 also accepts `ref` as a prop |
-| `useImperativeHandle` | expose `{ focus, reset }` not the DOM | pair with a forwarded ref |
+| `ref` prop (React 19) | expose a child's DOM node: `function Input({ ref, ...p }) { return <input ref={ref} {...p} /> }` | pre-19 needed `forwardRef`, which is now deprecated |
+| `useImperativeHandle` | expose `{ focus, reset }` not the DOM | pair with the `ref` prop (pre-19: a forwarded ref) |
 | `useLayoutEffect` | measure DOM before paint | blocks paint; use only to avoid flicker |
 | `useSyncExternalStore` | subscribe to non-React state | tear-safe in concurrent rendering |
 
@@ -375,7 +375,7 @@ export const usePrefs = create<Prefs>()(
 | Slices | `createAuthSlice(set, get)` merged into one store |
 | Bounded stores | one `create()` per unrelated domain |
 | Reset | keep an `INITIAL_STATE` constant; `reset: () => set(INITIAL_STATE)` |
-| `Map` / `Set` | new instance per update (or Immer + `enableMapSet()`); convert to arrays for `persist` |
+| `Map` / `Set` | new instance per update (or Immer + a one-time `enableMapSet()` call, otherwise Immer throws); convert to arrays for `persist` |
 
 Lessons: [Slice pattern](/group/react-tanstackquery-zustand/day/12/01-slice-pattern-bounded-stores) · [persist](/group/react-tanstackquery-zustand/day/12/03-persist-middleware-storage-choices) · [Hydration + SSR](/group/react-tanstackquery-zustand/day/12/04-hydration-ssr-caveats) · [Reset patterns](/group/react-tanstackquery-zustand/day/12/08-reset-state-patterns)
 

@@ -284,12 +284,12 @@ npx prisma migrate dev --name add_view_count_to_posts
 // ── Final schema.prisma after all 4 migrations ────────────────────────────
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum UserRole {

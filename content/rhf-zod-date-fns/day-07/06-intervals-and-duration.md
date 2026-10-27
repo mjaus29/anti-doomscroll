@@ -27,10 +27,11 @@ const interval = { start, end }
 
 // ─── intervalToDuration — breaks interval into human units
 const duration = intervalToDuration(interval)
-// { years: 0, months: 2, days: 21, hours: 0, minutes: 0, seconds: 0 }
+// { months: 2, days: 21 }   — zero-value units are omitted in date-fns v4
 
 duration.months  // 2
 duration.days    // 21
+duration.years   // undefined (not 0) — default with `?? 0` if you do arithmetic
 
 // ─── formatDuration — readable string from Duration object
 formatDuration(duration)
@@ -86,7 +87,7 @@ areIntervalsOverlapping(booking1, booking2)  // true — Jun 14-15 overlap
 
 ### Q: How do you display the duration between two dates in human-readable form (years, months, days)?
 
-**A:** Use `intervalToDuration({ start, end })` to get a `Duration` object with `{ years, months, days, hours, minutes, seconds }`. Then use `formatDuration(duration, { format: ['years', 'months', 'days'], zero: false })` to produce a string like "1 year 3 months 5 days", skipping zero-value units. This is more accurate than dividing milliseconds because it accounts for variable month lengths and leap years — `differenceInDays` would give 400 days while `intervalToDuration` correctly gives "1 year 35 days".
+**A:** Use `intervalToDuration({ start, end })` to get a `Duration` object with the non-zero units among `{ years, months, days, hours, minutes, seconds }`. Then use `formatDuration(duration, { format: ['years', 'months', 'days'], zero: false })` to produce a string like "1 year 3 months 5 days", skipping zero-value units. This is more accurate than dividing milliseconds because it accounts for variable month lengths and leap years — `differenceInDays` would give 400 days while `intervalToDuration` correctly gives "1 year 1 month 4 days" (for Jan 1 2025 → Feb 5 2026).
 
 ---
 
@@ -95,15 +96,15 @@ areIntervalsOverlapping(booking1, booking2)  // true — Jun 14-15 overlap
 ### ❌ Passing interval with end before start to `eachDayOfInterval`
 
 ```ts
-// ❌ Throws RangeError if start > end
+// ❌ Doesn't throw (date-fns v3/v4) — it silently returns the days in REVERSE order
 const days = eachDayOfInterval({
   start: new Date(2025, 6, 10),
   end:   new Date(2025, 5, 1)   // end before start
 })
-// RangeError: Invalid interval — end is before start
+// [Jul 10, Jul 9, ..., Jun 1]  — descending; an old v2 build threw RangeError instead
 ```
 
-**Fix:** Guard the order, or use `min`/`max`:
+**Fix:** Guard the order, or use `min`/`max` so the result is always ascending:
 
 ```ts
 import { min, max } from 'date-fns'

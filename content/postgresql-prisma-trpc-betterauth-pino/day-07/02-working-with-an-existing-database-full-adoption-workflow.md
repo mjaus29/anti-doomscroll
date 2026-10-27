@@ -84,11 +84,11 @@ model OrderItem {
 # Create the migrations directory and baseline file
 mkdir -p prisma/migrations/20250615000000_baseline
 
-# Create an EMPTY migration.sql — the DB already has the schema
-# We are NOT applying any SQL, just marking a starting point
-echo "" > prisma/migrations/20250615000000_baseline/migration.sql
-# Or just create an empty file:
-touch prisma/migrations/20250615000000_baseline/migration.sql
+# Generate the FULL schema SQL as the baseline migration.sql
+# (the DB already has these tables, so we will NOT run it — only record it as applied).
+# It must contain the real SQL: fresh databases and the shadow database replay
+# migrations from the start, so an empty baseline makes the next migrate dev fail.
+npx prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script > prisma/migrations/20250615000000_baseline/migration.sql
 
 # Tell Prisma: "consider this migration already applied"
 npx prisma migrate resolve --applied "20250615000000_baseline"
@@ -145,7 +145,7 @@ Relation names unclear          │ Rename relation field to be semantically mea
 
 ## W — Why It Matters
 
-- The baseline step is what most developers skip, and it causes `migrate dev` to try to CREATE tables that already exist — resulting in migration failures. The empty migration file with `migrate resolve --applied` is the handshake that says "Prisma, the database already has everything up to this point."
+- The baseline step is what most developers skip, and it causes `migrate dev` to try to CREATE tables that already exist — resulting in migration failures. The baseline migration (full schema SQL, generated with `migrate diff --from-empty`) plus `migrate resolve --applied` is the handshake that says "Prisma, the database already has everything up to this point."
 - Changing `onDelete: NoAction` to appropriate cascade rules during cleanup is a business logic decision, not just cosmetic — `NoAction` means "do nothing when the parent is deleted" which often silently creates orphaned rows. Deciding the correct `onDelete` rule for each relation is part of understanding the data model.
 - The cleanup step (Step 2) is also a learning opportunity — reading through the generated schema and understanding every table and relation gives you a map of the existing codebase's data model that no documentation can replace.
 
@@ -155,7 +155,7 @@ Relation names unclear          │ Rename relation field to be semantically mea
 
 ### Q: How do you adopt Prisma on an existing project that already has a PostgreSQL database with 30 tables?
 
-**A:** The workflow is: (1) **Introspect** — run `prisma db pull` to generate `schema.prisma` from the existing database. This produces a complete schema with all 30 tables as models, with correct types, constraints, and FK relations. (2) **Clean up** — rename models and fields to TypeScript conventions (PascalCase/camelCase) and add `@@map`/`@map` to preserve the actual DB names. Fix `onDelete: NoAction` rules to proper cascade rules. Add missing indexes on FK columns. (3) **Baseline** — create an empty migration file in `prisma/migrations/` and run `prisma migrate resolve --applied` to tell Prisma the database already has this schema. (4) **Generate** — run `prisma generate` to produce the typed Prisma Client. (5) **Iterate** — all future schema changes use `prisma migrate dev` normally. The key is the baseline step — without it, the first `migrate dev` would try to CREATE all 30 tables and fail because they already exist.
+**A:** The workflow is: (1) **Introspect** — run `prisma db pull` to generate `schema.prisma` from the existing database. This produces a complete schema with all 30 tables as models, with correct types, constraints, and FK relations. (2) **Clean up** — rename models and fields to TypeScript conventions (PascalCase/camelCase) and add `@@map`/`@map` to preserve the actual DB names. Fix `onDelete: NoAction` rules to proper cascade rules. Add missing indexes on FK columns. (3) **Baseline** — generate the full schema SQL into a `prisma/migrations/<timestamp>_baseline/migration.sql` with `prisma migrate diff --from-empty --to-schema ... --script`, then run `prisma migrate resolve --applied` so Prisma records it as applied without executing it on the existing database. (4) **Generate** — run `prisma generate` to produce the typed Prisma Client. (5) **Iterate** — all future schema changes use `prisma migrate dev` normally. The key is the baseline step — without it, the first `migrate dev` would try to CREATE all 30 tables and fail because they already exist.
 
 ---
 
@@ -178,7 +178,7 @@ npx prisma migrate dev --name init
 ```bash
 # ✅ Baseline first
 mkdir -p prisma/migrations/20250615000000_baseline
-touch prisma/migrations/20250615000000_baseline/migration.sql
+npx prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script > prisma/migrations/20250615000000_baseline/migration.sql
 npx prisma migrate resolve --applied "20250615000000_baseline"
 
 # Now migrate dev only generates SQL for NEW changes
@@ -230,12 +230,12 @@ model product_reviews {
 // ── (2) Cleaned-up schema ─────────────────────────────────────────────────
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model Product {
@@ -275,7 +275,7 @@ model ProductReview {
 # ── (3) Baseline commands ─────────────────────────────────────────────────
 
 mkdir -p prisma/migrations/20250615000000_baseline
-touch prisma/migrations/20250615000000_baseline/migration.sql
+npx prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script > prisma/migrations/20250615000000_baseline/migration.sql
 npx prisma migrate resolve --applied "20250615000000_baseline"
 npx prisma generate
 

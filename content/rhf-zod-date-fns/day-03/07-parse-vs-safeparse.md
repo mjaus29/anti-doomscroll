@@ -22,11 +22,11 @@ try {
   if (err instanceof z.ZodError) {
     console.log(err.issues)
     // [
-    //   { code: 'too_small', path: ['name'], message: 'String must contain at least 2 character(s)' },
-    //   { code: 'too_small', path: ['age'],  message: 'Number must be greater than or equal to 18' }
+    //   { code: 'too_small', path: ['name'], message: 'Too small: expected string to have >=2 characters' },
+    //   { code: 'too_small', path: ['age'],  message: 'Too small: expected number to be >=18' }
     // ]
-    err.flatten()
-    // { fieldErrors: { name: ['String must…'], age: ['Number must…'] }, formErrors: [] }
+    z.flattenError(err)
+    // { fieldErrors: { name: ['Too small…'], age: ['Too small…'] }, formErrors: [] }
   }
 }
 
@@ -39,8 +39,8 @@ if (result.success) {
 } else {
   // TypeScript narrows: result.error is ZodError
   result.error.issues         // ZodIssue[]
-  result.error.flatten()      // { fieldErrors, formErrors }
-  result.error.format()       // nested error object
+  z.flattenError(result.error)  // { fieldErrors, formErrors }   (Zod 3: error.flatten())
+  z.treeifyError(result.error)  // nested error tree             (Zod 3: error.format())
 }
 
 // ─── parseAsync / safeParseAsync — for schemas with async refinements
@@ -63,20 +63,23 @@ const err = result.error  // ZodError
 err.issues
 // [{ code, path, message, ... }]
 
-// .flatten() — grouped by field (best for forms)
-err.flatten()
+// z.flattenError() — grouped by field (best for forms). Zod 3: err.flatten()
+z.flattenError(err)
 // {
 //   formErrors:  string[]          — errors with no field path
 //   fieldErrors: { [field]: string[] }  — errors per field
 // }
 
-// .format() — nested object matching input shape
-err.format()
+// z.treeifyError() — nested tree matching input shape. Zod 3: err.format()
+z.treeifyError(err)
 // {
-//   _errors: [],
-//   name: { _errors: ['String must contain at least 2 character(s)'] },
-//   age:  { _errors: ['Number must be greater than or equal to 18'] }
+//   errors: [],
+//   properties: {
+//     name: { errors: ['Too small: expected string to have >=2 characters'] },
+//     age:  { errors: ['Too small: expected number to be >=18'] }
+//   }
 // }
+// z.prettifyError(err) gives a human-readable string for logs
 ```
 
 ---
@@ -84,7 +87,7 @@ err.format()
 ## W — Why It Matters
 
 - `safeParse` is the correct default — throwing errors in form handlers or API routes breaks the request/response cycle unless you have perfect try/catch coverage. `safeParse` returns a result object you control.
-- `error.flatten()` produces `{ fieldErrors: { field: string[] } }` — this maps directly to RHF's error structure when manually integrating Zod with forms (without `zodResolver`).
+- `z.flattenError(error)` (Zod 3: `error.flatten()`) produces `{ fieldErrors: { field: string[] } }` — this maps directly to RHF's error structure when manually integrating Zod with forms (without `zodResolver`).
 - `parseAsync` / `safeParseAsync` is required for schemas with async `.refine()` calls — calling synchronous `parse` on an async schema throws immediately.
 
 ---
@@ -119,7 +122,7 @@ export async function POST(req: Request) {
   const body   = await req.json()
   const result = Schema.safeParse(body)
   if (!result.success) {
-    return Response.json({ errors: result.error.flatten() }, { status: 400 })
+    return Response.json({ errors: z.flattenError(result.error) }, { status: 400 })
   }
   await db.insert(result.data)
   return Response.json({ ok: true })
@@ -141,7 +144,7 @@ Build a Next.js API route handler that: accepts `POST` with a JSON body `{ email
 import { z } from 'zod'
 
 const LoginSchema = z.object({
-  email:    z.string().email('Invalid email'),
+  email:    z.email('Invalid email'),
   password: z.string().min(8, 'Password must be at least 8 characters')
 })
 
@@ -151,7 +154,7 @@ export async function POST(req: Request) {
 
   if (!result.success) {
     return Response.json(
-      { errors: result.error.flatten().fieldErrors },
+      { errors: z.flattenError(result.error).fieldErrors },
       { status: 400 }
     )
     // Body: { errors: { email: ['Invalid email'], password: ['...'] } }

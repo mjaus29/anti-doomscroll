@@ -52,22 +52,23 @@ Arbitrary values (`[value]`) let you use **any CSS value** that isn't in Tailwin
 
 ```tsx
 {/* ─── Reference CSS custom properties */}
-{/* Syntax: utility-[--variable-name] OR utility-[var(--variable-name)] */}
+{/* Syntax: utility-(--variable-name) OR utility-[var(--variable-name)] */}
+{/* Before Tailwind v4 this was utility-[--variable-name]; v4 uses parentheses */}
 
-<div className="bg-[--color-brand]">
+<div className="bg-(--color-brand)">
   {/* background-color: var(--color-brand) */}
 </div>
 
-<div className="text-[--color-text-muted]">
+<div className="text-(--color-text-muted)">
   {/* color: var(--color-text-muted) */}
 </div>
 
-<div className="border-[--color-border]">
+<div className="border-(--color-border)">
   {/* border-color: var(--color-border) */}
 </div>
 
 {/* With opacity modifier */}
-<div className="bg-[--color-brand]/20">
+<div className="bg-(--color-brand)/20">
   {/* background-color: color-mix(in oklch, var(--color-brand) 20%, transparent) */}
 </div>
 
@@ -79,7 +80,7 @@ Arbitrary values (`[value]`) let you use **any CSS value** that isn't in Tailwin
 {/* ─── Runtime CSS variables (set via style prop) */}
 <div
   style={{ '--card-height': '320px' } as React.CSSProperties}
-  className="h-[--card-height] relative"
+  className="h-(--card-height) relative"
 >
   {/* height dynamically set via CSS variable */}
 </div>
@@ -242,7 +243,7 @@ Arbitrary values (`[value]`) let you use **any CSS value** that isn't in Tailwin
 
 - Arbitrary values are the escape hatch that makes Tailwind practical on real projects — design systems, third-party integrations, and one-off requirements always produce values outside the default scale. Without arbitrary values, Tailwind would force you back to a separate CSS file for every exception.
 - The `calc()` pattern for `h-[calc(100vh-3.5rem)]` is one of the most used in real Next.js apps — sticky navbars create fixed-height headers, and every page's content area needs to fill the remaining viewport height without a scroll glitch.
-- CSS variable arbitrary values (`bg-[--color-brand]`) bridge Tailwind's utility system with runtime values — you can dynamically change a CSS variable via JavaScript and every element using that variable in an arbitrary value updates instantly with no class changes.
+- CSS variable arbitrary values (`bg-(--color-brand)`) bridge Tailwind's utility system with runtime values — you can dynamically change a CSS variable via JavaScript and every element using that variable in an arbitrary value updates instantly with no class changes.
 
 ---
 
@@ -250,7 +251,7 @@ Arbitrary values (`[value]`) let you use **any CSS value** that isn't in Tailwin
 
 ### Q1: What are arbitrary values in Tailwind and when should you use them?
 
-**A:** Arbitrary values let you use any CSS value within a utility class by wrapping it in square brackets — `w-[340px]`, `bg-[#1a2b3c]`, `h-[calc(100vh-56px)]`. Use them when the design requires a specific value not in Tailwind's default scale, when integrating with a third-party component that needs exact sizing, when referencing CSS custom properties (`bg-[--color-brand]`), or when using CSS functions like `calc()`, `min()`, `max()`, or `clamp()`. They should not be used as a way to avoid learning the scale — if you find yourself repeatedly using `w-[16px]`, that's `w-4` and you should use the named utility instead.
+**A:** Arbitrary values let you use any CSS value within a utility class by wrapping it in square brackets — `w-[340px]`, `bg-[#1a2b3c]`, `h-[calc(100vh-56px)]`. Use them when the design requires a specific value not in Tailwind's default scale, when integrating with a third-party component that needs exact sizing, when referencing CSS custom properties (`bg-(--color-brand)`), or when using CSS functions like `calc()`, `min()`, `max()`, or `clamp()`. They should not be used as a way to avoid learning the scale — if you find yourself repeatedly using `w-[16px]`, that's `w-4` and you should use the named utility instead.
 
 ### Q2: How do you include a space inside an arbitrary value in Tailwind?
 

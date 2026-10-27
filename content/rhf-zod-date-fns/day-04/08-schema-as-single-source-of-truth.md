@@ -17,7 +17,7 @@ import { z } from 'zod'
 
 export const CreateUserSchema = z.object({
   username:  z.string().min(3, 'Min 3 characters').max(20),
-  email:     z.string().email('Invalid email'),
+  email:     z.email('Invalid email'),
   password:  z.string().min(8, 'Min 8 characters'),
   role:      z.enum(['admin', 'editor', 'viewer']).default('viewer'),
   birthYear: z.coerce.number().int().min(1900).max(2010)
@@ -33,10 +33,10 @@ export type CreateUserInput = z.input<typeof CreateUserSchema>
 'use client'
 import { useForm }           from 'react-hook-form'
 import { zodResolver }       from '@hookform/resolvers/zod'
-import { CreateUserSchema, CreateUser } from '@/lib/schemas/create-user'
+import { CreateUserSchema, CreateUser, CreateUserInput } from '@/lib/schemas/create-user'
 
 export default function CreateUserPage() {
-  const { register, handleSubmit, formState: { errors } } = useForm<CreateUser>({
+  const { register, handleSubmit, formState: { errors } } = useForm<CreateUserInput, unknown, CreateUser>({   // schema has .default() + coerce → input ≠ output
     resolver:      zodResolver(CreateUserSchema),
     defaultValues: { username: '', email: '', password: '', role: 'viewer' }
   })
@@ -47,13 +47,14 @@ export default function CreateUserPage() {
 ```tsx
 // ─── Usage 2: Next.js API Route (server)
 // src/app/api/users/route.ts
+import { z } from 'zod'
 import { CreateUserSchema } from '@/lib/schemas/create-user'
 
 export async function POST(req: Request) {
   const body   = await req.json()
   const result = CreateUserSchema.safeParse(body)
   if (!result.success) {
-    return Response.json({ errors: result.error.flatten() }, { status: 400 })
+    return Response.json({ errors: z.flattenError(result.error) }, { status: 400 })
   }
   // result.data is typed as CreateUser ✅
   await db.user.create({ data: result.data })
@@ -65,13 +66,14 @@ export async function POST(req: Request) {
 // ─── Usage 3: Server Action (Next.js)
 // src/app/actions/create-user.ts
 'use server'
+import { z } from 'zod'
 import { CreateUserSchema } from '@/lib/schemas/create-user'
 
 export async function createUserAction(formData: FormData) {
   const raw    = Object.fromEntries(formData)
   const result = CreateUserSchema.safeParse(raw)
   if (!result.success) {
-    return { errors: result.error.flatten() }
+    return { errors: z.flattenError(result.error) }
   }
   await db.user.create({ data: result.data })
   return { success: true }
@@ -115,10 +117,10 @@ export const PublicRegisterSchema  = CreateUserSchema.omit({ role: true })
 ```ts
 // ❌ Two schemas for the same data — they drift apart
 // src/components/user-form.tsx
-const FormSchema = z.object({ email: z.string().email(), age: z.coerce.number().min(18) })
+const FormSchema = z.object({ email: z.email(), age: z.coerce.number().min(18) })
 
 // src/app/api/users/route.ts
-const ApiSchema = z.object({ email: z.string().email(), age: z.number().min(16) })
+const ApiSchema = z.object({ email: z.email(), age: z.number().min(16) })
 // ← min(16) vs min(18) — different rules, both "valid"
 ```
 
@@ -126,7 +128,7 @@ const ApiSchema = z.object({ email: z.string().email(), age: z.number().min(16) 
 
 ```ts
 // src/lib/schemas/user.ts
-export const UserSchema = z.object({ email: z.string().email(), age: z.coerce.number().min(18) })
+export const UserSchema = z.object({ email: z.email(), age: z.coerce.number().min(18) })
 // Both form AND API import from here — one rule, always consistent
 ```
 
@@ -136,7 +138,7 @@ export const UserSchema = z.object({ email: z.string().email(), age: z.coerce.nu
 
 ### Challenge
 
-Create a shared `ContactFormSchema` in `src/lib/schemas/contact.ts`. Use it in: (1) a client-side `<ContactForm>` component with `zodResolver`, and (2) a mock API route `POST /api/contact` that validates with `safeParse` and returns `400` with `flatten()` on failure. Prove both use the same schema by updating one rule and noting it changes in both.
+Create a shared `ContactFormSchema` in `src/lib/schemas/contact.ts`. Use it in: (1) a client-side `<ContactForm>` component with `zodResolver`, and (2) a mock API route `POST /api/contact` that validates with `safeParse` and returns `400` with `z.flattenError()` on failure. Prove both use the same schema by updating one rule and noting it changes in both.
 
 ### Solution
 
@@ -146,9 +148,9 @@ import { z } from 'zod'
 
 export const ContactFormSchema = z.object({
   name:    z.string().min(2, 'Name must be at least 2 characters'),
-  email:   z.string().email('Invalid email address'),
+  email:   z.email('Invalid email address'),
   subject: z.enum(['support', 'sales', 'general'], {
-             errorMap: () => ({ message: 'Please select a subject' })
+             error: 'Please select a subject'   // Zod 3: errorMap: () => ({ message })
            }),
   message: z.string().min(20, 'Message must be at least 20 characters').max(1000)
 })
@@ -221,6 +223,7 @@ export function ContactForm() {
 
 ```ts
 // src/app/api/contact/route.ts — server usage of the SAME schema
+import { z } from 'zod'
 import { ContactFormSchema } from '@/lib/schemas/contact'
 
 export async function POST(req: Request) {
@@ -229,7 +232,7 @@ export async function POST(req: Request) {
 
   if (!result.success) {
     return Response.json(
-      { errors: result.error.flatten().fieldErrors },
+      { errors: z.flattenError(result.error).fieldErrors },
       { status: 400 }
     )
   }
@@ -268,19 +271,19 @@ export async function POST(req: Request) {
 SETUP
   npm install @hookform/resolvers
   import { zodResolver } from '@hookform/resolvers/zod'
-  useForm<z.infer<typeof Schema>>({ resolver: zodResolver(Schema) })
+  useForm({ resolver: zodResolver(Schema) })     // types inferred from the resolver
   → remove ALL rules from register() — schema owns validation
 
 ZODRESOLVER FLOW
   submit → schema.safeParse(formValues)
-    success → onValid(data)          data is typed as z.infer<Schema>
+    success → onValid(data)          data is typed as z.output<Schema> (= z.infer)
     failure → maps ZodIssue[] to formState.errors
               issue.path → errors.field.subfield[0].name
 
 TYPED FORM VALUES
-  type FormType = z.infer<typeof Schema>      output type (after parse)
-  type FormInput = z.input<typeof Schema>     input type (before transforms)
-  useForm<FormType>({ resolver })
+  type FormOutput = z.output<typeof Schema>   output type (after parse) = z.infer
+  type FormInput  = z.input<typeof Schema>    input type (before coerce/default/transform)
+  useForm<FormInput, unknown, FormOutput>({ resolver })   (single generic only if input === output)
   register('field')  → type-safe ✅
   errors.field       → type-safe ✅
   setValue('field', wrongType) → TypeScript error ✅
@@ -288,7 +291,7 @@ TYPED FORM VALUES
 COERCION (HTML inputs → always strings)
   z.coerce.number()   "42" → 42   (replaces valueAsNumber)
   z.coerce.date()     "2024-01-01" → Date (replaces valueAsDate)
-  z.coerce.boolean()  "true" → true
+  z.coerce.boolean()  Boolean(x): "false" → true ⚠️ (checkbox via register is already boolean → z.boolean())
   Empty string fix:   z.preprocess(v => v === '' ? undefined : v, z.coerce.number().optional())
   Checkbox fix:       z.preprocess(v => v === 'on' || v === true, z.boolean())
 
@@ -300,21 +303,22 @@ TRANSFORMS vs PREPROCESS
 
 ERROR MESSAGES
   .min(n, 'message')                    per-rule string
-  .email({ message: '...' })            per-rule object
-  z.string({ required_error: '...' })   when undefined
-  z.string({ invalid_type_error: '...' }) when wrong type
-  z.setErrorMap(fn)                     global override (i18n)
+  .min(n, { error: '...' })             per-rule object (Zod 3: { message })
+  z.string({ error: iss => iss.input === undefined ? 'Required' : 'Wrong type' })
+                                        replaces required_error / invalid_type_error
+  z.config({ customError: fn })         global override (i18n) (Zod 3: z.setErrorMap)
 
 ERROR PATH MAPPING
   ZodIssue.path → RHF errors path
   path: ['email']          → errors.email
   path: ['address','city'] → errors.address?.city
   path: ['items', 0, 'qty']→ errors.items?.[0]?.qty
-  path: []                 → errors.root
+  path: []                 → errors[''] (NOT errors.root — invisible in the UI)
+  path: ['root']           → errors.root (explicit form-level error)
   ALWAYS set path in .refine() for inline field errors
 
 CROSS-FIELD VALIDATION
-  .refine(fn, { message, path })        single rule, one error
+  .refine(fn, { error, path })          single rule, one error (Zod 3: message)
   .refine chaining                       all run — multiple errors visible
   .superRefine((data, ctx) => {          multiple issues, multiple paths
     ctx.addIssue({ code, message, path })

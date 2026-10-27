@@ -79,16 +79,15 @@ model User {
 
 ```prisma
 // ── @@schema — PostgreSQL schema (namespace) placement ────────────────────
-// Requires multiSchema preview feature
+// multiSchema is GA since Prisma 6.13 — no previewFeatures flag needed (was a preview flag before)
 
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["multiSchema"]
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
   schemas  = ["public", "auth", "billing"]  // declare all schemas used
 }
 
@@ -213,13 +212,12 @@ Create a schema for a multi-tenant SaaS app using two PostgreSQL schemas: `publi
 // prisma/schema.prisma
 
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["multiSchema"]
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
   schemas  = ["public", "tenant"]
 }
 

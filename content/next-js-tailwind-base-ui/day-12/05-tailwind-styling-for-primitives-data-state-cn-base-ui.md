@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-Base UI components emit `data-state`, `data-highlighted`, `data-disabled`, `data-checked`, `data-selected`, `data-placeholder`, `data-open`, and `data-popup-open` attributes. Every visual state is driven by these attributes via Tailwind's `data-[]:` variants — no JavaScript-driven class toggling needed.
+Base UI components emit `data-open`, `data-closed`, `data-highlighted`, `data-disabled`, `data-checked`, `data-selected`, `data-placeholder`, and `data-popup-open` attributes. (Base UI has no Radix-style `data-state="open"`; open/closed are separate boolean attributes.) Every visual state is driven by these attributes via Tailwind's `data-[]:` variants — no JavaScript-driven class toggling needed.
 
 ---
 
@@ -13,10 +13,10 @@ Base UI components emit `data-state`, `data-highlighted`, `data-disabled`, `data
 ### Complete `data-*` Attribute Reference
 
 ```tsx
-{/* ─── data-state: open/closed — floating components */}
-<Popover.Popup  className="data-[state=open]:animate-in data-[state=closed]:animate-out">
-<Dialog.Popup   className="data-[state=open]:opacity-100 data-[state=closed]:opacity-0">
-<Menu.Popup     className="data-[state=closed]:hidden">
+{/* ─── data-open / data-closed — floating components (boolean attributes, no data-state) */}
+<Popover.Popup  className="data-[open]:animate-in data-[closed]:animate-out">
+<Dialog.Popup   className="data-[open]:opacity-100 data-[closed]:opacity-0">
+<Menu.Popup     className="data-[closed]:hidden">
 
 {/* ─── data-[starting-style] / data-[ending-style] — animation hooks */}
 {/* Set initial state (before open animation starts) */}
@@ -43,8 +43,8 @@ Base UI components emit `data-state`, `data-highlighted`, `data-disabled`, `data
   data-[disabled]:pointer-events-none
 ">
 
-{/* ─── data-selected: true — selected option in Select */}
-<Select.Option className="
+{/* ─── data-selected: true — selected item in Select */}
+<Select.Item className="
   data-[selected]:font-semibold
   data-[selected]:text-blue-700
   data-[selected]:bg-blue-50
@@ -85,7 +85,7 @@ export const POPUP_BASE = [
 
 export const POPUP_TRANSITION = [
   "transition-all duration-200 ease-out",
-  "origin-[--transform-origin]",
+  "origin-(--transform-origin)",
   "data-[starting-style]:opacity-0 data-[starting-style]:scale-95",
   "data-[ending-style]:opacity-0 data-[ending-style]:scale-95",
 ].join(" ");
@@ -129,7 +129,7 @@ import {
   ITEM_HIGHLIGHTED,
   ITEM_DISABLED,
 } from "@/lib/base-ui-styles";
-import * as Menu from "@base-ui/react/menu";
+import { Menu } from "@base-ui/react/menu";
 
 // ─── Compose with cn() — base + shared constants + one-off overrides
 function MenuItem({
@@ -171,23 +171,23 @@ function MenuItem({
 
 ### Q1: How does Base UI communicate state to your Tailwind styles, and why is this better than JavaScript class toggling?
 
-**A:** Base UI sets `data-*` attributes on rendered elements whenever state changes — `data-state="open"` when a popover opens, `data-highlighted` on the currently focused menu item, `data-checked` when a switch is on. Tailwind's `data-[state=open]:` and `data-[highlighted]:` variants respond to these attributes purely in CSS. This is better than JavaScript class toggling (`setIsHighlighted(true)`) because it avoids React re-renders on every hover/focus event, produces more predictable behaviour (CSS transitions are synchronised with the browser's render cycle), is serialisable as HTML for SSR, and is testable via `getByRole` + attribute assertions without needing to inspect React state.
+**A:** Base UI sets `data-*` attributes on rendered elements whenever state changes — `data-open` when a popover opens, `data-highlighted` on the currently focused menu item, `data-checked` when a switch is on. Tailwind's `data-[open]:` and `data-[highlighted]:` variants respond to these attributes purely in CSS. This is better than JavaScript class toggling (`setIsHighlighted(true)`) because it avoids React re-renders on every hover/focus event, produces more predictable behaviour (CSS transitions are synchronised with the browser's render cycle), is serialisable as HTML for SSR, and is testable via `getByRole` + attribute assertions without needing to inspect React state.
 
 ---
 
 ## C — Common Pitfalls + Fix
 
-### ❌ Pitfall: Using `data-[state=open]:` for close animation — popup disappears instantly
+### ❌ Pitfall: Using `data-[open]:` for close animation — popup disappears instantly
 
 ```tsx
-{/* ❌ When closed, data-state="closed" — the data-[state=open]: class is removed */}
+{/* ❌ When closed, data-open is removed — the data-[open]: class stops applying */}
 {/* The popup immediately loses all open styles — no exit animation */}
 <Popover.Popup className="
-  data-[state=open]:opacity-100 data-[state=open]:scale-100
+  data-[open]:opacity-100 data-[open]:scale-100
   opacity-0 scale-95
   transition-all duration-200
 ">
-{/* When closing: data-state switches from open→closed BEFORE transition ends */}
+{/* When closing: data-open is swapped for data-closed BEFORE transition ends */}
 {/* opacity-0 scale-95 applies instantly — transition doesn't run ❌ */}
 ```
 
@@ -216,7 +216,7 @@ Build a styled `<HighlightableItem>` that demonstrates ALL Base UI data attribut
 
 ```tsx
 // src/components/ui/highlightable-item.tsx
-import * as Select from "@base-ui/react/select";
+import { Select } from "@base-ui/react/select";
 import { cn } from "@/lib/cn";
 
 interface HighlightableItemProps {
@@ -233,7 +233,7 @@ export function HighlightableItem({
   icon,
 }: HighlightableItemProps) {
   return (
-    <Select.Option
+    <Select.Item
       value={value}
       disabled={disabled}
       className={cn(
@@ -276,7 +276,9 @@ export function HighlightableItem({
       )}
 
       {/* Label */}
-      <span className="flex-1 min-w-0 truncate">{children}</span>
+      <Select.ItemText className="flex-1 min-w-0 truncate">
+        {children}
+      </Select.ItemText>
 
       {/* Selected checkmark — shown via data-[selected] */}
       <span
@@ -286,7 +288,7 @@ export function HighlightableItem({
       >
         ✓
       </span>
-    </Select.Option>
+    </Select.Item>
   );
 }
 ```

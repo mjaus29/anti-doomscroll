@@ -32,7 +32,7 @@ Base UI automatically manages the accessibility layer — ARIA roles, `aria-expa
 //   role="menuitem"
 //   aria-disabled="true/false"
 
-// Select.Option gets:
+// Select.Item gets:
 //   role="option"
 //   aria-selected="true/false"
 
@@ -217,7 +217,7 @@ Build an accessible `<IconButton>` wrapper that:
 
 ```tsx
 // src/components/ui/icon-button.tsx
-import * as Popover from '@base-ui/react/popover'
+import { Popover } from '@base-ui/react/popover'
 import { cn }       from '@/lib/cn'
 
 interface IconButtonProps

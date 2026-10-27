@@ -55,14 +55,14 @@ function SignupForm() {
 // ─── Strategy 2: async .refine in Zod schema (submit-time validation)
 // zodResolver calls safeParseAsync automatically — async refine works
 const AsyncEmailSchema = z.object({
-  email: z.string().email()
+  email: z.email()
 }).refine(
   async data => {
     const exists = await fetch(`/api/check-email?email=${data.email}`)
       .then(r => r.json()).then(d => d.exists)
     return !exists
   },
-  { message: 'Email is already registered', path: ['email'] }
+  { error: 'Email is already registered', path: ['email'] }
 )
 
 // zodResolver handles async schemas automatically — no special config

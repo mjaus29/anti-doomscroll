@@ -49,6 +49,7 @@ export const getUser = cache(async (id) =>
 ```tsx
 // Scope: Persistent across requests (survives server restarts in production)
 // What: stores fetch() response bodies
+// NOTE: opt-in since Next.js 15 — a bare fetch(url) is not stored; use cache: 'force-cache' or next.revalidate / next.tags
 // Duration: until revalidated or cache is explicitly cleared
 // Location: server-side (Next.js data cache store)
 

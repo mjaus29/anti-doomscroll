@@ -162,8 +162,8 @@ export const getUser = cache(async (id: string) => {
 });
 
 // ─── Level 2: fetch() cache options — HTTP-level caching
-// Static: cached indefinitely (default for fetch in Server Components)
-const data = await fetch(url);
+// Static: cached indefinitely (opt-in with force-cache; a bare fetch(url) is NOT cached since Next 15)
+const data = await fetch(url, { cache: "force-cache" });
 
 // ISR: cached, revalidated after N seconds
 const data = await fetch(url, { next: { revalidate: 3600 } });
@@ -214,7 +214,7 @@ export function HeroImage() {
       alt="Hero"
       width={1200}
       height={600}
-      priority // ← disables lazy loading, adds <link rel="preload">
+      preload // ← disables lazy loading, adds <link rel="preload">
       // Use for LCP (Largest Contentful Paint) image only
     />
   );
@@ -278,7 +278,7 @@ export default function RootLayout({ children }) {
 
 ```
 LCP (Largest Contentful Paint) — target: < 2.5s
-  ✅ Add priority to above-the-fold <Image>
+  ✅ Add preload to above-the-fold <Image>
   ✅ Use ISR/Static for content pages — CDN delivery
   ✅ Preload critical fonts with next/font
   ✅ Use Suspense to stream page shell quickly
@@ -334,7 +334,7 @@ function sendToAnalytics(metric: { name: string; value: number; id: string }) {
 
 - JavaScript bundle size is the single biggest performance lever for most Next.js apps — every KB of unnecessary JS delays Time to Interactive (TTI) and blocks the main thread from responding to user input.
 - Hydration mismatches cause visible UI flickers and React warnings in production — they happen when server-rendered HTML doesn't match what React tries to render in the browser, forcing React to throw away the server HTML and re-render from scratch.
-- `priority` on the LCP image is a one-line change that can move LCP from 3s to 1.5s — it adds a `<link rel="preload">` to the HTML so the browser fetches the image before parsing JavaScript.
+- `preload` on the LCP image is a one-line change that can move LCP from 3s to 1.5s — it adds a `<link rel="preload">` to the HTML so the browser fetches the image before parsing JavaScript.
 - Understanding the build output (○ vs ƒ) and using bundle analyzer are the two tools that reveal real-world performance issues — code review alone won't show you that a small `'use client'` addition tripled a route's bundle size.
 
 ---
@@ -349,9 +349,9 @@ function sendToAnalytics(metric: { name: string; value: number; id: string }) {
 
 **A:** A hydration mismatch occurs when the HTML rendered on the server doesn't match what React renders in the browser during hydration. Common causes: using `new Date()`, `Math.random()`, or `window` values directly in render (values differ between server and browser runtime); browser extensions injecting attributes into the DOM; third-party libraries that modify the DOM before hydration. Fix: use `useEffect` to set browser-only values after mount (the component renders with a safe server-compatible initial state, then updates client-side in `useEffect`). For `<html>` attribute mismatches from extensions, add `suppressHydrationWarning` to the `<html>` element.
 
-### Q3: What is the `priority` prop in `next/image` and when should you use it?
+### Q3: What is the `preload` prop in `next/image` and when should you use it?
 
-**A:** `priority` disables lazy loading for an image and adds a `<link rel="preload">` to the page's `<head>`, telling the browser to fetch the image as early as possible — before JavaScript is even parsed. Use it exclusively for the LCP (Largest Contentful Paint) element — typically the hero image or the main product image above the fold. Using `priority` on every image defeats its purpose (the browser's preload queue has limited capacity). Only one or two images per page should have `priority`. Without it, an above-the-fold image is lazy-loaded, causing a visible delay in the LCP metric.
+**A:** `preload` disables lazy loading for an image and adds a `<link rel="preload">` to the page's `<head>`, telling the browser to fetch the image as early as possible — before JavaScript is even parsed. Use it exclusively for the LCP (Largest Contentful Paint) element — typically the hero image or the main product image above the fold. Using `preload` on every image defeats its purpose (the browser's preload queue has limited capacity). Only one or two images per page should have `preload`. Without it, an above-the-fold image is lazy-loaded, causing a visible delay in the LCP metric. (Before Next.js 16 this prop was called `priority`; it is deprecated but still works.)
 
 ---
 
@@ -404,10 +404,10 @@ const RevenueChart = dynamic(() => import("./_components/revenue-chart"), {
 </div>
 ```
 
-### ❌ Pitfall: Using `priority` on every image
+### ❌ Pitfall: Using `preload` on every image
 
 ```tsx
-// ❌ All images have priority — browser tries to preload all of them
+// ❌ All images have preload — browser tries to preload all of them
 // Defeats the purpose — preload queue is limited
 {
   products.map((p) => (
@@ -417,13 +417,13 @@ const RevenueChart = dynamic(() => import("./_components/revenue-chart"), {
       alt={p.name}
       width={400}
       height={400}
-      priority
-    /> // ← ALL marked priority
+      preload
+    /> // ← ALL marked preload
   ));
 }
 ```
 
-**Fix:** Only the LCP element gets `priority`:
+**Fix:** Only the LCP element gets `preload`:
 
 ```tsx
 // ✅ Only the first/hero image above the fold
@@ -435,7 +435,7 @@ const RevenueChart = dynamic(() => import("./_components/revenue-chart"), {
       alt={p.name}
       width={400}
       height={400}
-      priority={index === 0} // ← only the first image ✅
+      preload={index === 0} // ← only the first image ✅
     />
   ));
 }
@@ -512,7 +512,7 @@ export const getUser = cache(async (id: string) => {
 
 Build a fully optimized `/products` route that scores well on all Core Web Vitals:
 
-1. **LCP** — hero banner image with `priority` + `next/image`
+1. **LCP** — hero banner image with `preload` + `next/image`
 2. **Bundle size** — `ProductCard` is a Server Component, `QuickViewButton` is a tiny Client Component with `next/dynamic` lazy loading its modal
 3. **CLS prevention** — skeleton dimensions match real content; image has explicit dimensions
 4. **TTFB** — ISR with `revalidate = 1800`; `Promise.all` for parallel data fetching
@@ -625,10 +625,10 @@ interface Product {
 
 export function ProductCard({
   product,
-  priority = false,
+  preload = false,
 }: {
   product: Product;
-  priority?: boolean;
+  preload?: boolean;
 }) {
   return (
     <div
@@ -645,7 +645,7 @@ export function ProductCard({
                  (max-width: 1024px) 50vw,
                  25vw"
           className="object-cover"
-          priority={priority} // ← only true for first visible card (LCP)
+          preload={preload} // ← only true for first visible card (LCP)
         />
       </div>
       <div className="p-4">
@@ -758,8 +758,8 @@ export default async function ProductsPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
-      {/* ─── LCP element: hero banner image with priority ──────────────────── */}
-      {/* priority adds <link rel="preload"> → faster LCP                       */}
+      {/* ─── LCP element: hero banner image with preload ──────────────────── */}
+      {/* preload adds <link rel="preload"> → faster LCP                       */}
       {/* ✅ CLS: explicit width/height reserved before image loads              */}
       <div className="relative rounded-2xl overflow-hidden mb-10">
         <Image
@@ -767,7 +767,7 @@ export default async function ProductsPage() {
           alt={hero.headline}
           width={1200}
           height={400}
-          priority // ← LCP image: disable lazy loading ✅
+          preload // ← LCP image: disable lazy loading ✅
           className="w-full object-cover rounded-2xl"
         />
         {/* Text overlay — part of static HTML, no layout shift */}
@@ -815,7 +815,7 @@ export default async function ProductsPage() {
             <ProductCard
               key={product.id}
               product={product}
-              priority={index < 4} // ← first 4 cards: priority (above fold)
+              preload={index < 4} // ← first 4 cards: preload (above fold)
               // ← remaining: lazy loaded ✅
             />
           ))}
@@ -828,7 +828,7 @@ export default async function ProductsPage() {
 /*
   Core Web Vitals optimization breakdown:
   ─────────────────────────────────────────────────────────────────────────────
-  LCP   → hero image has priority → preloaded → sub-2s LCP ✅
+  LCP   → hero image has preload → preloaded → sub-2s LCP ✅
   CLS   → Image fill with aspect-square container → no shift ✅
           skeleton matches card dimensions exactly → no shift on load ✅
           next/font (in layout) → no font swap shift ✅
@@ -943,7 +943,7 @@ WHAT TRIGGERS DYNAMIC RENDERING
   → export const dynamic = 'force-dynamic'
 
 CACHE CONTROL
-  fetch(url)                           → cached (default)
+  fetch(url, {cache:'force-cache'})    → cached (opt-in; bare fetch(url) is uncached since Next 15)
   fetch(url, {next:{revalidate:N}})    → ISR
   fetch(url, {next:{tags:['tag']}})    → tagged (on-demand)
   fetch(url, {cache:'no-store'})       → no cache (always fresh)
@@ -962,7 +962,7 @@ PERFORMANCE CHECKLIST
   ✅ 'use client' as deep as possible
   ✅ next/dynamic for heavy optional components
   ✅ ssr:false for browser-only libraries
-  ✅ priority on LCP image only
+  ✅ preload on LCP image only
   ✅ width + height (or fill) on all images
   ✅ next/font — zero layout shift, zero external requests
   ✅ Promise.all for parallel Server Component fetches

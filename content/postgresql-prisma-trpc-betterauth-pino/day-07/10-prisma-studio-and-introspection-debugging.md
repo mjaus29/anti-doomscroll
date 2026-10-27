@@ -106,7 +106,7 @@ ORDER BY finished_at ASC;
 # Check for schema drift (DB vs schema.prisma)
 npx prisma migrate diff \
   --from-schema-datasource prisma/schema.prisma \
-  --to-schema-datamodel    prisma/schema.prisma \
+  --to-schema    prisma/schema.prisma \
   --script
 # No output = no drift ✅
 ```
@@ -148,7 +148,7 @@ npx prisma validate && git add prisma/schema.prisma
 
 ```typescript
 // ── Debugging Prisma Client queries — enable query logging ────────────────
-const prisma = new PrismaClient({
+const prisma = new PrismaClient({ adapter,
   log: [
     { emit: "event", level: "query" },
     { emit: "stdout", level: "error" },
@@ -165,7 +165,7 @@ prisma.$on("query", (e) => {
 });
 
 // Or simpler: log all to stdout
-const prismaDebug = new PrismaClient({
+const prismaDebug = new PrismaClient({ adapter,
   log: ["query", "info", "warn", "error"],
 });
 
@@ -187,7 +187,7 @@ const prismaDebug = new PrismaClient({
 
 ### Q: How do you diagnose and fix an N+1 query problem introduced by Prisma?
 
-**A:** Enable query logging: `new PrismaClient({ log: ['query'] })`. Then load a page and watch the console — if you see one query followed by N identical queries with different IDs, that's N+1. The fix in Prisma is to add `include` or `select` with nested relations to the original query, so Prisma fetches everything in a single JOIN (with `relationJoins` preview feature) or two queries (default: one for parents, one bulk query for all children using `IN (ids)`). For example: `prisma.post.findMany({ include: { author: true } })` — instead of fetching 100 posts and then querying each author, Prisma fetches all posts, collects the unique `authorId` values, and fetches all matching users in one `WHERE id IN (...)` query.
+**A:** Enable query logging: `new PrismaClient({ adapter, log: ['query'] })`. Then load a page and watch the console — if you see one query followed by N identical queries with different IDs, that's N+1. The fix in Prisma is to add `include` or `select` with nested relations to the original query, so Prisma fetches everything in a single JOIN (with `relationJoins` preview feature) or two queries (default: one for parents, one bulk query for all children using `IN (ids)`). For example: `prisma.post.findMany({ include: { author: true } })` — instead of fetching 100 posts and then querying each author, Prisma fetches all posts, collects the unique `authorId` values, and fetches all matching users in one `WHERE id IN (...)` query.
 
 ---
 
@@ -262,7 +262,7 @@ check "Migrations up to date" npx prisma migrate status 2>/dev/null
 check "No schema drift" bash -c '
   DIFF=$(npx prisma migrate diff \
     --from-schema-datasource prisma/schema.prisma \
-    --to-schema-datamodel prisma/schema.prisma \
+    --to-schema prisma/schema.prisma \
     --script 2>&1)
   [ -z "$DIFF" ]
 '
@@ -278,7 +278,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 ```typescript
 // src/lib/prisma.ts — singleton with dev logging + health check
 
-import { PrismaClient, Prisma } from "@prisma/client";
+import { PrismaClient, Prisma } from "@/generated/prisma/client";
 
 function createPrismaClient() {
   const logConfig: Prisma.PrismaClientOptions["log"] =
@@ -290,7 +290,7 @@ function createPrismaClient() {
         ]
       : [{ emit: "stdout", level: "error" }];
 
-  const client = new PrismaClient({ log: logConfig });
+  const client = new PrismaClient({ adapter, log: logConfig });
 
   if (process.env.NODE_ENV === "development") {
     // Log slow queries (> 200ms) to help catch N+1 in development

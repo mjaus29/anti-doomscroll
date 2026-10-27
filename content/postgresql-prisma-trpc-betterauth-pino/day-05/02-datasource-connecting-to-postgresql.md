@@ -4,20 +4,44 @@
 
 ## T — TL;DR
 
-The `datasource` block tells Prisma which database engine to use and how to connect to it. For PostgreSQL, the `provider` is `"postgresql"` and the `url` is a connection string — always loaded from an environment variable, never hard-coded. The `directUrl` and `shadowDatabaseUrl` fields are used for connection pooling (PgBouncer) and migration workflows respectively.
+In Prisma 7 the `datasource` block only declares the engine (`provider = "postgresql"`). The connection string no longer lives in `schema.prisma`: the CLI reads it from `datasource.url` in `prisma.config.ts`, and your app passes a connection string to a driver adapter (`@prisma/adapter-pg`) when it builds `PrismaClient`. Always load it from an environment variable, never hard-code it. `url`, `directUrl` and `shadowDatabaseUrl` in the schema are removed in Prisma 7 (before Prisma 7 they were set in the datasource block).
 
 ---
 
 ## K — Key Concepts
 
 ```prisma
-// ── Basic datasource ───────────────────────────────────────────────────────
+// ── Basic datasource (Prisma 7) ────────────────────────────────────────────
+// prisma/schema.prisma
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // no url here in Prisma 7 — see prisma.config.ts
 }
+```
 
-// env("DATABASE_URL") reads from the .env file (or OS environment)
+```ts
+// prisma.config.ts — used by the Prisma CLI (migrate, db pull, studio)
+import 'dotenv/config'   // Prisma 7 does NOT load .env automatically
+import { defineConfig, env } from 'prisma/config'
+
+export default defineConfig({
+  schema: 'prisma/schema.prisma',
+  datasource: { url: env('DATABASE_URL') },
+})
+// Before Prisma 7: `url = env("DATABASE_URL")` inside the datasource block.
+```
+
+```ts
+// src/lib/prisma.ts — runtime connection goes through a driver adapter
+import { PrismaClient } from '@/generated/prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+export const prisma = new PrismaClient({ adapter })
+// The `datasources` / `datasourceUrl` constructor options were removed in Prisma 7.
+```
+
+```
 // .env file (never commit to git):
 // DATABASE_URL="postgresql://user:password@localhost:5432/mydb"
 ```
@@ -44,37 +68,43 @@ Examples:
   postgresql://user:pass@ep-name.region.aws.neon.tech/dbname?sslmode=require
 ```
 
-```prisma
-// ── directUrl — for connection poolers (PgBouncer, Supabase Pooler) ────────
-// PgBouncer in transaction mode doesn't support prepared statements
-// Prisma needs a direct (non-pooled) connection for migrations
-datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")        // pooled URL — used by Prisma Client at runtime
-  directUrl = env("DIRECT_DATABASE_URL") // direct URL — used for prisma migrate
-}
+```ts
+// ── Poolers (PgBouncer, Supabase Pooler): two URLs, two places ─────────────
+// PgBouncer in transaction mode can't run migrations reliably (DDL, SET, advisory locks),
+// so the CLI needs a DIRECT (non-pooled) connection, while the app can use the POOLED one.
+
+// prisma.config.ts → CLI (migrate, db pull) uses the direct URL
+export default defineConfig({
+  schema: 'prisma/schema.prisma',
+  datasource: {
+    url: env('DIRECT_DATABASE_URL'),          // direct, non-pooled
+    shadowDatabaseUrl: env('SHADOW_DATABASE_URL'), // optional, see below
+  },
+})
+
+// src/lib/prisma.ts → runtime uses the pooled URL via the adapter
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL }) // pooled
+export const prisma = new PrismaClient({ adapter })
+
+// Before Prisma 7 this was `url` (pooled) + `directUrl` (direct) in the datasource block.
+// In Prisma 7 the config `url` IS the direct one (the old `directUrl` role).
 
 // .env:
-// DATABASE_URL="postgresql://user:pass@pooler-host:6543/db?pgbouncer=true"
+// DATABASE_URL="postgresql://user:pass@pooler-host:6543/db"
 // DIRECT_DATABASE_URL="postgresql://user:pass@direct-host:5432/db"
 
-// When to use directUrl:
+// When to split the URLs:
 // ✅ Supabase with connection pooler enabled
 // ✅ PgBouncer in transaction/statement mode
 // ✅ Neon serverless (use pooled URL for app, direct for migrations)
 // ❌ Not needed for direct connections (local dev, Railway, Render without pooler)
 ```
 
-```prisma
+```ts
 // ── shadowDatabaseUrl — for development migration workflow ────────────────
 // Prisma needs a "shadow" database to safely calculate migration diffs
 // Usually only needed when the main DB user lacks CREATE DATABASE permission
-
-datasource db {
-  provider          = "postgresql"
-  url               = env("DATABASE_URL")
-  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
-}
+// Prisma 7: set it in prisma.config.ts → datasource.shadowDatabaseUrl (not in schema.prisma)
 
 // Shadow database is a temporary DB Prisma creates, applies all migrations to,
 // compares with the target DB, then drops it.
@@ -88,7 +118,6 @@ datasource db {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
   schemas  = ["public", "auth", "billing"]  // multi-schema support (Prisma 4.3+)
 }
 
@@ -105,15 +134,15 @@ model User {
 // ── provider options ───────────────────────────────────────────────────────
 // Prisma 7 supported providers:
 // "postgresql"  → PostgreSQL / CockroachDB
-// "mysql"       → MySQL / MariaDB / PlanetScale
+// "mysql"       → MySQL / MariaDB
 // "sqlite"      → SQLite (file-based, great for tests)
 // "sqlserver"   → Microsoft SQL Server / Azure SQL
-// "mongodb"     → MongoDB (different schema rules apply)
+// ("mongodb" is NOT supported by Prisma 7 yet — stay on Prisma 6 for MongoDB)
 
-// For testing — switch to SQLite without changing models:
+// Every provider needs a driver adapter at runtime in Prisma 7
+// (e.g. @prisma/adapter-pg for PostgreSQL, @prisma/adapter-better-sqlite3 for SQLite).
 datasource db {
   provider = "sqlite"
-  url      = "file:./test.db"
 }
 // Most scalar types work across providers — but @db. native types are provider-specific
 ```
@@ -121,7 +150,8 @@ datasource db {
 ```
 ── .env file setup ───────────────────────────────────────────────────────────
 
-Project root .env (loaded automatically by Prisma CLI):
+Project root .env (Prisma 7 does NOT load it for you — `import 'dotenv/config'`
+at the top of prisma.config.ts, or use Node's --env-file / Bun):
   DATABASE_URL="postgresql://postgres:postgres@localhost:5432/myapp_dev"
 
 Never commit .env to git:
@@ -139,17 +169,17 @@ Never commit .env to git:
 
 ## W — Why It Matters
 
-- Hardcoding the database URL in `schema.prisma` is a critical security mistake — connection strings contain credentials. `env("DATABASE_URL")` reads from environment at runtime so the secret lives only in `.env` (local) or a secrets manager (production).
-- The `directUrl` + `url` split is required when using connection poolers like PgBouncer or Supabase's pooler — Prisma Client uses the pooled URL for all runtime queries (efficient), while `prisma migrate` uses the direct URL (necessary because migrations require DDL statements that poolers can't handle in transaction mode).
+- Hardcoding the database URL in `schema.prisma` is a critical security mistake — connection strings contain credentials. `env('DATABASE_URL')` in `prisma.config.ts` (and `process.env.DATABASE_URL` in the adapter) reads from the environment so the secret lives only in `.env` (local) or a secrets manager (production).
+- Splitting the two URLs is required when using connection poolers like PgBouncer or Supabase's pooler — in Prisma 7 the adapter gets the pooled URL for all runtime queries (efficient), while `prisma.config.ts` gives the CLI the direct URL (necessary because migrations require DDL statements that poolers can't handle in transaction mode).
 - Using `?schema=public` in the connection string sets the PostgreSQL `search_path` — critical when your tables are in a non-default schema. Without it, Prisma may not find your tables even if they exist.
 
 ---
 
 ## I — Interview Q&A
 
-### Q: What is the difference between `url` and `directUrl` in a Prisma datasource?
+### Q: How do you handle pooled vs direct connection URLs in Prisma 7?
 
-**A:** `url` is the connection string Prisma Client uses at runtime for all database queries in your application — this is typically a pooled connection via PgBouncer or Supabase's connection pooler for performance and scalability. `directUrl` is a direct (non-pooled) connection string used exclusively by the Prisma CLI for schema migrations (`prisma migrate dev`, `prisma migrate deploy`). The distinction exists because connection poolers operating in transaction mode don't support PostgreSQL features that migrations require — specifically prepared statements and `SET` commands for session configuration. By separating the two URLs, you get pooled performance at runtime and reliable migration execution.
+**A:** The runtime connection string is passed to the driver adapter (`new PrismaPg({ connectionString })`) — typically a pooled connection via PgBouncer or Supabase's pooler for performance and scalability. The `datasource.url` in `prisma.config.ts` is used by the Prisma CLI for schema migrations (`prisma migrate dev`, `prisma migrate deploy`), so it should be the direct (non-pooled) connection. Before Prisma 7 this was the `url` / `directUrl` pair in the schema's datasource block. The distinction exists because connection poolers operating in transaction mode don't support PostgreSQL features that migrations require — specifically prepared statements and `SET` commands for session configuration. By separating the two, you get pooled performance at runtime and reliable migration execution.
 
 ---
 
@@ -157,22 +187,21 @@ Never commit .env to git:
 
 ### ❌ Hard-coding credentials in schema.prisma
 
-```prisma
+```ts
 // ❌ Credentials in source code — security incident waiting to happen
-datasource db {
-  provider = "postgresql"
-  url      = "postgresql://admin:supersecret123@prod-db.example.com:5432/myapp"
-}
+// prisma.config.ts
+export default defineConfig({
+  datasource: { url: 'postgresql://admin:supersecret123@prod-db.example.com:5432/myapp' },
+})
 ```
 
-**Fix:** Always use `env()`:
+**Fix:** Always read from the environment (in Prisma 7, in `prisma.config.ts` and the adapter, not in the schema):
 
-```prisma
+```ts
 // ✅ Credentials stay in .env (not committed to git)
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
+export default defineConfig({
+  datasource: { url: env('DATABASE_URL') },
+})
 ```
 
 ```
@@ -186,7 +215,7 @@ DATABASE_URL="postgresql://admin:supersecret123@prod-db.example.com:5432/myapp"
 
 ### Challenge
 
-Write a complete `datasource` configuration for a production Next.js app deployed on Vercel with a Supabase PostgreSQL database using the connection pooler. Requirements: (1) runtime queries use the pooled URL, (2) migrations use the direct URL, (3) both URLs come from environment variables, (4) include the correct connection string options for Supabase's pooler, (5) also write a `.env.example` file showing all required variables.
+Write a complete `datasource` configuration for a production Next.js app deployed on Vercel with a Supabase PostgreSQL database using the connection pooler. Requirements: (1) runtime queries use the pooled URL (through the `pg` driver adapter), (2) migrations use the direct URL (in `prisma.config.ts`), (3) both URLs come from environment variables, (4) use the correct Supabase pooler connection string and keep the serverless pool small, (5) also write a `.env.example` file showing all required variables.
 
 ### Solution
 
@@ -194,36 +223,55 @@ Write a complete `datasource` configuration for a production Next.js app deploye
 // prisma/schema.prisma
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
-  provider  = "postgresql"
-  // Pooled URL for runtime Prisma Client queries
-  // ?pgbouncer=true tells Prisma to disable prepared statements
-  // connection_limit=1 avoids connection exhaustion in serverless (Vercel)
-  url       = env("DATABASE_URL")
-
-  // Direct URL for prisma migrate — bypasses the pooler
-  directUrl = env("DIRECT_DATABASE_URL")
+  provider = "postgresql"
 }
+```
+
+```ts
+// prisma.config.ts — CLI: direct URL, bypasses the pooler
+import 'dotenv/config'
+import { defineConfig, env } from 'prisma/config'
+
+export default defineConfig({
+  schema: 'prisma/schema.prisma',
+  datasource: { url: env('DIRECT_DATABASE_URL') },
+})
+```
+
+```ts
+// src/lib/prisma.ts — runtime: pooled URL through the pg adapter
+import { PrismaClient } from '@/generated/prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,   // pooled (Supabase transaction mode)
+  max: 1,                                       // avoid connection exhaustion in serverless (Vercel)
+})
+export const prisma = new PrismaClient({ adapter })
+// Before Prisma 7 this was `?pgbouncer=true&connection_limit=1` on the URL — those are
+// Prisma-engine query params; the pg driver uses pool options such as `max` instead.
 ```
 
 ```bash
 # .env.example — commit this file (no real values)
 # ─── Supabase connection strings ─────────────────────────────────────────────
-# Pooled connection (used by Prisma Client at runtime)
+# Pooled connection (used by the pg adapter at runtime)
 # Find in: Supabase Dashboard → Settings → Database → Connection String → Transaction mode
-DATABASE_URL="postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
+DATABASE_URL="postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres"
 
-# Direct connection (used by prisma migrate only)
+# Direct connection (used by prisma.config.ts / prisma migrate only)
 # Find in: Supabase Dashboard → Settings → Database → Connection String → Session mode
 DIRECT_DATABASE_URL="postgresql://postgres.[project-ref]:[password]@db.[project-ref].supabase.co:5432/postgres"
 ```
 
 ```bash
 # .env — your actual values (never commit)
-DATABASE_URL="postgresql://postgres.abcdefghijklm:MyPassword123@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
+DATABASE_URL="postgresql://postgres.abcdefghijklm:MyPassword123@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
 DIRECT_DATABASE_URL="postgresql://postgres.abcdefghijklm:MyPassword123@db.abcdefghijklm.supabase.co:5432/postgres"
 ```
 

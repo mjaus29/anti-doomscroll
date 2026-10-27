@@ -31,7 +31,7 @@ Environment variables in Next.js 16 follow strict rules: **only `NEXT_PUBLIC_` p
 
 ```bash
 # ─── Category 1: SERVER-ONLY (no NEXT_PUBLIC_ prefix)
-# Available in: Server Components, Server Actions, Route Handlers, Middleware
+# Available in: Server Components, Server Actions, Route Handlers, Proxy
 # NOT available in: Client Components, browser console, network requests
 
 DATABASE_URL="postgresql://user:password@localhost:5432/acme"
@@ -279,7 +279,7 @@ export const env = createEnv({
 // Client Components      → process.env.DATABASE_URL ❌ (undefined)
 // Server Actions         → process.env.DATABASE_URL ✅
 // Route Handlers         → process.env.DATABASE_URL ✅
-// Middleware             → process.env.DATABASE_URL ✅
+// Proxy             → process.env.DATABASE_URL ✅
 // next.config.ts         → process.env.DATABASE_URL ✅
 //
 // ─── Edge Runtime limitation:
@@ -309,7 +309,7 @@ export const env = createEnv({
 
 ### Q1: What is the difference between a regular env var and a `NEXT_PUBLIC_` env var in Next.js?
 
-**A:** Regular environment variables (without the `NEXT_PUBLIC_` prefix) are only available in server-side code — Server Components, Server Actions, Route Handlers, and Middleware. They are never included in the client-side JavaScript bundle. `NEXT_PUBLIC_` prefixed variables are inlined into the client JavaScript bundle at build time — they're accessible everywhere, including Client Components and the browser console. The practical rule: database URLs, API secret keys, JWT secrets, and anything sensitive must never have the `NEXT_PUBLIC_` prefix. Only put values in `NEXT_PUBLIC_` that you're comfortable with every user seeing in their browser DevTools.
+**A:** Regular environment variables (without the `NEXT_PUBLIC_` prefix) are only available in server-side code — Server Components, Server Actions, Route Handlers, and Proxy. They are never included in the client-side JavaScript bundle. `NEXT_PUBLIC_` prefixed variables are inlined into the client JavaScript bundle at build time — they're accessible everywhere, including Client Components and the browser console. The practical rule: database URLs, API secret keys, JWT secrets, and anything sensitive must never have the `NEXT_PUBLIC_` prefix. Only put values in `NEXT_PUBLIC_` that you're comfortable with every user seeing in their browser DevTools.
 
 ### Q2: Why should you validate environment variables with Zod at startup rather than at the point of use?
 

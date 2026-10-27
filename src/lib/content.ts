@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { createLessonUpdateKey, type LessonUpdate } from './lesson-updates';
 
 const CONTENT_ROOT = path.join(process.cwd(), 'content');
 
@@ -456,6 +457,75 @@ export function getCheatsheet(groupId: string): GroupCheatsheet | null {
 
 	cheatsheetCache.set(groupId, cheatsheet);
 	return cheatsheet;
+}
+
+let cachedLessonUpdates: LessonUpdate[] | null = null;
+
+function parseGroupUpdates(group: TechGroup): LessonUpdate[] {
+	const filePath = path.join(CONTENT_ROOT, group.id, 'updates.json');
+	if (!fs.existsSync(filePath)) return [];
+
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+	} catch {
+		console.warn(`[content] Ignoring invalid ${filePath}`);
+		return [];
+	}
+
+	const entries = (parsed as { updates?: unknown })?.updates;
+	if (!Array.isArray(entries)) return [];
+
+	return entries.flatMap((entry): LessonUpdate[] => {
+		const candidate = entry as Record<string, unknown>;
+		const lesson = typeof candidate.lesson === 'string' ? candidate.lesson : '';
+		const match = /^day-(\d+)\/(.+)$/.exec(lesson);
+		const day = match ? group.days.find((d) => d.id === match[1]) : undefined;
+		const topic = day?.topics.find((t) => t.id === match?.[2]);
+		const date = typeof candidate.date === 'string' ? candidate.date : '';
+		const summary = typeof candidate.summary === 'string' ? candidate.summary.trim() : '';
+
+		// Skip entries that point at a missing lesson rather than linking nowhere.
+		if (!day || !topic || !date || !summary) return [];
+
+		return [
+			{
+				key: createLessonUpdateKey(group.id, lesson, date),
+				groupId: group.id,
+				groupTitle: group.title,
+				dayId: day.id,
+				topicId: topic.id,
+				topicTitle: topic.title,
+				href: `/group/${group.id}/day/${day.id}/${topic.id}`,
+				date,
+				kind: candidate.kind === 'correction' ? 'correction' : 'outdated',
+				summary,
+				changes: Array.isArray(candidate.changes)
+					? candidate.changes.filter((c): c is string => typeof c === 'string' && c.trim() !== '')
+					: [],
+			},
+		];
+	});
+}
+
+/** All lesson updates, newest first, then in curriculum order. */
+export function getLessonUpdates(): LessonUpdate[] {
+	if (process.env.NODE_ENV === 'production' && cachedLessonUpdates) {
+		return cachedLessonUpdates;
+	}
+
+	const updates = getAllGroups()
+		.flatMap((group) => parseGroupUpdates(group))
+		.sort((left, right) => right.date.localeCompare(left.date));
+
+	cachedLessonUpdates = updates;
+	return updates;
+}
+
+export function getTopicUpdates(groupId: string, dayId: string, topicId: string): LessonUpdate[] {
+	return getLessonUpdates().filter(
+		(update) => update.groupId === groupId && update.dayId === dayId && update.topicId === topicId
+	);
 }
 
 export function getAllDays(groupId?: string): Day[] {

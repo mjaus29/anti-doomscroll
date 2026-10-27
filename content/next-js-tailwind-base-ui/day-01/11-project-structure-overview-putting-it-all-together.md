@@ -77,14 +77,14 @@ import { Input } from "@/components/ui/input";
 
 > ⚠️ **Barrel file caveat:** Next.js and Turbopack can tree-shake correctly, but large barrel files in deeply nested imports can slow down HMR. Use barrels for `components/ui/` and `types/` — avoid them for `services/` or `lib/` where each file may have heavy dependencies.
 
-### The `middleware.ts` Position
+### The `proxy.ts` Position
 
 ```
 src/
-├── middleware.ts      ← CORRECT position when using src/ directory
+├── proxy.ts      ← CORRECT position when using src/ directory
 └── app/
 
-# middleware.ts must be at the root of src/ (or project root without src/)
+# proxy.ts must be at the root of src/ (or project root without src/)
 # It is NOT inside app/ — it intercepts requests before routing
 
 # Common uses:
@@ -95,10 +95,10 @@ src/
 ```
 
 ```ts
-// src/middleware.ts
+// src/proxy.ts
 import { NextRequest, NextResponse } from "next/server";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ─── Auth guard: protect dashboard routes
@@ -114,7 +114,7 @@ export function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// ─── Matcher: only run middleware on these paths
+// ─── Matcher: only run proxy on these paths
 export const config = {
   matcher: [
     "/dashboard/:path*",
@@ -204,7 +204,7 @@ When a new developer joins, they should be able to answer these in 60 seconds:
 
 Q: Where is the home page?          → src/app/(marketing)/page.tsx
 Q: Where are reusable buttons?      → src/components/ui/button.tsx
-Q: Where does auth logic live?      → src/lib/auth.ts + src/middleware.ts
+Q: Where does auth logic live?      → src/lib/auth.ts + src/proxy.ts
 Q: Where are product API calls?     → src/services/product-service.ts
 Q: Where are environment variables? → .env.local (see .env.example for keys)
 Q: Where is global CSS?             → src/app/globals.css
@@ -386,7 +386,6 @@ my-shop/
 │           └── route.ts
 ├── types.ts                     ← all types in one root file
 ├── next.config.ts
-├── tailwind.config.ts
 ├── tsconfig.json
 └── package.json
 ```
@@ -438,7 +437,6 @@ my-shop/                              ← after reorganization
 │       └── api.ts                   ← split from types.ts
 │
 ├── next.config.ts
-├── tailwind.config.ts
 ├── tsconfig.json
 └── package.json
 ```
@@ -589,7 +587,7 @@ SCAFFOLD
 CONFIG FILES (root level — don't touch without understanding)
   next.config.ts     ← framework behavior (images, redirects, headers, env)
   tsconfig.json      ← TypeScript (strict: true, moduleResolution: bundler, @/* alias)
-  tailwind.config.ts ← Tailwind theme + content paths
+  postcss.config.mjs ← loads Tailwind v4 (theme lives in globals.css @theme)
   eslint.config.mjs  ← code quality rules (next/core-web-vitals + next/typescript)
   .env.local         ← secrets (git ignored — never commit)
 
@@ -607,7 +605,7 @@ SPECIAL FILES (each has ONE job)
   error.tsx     → error boundary ('use client' required)
   not-found.tsx → 404 UI
   route.ts      → API handler (GET, POST, etc.)
-  middleware.ts → runs before routing (auth, redirects)
+  proxy.ts → runs before routing (auth, redirects)
 
 COMPONENT TYPES
   Default           → Server Component (zero JS shipped, async/await allowed)
@@ -622,7 +620,7 @@ SOURCE STRUCTURE
   src/services/      ← API service functions (HTTP layer)
   src/stores/        ← client state (Zustand, Jotai)
   src/types/         ← TypeScript types + barrel index.ts
-  src/middleware.ts  ← edge middleware
+  src/proxy.ts  ← proxy
   public/            ← static assets at root URL (not in src/)
 
 DEV LOOP
@@ -725,7 +723,7 @@ my-app/
 │   │   ├── product.ts
 │   │   └── user.ts
 │   │
-│   └── middleware.ts                 ← Edge middleware (auth redirects)
+│   └── proxy.ts                 ← Proxy (auth redirects)
 │
 ├── public/                           ← static assets (NOT in src/)
 │   ├── favicon.ico
@@ -735,7 +733,6 @@ my-app/
 │       └── og-default.jpg
 │
 ├── next.config.ts                    ← Next.js config
-├── tailwind.config.ts                ← Tailwind config
 ├── tsconfig.json                     ← TypeScript config
 ├── eslint.config.mjs                 ← ESLint config
 ├── postcss.config.mjs                ← PostCSS config
@@ -759,7 +756,7 @@ Shared utility function                 → src/lib/utils.ts
 Custom hook with browser APIs          → src/hooks/
 Global state (Zustand/Jotai)           → src/stores/
 API route handler                       → src/app/api/resource/route.ts
-Edge middleware (auth, redirects)       → src/middleware.ts
+Proxy (auth, redirects)       → src/proxy.ts
 Static file (favicon, robot.txt)       → public/
 ```
 

@@ -1,5 +1,5 @@
 import { TopicView } from "@/components/TopicView";
-import { getAllGroups, getGroup, getTopic } from "@/lib/content";
+import { getAllGroups, getGroup, getTopic, getTopicUpdates } from "@/lib/content";
 import { notFound } from "next/navigation";
 
 interface PageProps {
@@ -81,6 +81,7 @@ export default async function TopicPage({ params }: Readonly<PageProps>) {
         nextTopic ? { id: nextTopic.id, title: nextTopic.title } : null
       }
       sidebarGroups={sidebarGroups}
+      lessonUpdates={getTopicUpdates(group.id, dayId, topicId)}
     />
   );
 }

@@ -385,7 +385,7 @@ export async function createNote(
   };
   NOTES = [...NOTES, newNote];
 
-  revalidateTag("notes"); // ← tag-based: clears notes list
+  revalidateTag("notes", "max"); // ← tag-based: clears notes list
   revalidatePath("/notes"); // ← path-based: clears /notes page
 
   return {
@@ -424,8 +424,8 @@ export async function updateNote(
     updatedAt: new Date().toISOString(),
   };
 
-  revalidateTag("notes");
-  revalidateTag(`note-${id}`); // ← surgical: only this note's detail
+  revalidateTag("notes", "max");
+  revalidateTag(`note-${id}`, "max"); // ← surgical: only this note's detail
   revalidatePath("/notes");
   revalidatePath(`/notes/${id}`);
 
@@ -446,7 +446,7 @@ export async function deleteNote(id: string): Promise<ActionResult> {
 
   NOTES = NOTES.filter((n) => n.id !== id);
 
-  revalidateTag("notes");
+  revalidateTag("notes", "max");
   revalidatePath("/notes");
   // No revalidatePath for /notes/[id] — it will 404 naturally
 

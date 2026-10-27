@@ -59,7 +59,7 @@ const evil = await prisma.$queryRaw(`SELECT * FROM users WHERE id = ${userId}`);
 
 ```typescript
 // ── Prisma.sql — composing complex queries safely ──────────────────────────
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 
 // Build dynamic WHERE clauses safely
 const filters: Prisma.Sql[] = [];
@@ -255,7 +255,7 @@ Write three raw SQL queries using `$queryRaw` and one using `$executeRaw`: (1) a
 
 ```typescript
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 
 // ── (1) Window function: customer spend rank by region ─────────────────────
 interface CustomerRankRow {

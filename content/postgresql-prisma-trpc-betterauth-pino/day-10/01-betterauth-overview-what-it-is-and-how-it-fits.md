@@ -70,7 +70,7 @@ BetterAuth is a TypeScript-first, framework-agnostic authentication library that
   │       └── auth/
   │           └── [...all]/
   │               └── route.ts  ← Next.js handler that proxies to BetterAuth
-  └── middleware.ts              ← optional: route protection
+  └── proxy.ts                   ← optional: route protection (middleware.ts before Next 16)
 ```
 
 ---
@@ -136,7 +136,7 @@ Map out (in a comment block) the complete request flow for a sign-in attempt: fr
 
   4. BetterAuth instance (src/lib/auth.ts)
      - Looks up user by email via Prisma → prisma.user.findUnique({ where: { email } })
-     - Verifies password hash (bcrypt compare)
+     - Verifies password hash (scrypt verify)
      - On success: creates a new session row → prisma.session.create({ data: { userId, token, expiresAt } })
      - Returns session token
 

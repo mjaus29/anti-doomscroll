@@ -316,7 +316,7 @@ DOCKERFILE + LAYER CACHE
   Combine RUN with && — one layer, no intermediate files saved
   .dockerignore: exclude node_modules/, .git/, .next/, .env*
   USER node — always switch to non-root before CMD
-  RUN npm ci --frozen-lockfile — never npm install (non-deterministic)
+  RUN npm ci — never npm install (non-deterministic); npm ci already fails on lockfile drift (--frozen-lockfile is a yarn/pnpm flag)
 
 VOLUMES + MOUNTS
   Named volume:  Docker-managed, portable, for DB data in production
@@ -352,7 +352,7 @@ TEST EXECUTION
   docker compose run --rm test npm run test:ci
   Bind mount ./src + ./coverage for fast iteration and output capture
   Use tmpfs for test DB — 10-20× faster than named volume
-  Serial test execution: poolOptions.forks.singleFork: true
+  Serial test execution: fileParallelism: false (or maxWorkers: 1) — Vitest 4; was poolOptions.forks.singleFork
   Capture exit code from docker compose run for CI pass/fail
   docker-compose.test.yml — separate from dev Compose file
 

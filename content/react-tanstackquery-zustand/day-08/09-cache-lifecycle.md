@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-A cache entry moves through four phases: **fetching → fresh → stale → inactive → deleted**. Understanding the lifecycle explains every TanStack Query behavior — when network requests fire, when components get instant data, when memory is freed.
+A cache entry moves through five phases: **fetching → fresh → stale → inactive → deleted**. Understanding the lifecycle explains every TanStack Query behavior — when network requests fire, when components get instant data, when memory is freed.
 
 ---
 

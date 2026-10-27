@@ -11,7 +11,8 @@
 ## K — Key Concepts
 
 ```bash
-npm install @hookform/resolvers
+npm install zod @hookform/resolvers
+# @hookform/resolvers v5+ auto-detects Zod 4 (and Zod 3) — the zodResolver API is the same
 ```
 
 ```tsx
@@ -21,7 +22,7 @@ import { z }            from 'zod'
 
 // ─── 1. Define schema
 const LoginSchema = z.object({
-  email:    z.string().email('Invalid email address'),
+  email:    z.email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters')
 })
 
@@ -49,7 +50,7 @@ const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
 // 2. If success: passes data to your onValid handler
 // 3. If failure: maps ZodError.issues to RHF's errors object
 //    { path: ['email'], message: 'Invalid email' }
-//    → errors.email = { type: 'invalid_string', message: 'Invalid email' }
+//    → errors.email = { type: 'invalid_format', message: 'Invalid email' }   (Zod 3 used 'invalid_string')
 
 // ─── mode still works with zodResolver
 useForm<LoginForm>({
@@ -115,9 +116,9 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z }           from 'zod'
 
 const LoginSchema = z.object({
-  email:      z.string().email('Please enter a valid email'),
+  email:      z.email('Please enter a valid email'),
   password:   z.string().min(8, 'Password must be at least 8 characters'),
-  rememberMe: z.boolean().default(false)
+  rememberMe: z.boolean()
 })
 
 type LoginForm = z.infer<typeof LoginSchema>

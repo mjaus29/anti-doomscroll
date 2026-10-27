@@ -221,7 +221,7 @@ export default async function Template({ children }) {
 }
 ```
 
-**Fix:** Auth guards belong in `layout.tsx` (runs once per segment entry) or `middleware.ts`:
+**Fix:** Auth guards belong in `layout.tsx` (runs once per segment entry) or `proxy.ts`:
 
 ```tsx
 // src/app/(dashboard)/layout.tsx

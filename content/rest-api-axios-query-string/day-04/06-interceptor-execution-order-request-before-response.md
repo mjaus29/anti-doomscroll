@@ -65,7 +65,7 @@ await api.get("/test");
 
 ### The Timing Pattern — Request + Response Pair
 
-This only works correctly because request LIFO + response FIFO means the LAST request interceptor runs FIRST, and the FIRST response interceptor runs FIRST — they're "closest" to the actual HTTP call:
+The interceptor you add FIRST is the one closest to the network on both sides: as a request interceptor (LIFO) it runs LAST, right before the HTTP call, and as a response interceptor (FIFO) it runs FIRST, right after the response arrives. So a pair registered first brackets the HTTP call most tightly:
 
 ```js
 // Request interceptor — stamps start time (runs last, just before request)
@@ -81,8 +81,9 @@ api.interceptors.response.use((response) => {
   return response;
 });
 
-// Even with other interceptors added between these two,
-// the timing interceptors work because they're added as a matched pair
+// Register this pair BEFORE any other interceptors: later-added request interceptors
+// run before the stamp, and later-added response interceptors run after the read,
+// so their time is excluded from the measurement
 ```
 
 ### Why the Asymmetry Exists
@@ -97,7 +98,7 @@ Execution left to right:
 B-req → A-req → [HTTP] → A-res → B-res
 ```
 
-The interceptor added FIRST forms the "outer shell" — it's the first to see the request config and the last to see the response.
+The interceptor added FIRST sits closest to the network (the "inner layer") — it's the last to see the request config and the first to see the response. The interceptor added LAST is the outermost: first to see the request config, last to see the response.
 
 ---
 
@@ -114,7 +115,7 @@ The interceptor added FIRST forms the "outer shell" — it's the first to see th
 
 ### Q1: In what order do request interceptors execute?
 
-**A:** LIFO — Last In, First Out. The most recently added interceptor runs first. This means the first interceptor you add is the outermost wrapper, and the last one you add runs just before the request is sent.
+**A:** LIFO — Last In, First Out. The most recently added interceptor runs first. This means the first interceptor you add runs last, right before the request is sent (closest to the network), and the last one you add runs first.
 
 ### Q2: In what order do response interceptors execute?
 
@@ -122,7 +123,7 @@ The interceptor added FIRST forms the "outer shell" — it's the first to see th
 
 ### Q3: Why does the timing pattern (stamp time in request interceptor, read in response interceptor) work reliably?
 
-**A:** The request interceptor stamps `startTime` just before the request fires. The response interceptor reads it just after the response arrives. Because both run as close to the actual HTTP call as possible (the last request interceptor runs right before the call; the first response interceptor runs right after), the timing is accurate regardless of other interceptors in the chain.
+**A:** The request interceptor stamps `startTime` just before the request fires. The response interceptor reads it just after the response arrives. Because both were registered first, they run as close to the actual HTTP call as possible (the first-added request interceptor runs last, right before the call; the first-added response interceptor runs first, right after). Interceptors registered later fall outside the measured window, so the timing stays accurate.
 
 ---
 

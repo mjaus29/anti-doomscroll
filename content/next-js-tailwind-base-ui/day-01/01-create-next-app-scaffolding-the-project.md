@@ -62,12 +62,11 @@ my-app/
 ├── public/
 │   ├── next.svg
 │   └── vercel.svg
-├── .eslintrc.json            ← or eslint.config.mjs (flat config)
+├── eslint.config.mjs         ← ESLint flat config (eslint-config-next)
 ├── .gitignore
 ├── next.config.ts            ← TypeScript config (v15+)
 ├── package.json
-├── postcss.config.mjs
-├── tailwind.config.ts
+├── postcss.config.mjs        ← Tailwind v4 plugin (no tailwind.config.ts)
 └── tsconfig.json
 ```
 

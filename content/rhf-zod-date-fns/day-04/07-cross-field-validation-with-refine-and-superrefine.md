@@ -19,7 +19,7 @@ const DateRangeSchema = z.object({
   endDate:   z.coerce.date()
 }).refine(
   data => data.endDate > data.startDate,
-  { message: 'End date must be after start date', path: ['endDate'] }
+  { error: 'End date must be after start date', path: ['endDate'] }   // Zod 4: `error` (v3: `message`, still works)
 )
 
 // ─── Chaining multiple .refine calls
@@ -28,10 +28,10 @@ const PriceSchema = z.object({
   maxPrice: z.coerce.number().nonnegative()
 })
 .refine(d => d.maxPrice >= d.minPrice, {
-  message: 'Max price must be ≥ min price', path: ['maxPrice']
+  error: 'Max price must be ≥ min price', path: ['maxPrice']
 })
 .refine(d => d.maxPrice - d.minPrice <= 10000, {
-  message: 'Price range cannot exceed $10,000', path: ['maxPrice']
+  error: 'Price range cannot exceed $10,000', path: ['maxPrice']
 })
 // Both run — both errors can appear simultaneously ✅
 ```
@@ -46,17 +46,18 @@ const PasswordSchema = z.object({
   // Can add MULTIPLE issues from one superRefine
   if (data.password.length < 8) {
     ctx.addIssue({
-      code:    z.ZodIssueCode.too_small,
+      code:    'too_small',            // Zod 4: plain string literal (z.ZodIssueCode is deprecated)
+      origin:  'string',               // Zod 4: `origin` replaces v3's `type`
       minimum: 8,
-      type:    'string',
       inclusive: true,
+      input:   data.password,
       message: 'Password must be at least 8 characters',
       path:   ['password']
     })
   }
   if (data.password !== data.confirmPassword) {
     ctx.addIssue({
-      code:    z.ZodIssueCode.custom,
+      code:    'custom',
       message: 'Passwords do not match',
       path:   ['confirmPassword']
     })
@@ -64,7 +65,7 @@ const PasswordSchema = z.object({
   // Conditional: only check hint if password is set
   if (data.password && data.hint && data.hint.includes(data.password)) {
     ctx.addIssue({
-      code:    z.ZodIssueCode.custom,
+      code:    'custom',
       message: 'Hint cannot contain your password',
       path:   ['hint']
     })
@@ -75,13 +76,13 @@ const PasswordSchema = z.object({
 ```tsx
 // ─── .refine with async — validate against an external source
 const UniqueEmailSchema = z.object({
-  email: z.string().email()
+  email: z.email()
 }).refine(
   async data => {
     const exists = await checkEmailExists(data.email)
     return !exists
   },
-  { message: 'Email is already registered', path: ['email'] }
+  { error: 'Email is already registered', path: ['email'] }
 )
 
 // MUST use safeParseAsync / parseAsync for async refine
@@ -103,7 +104,7 @@ await UniqueEmailSchema.safeParseAsync({ email: 'mark@example.com' })
 
 ### Q: What is the difference between `.refine()` and `.superRefine()` in Zod?
 
-**A:** `.refine(fn, message)` adds one validation rule and returns one error. It's simple and concise for single cross-field checks. `.superRefine(fn)` receives a `ctx` object with `ctx.addIssue()` — you can add zero, one, or multiple `ZodIssue` objects per call, each with a custom `code`, `path`, and `message`. Use `.refine` for simple cross-field checks. Use `.superRefine` when you need to conditionally add errors to multiple different fields from one function, when you need specific ZodIssueCodes (not just `custom`), or when you need to short-circuit (abort early) using `z.NEVER`.
+**A:** `.refine(fn, message)` adds one validation rule and returns one error. It's simple and concise for single cross-field checks. `.superRefine(fn)` receives a `ctx` object with `ctx.addIssue()` — you can add zero, one, or multiple `ZodIssue` objects per call, each with a custom `code`, `path`, and `message`. Use `.refine` for simple cross-field checks. Use `.superRefine` when you need to conditionally add errors to multiple different fields from one function, when you need specific issue codes (not just `custom`), or when you need to stop later checks from running after a critical failure (pass `fatal: true` to `ctx.addIssue`, or `abort: true` to `.refine`). Note `return z.NEVER` alone does not abort later checks — it only satisfies the return type.
 
 ---
 
@@ -112,12 +113,13 @@ await UniqueEmailSchema.safeParseAsync({ email: 'mark@example.com' })
 ### ❌ Chaining `.refine()` with `async` but calling synchronous `safeParse`
 
 ```tsx
-// ❌ async refine requires safeParseAsync — sync safeParse returns a Promise object
+// ❌ async refine requires safeParseAsync — sync safeParse throws
 const Schema = z.object({ email: z.string() })
   .refine(async d => !(await emailExists(d.email)), 'Taken')
 
 const result = Schema.safeParse({ email: 'x@x.com' })
-// result is a Promise, not { success, data } ❌
+// Zod 4 throws "Encountered Promise during synchronous parse. Use .parseAsync() instead." ❌
+// (Zod 3 silently returned a broken result)
 ```
 
 **Fix:** Use `safeParseAsync` (or let `zodResolver` handle it — it does automatically):
@@ -153,27 +155,28 @@ const BookingSchema = z.object({
 }).superRefine((data, ctx) => {
   // 1. checkOut must be after checkIn
   if (data.checkOut <= data.checkIn) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom,
+    ctx.addIssue({ code: 'custom',
       message: 'Check-out must be after check-in', path: ['checkOut'] })
   }
   // 2. > 2 guests requires suite
   if (data.guestCount > 2 && data.roomType !== 'suite') {
-    ctx.addIssue({ code: z.ZodIssueCode.custom,
+    ctx.addIssue({ code: 'custom',
       message: `${data.guestCount} guests require a suite`, path: ['roomType'] })
   }
   // 3. Budget must cover minimum per guest
   const minBudget = data.guestCount * 50
   if (data.totalBudget < minBudget) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom,
+    ctx.addIssue({ code: 'custom',
       message: `Minimum budget is $${minBudget} for ${data.guestCount} guests`,
       path: ['totalBudget'] })
   }
 })
 
-type Booking = z.infer<typeof BookingSchema>
+type BookingInput  = z.input<typeof BookingSchema>
+type BookingOutput = z.output<typeof BookingSchema>
 
 export function BookingForm() {
-  const { register, handleSubmit, formState: { errors } } = useForm<Booking>({
+  const { register, handleSubmit, formState: { errors } } = useForm<BookingInput, unknown, BookingOutput>({
     resolver:      zodResolver(BookingSchema),
     mode:          'onSubmit',
     defaultValues: { guestCount: 1, roomType: 'standard', totalBudget: 100 }

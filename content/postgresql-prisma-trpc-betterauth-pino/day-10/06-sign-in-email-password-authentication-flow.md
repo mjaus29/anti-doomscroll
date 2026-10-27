@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-Sign-in verifies the password against the stored bcrypt hash and creates a new session row. On the client, call `authClient.signIn.email({ email, password })`. On failure, BetterAuth returns typed error codes (`INVALID_EMAIL_OR_PASSWORD`). Never reveal which of email or password was wrong — always use a generic error message.
+Sign-in verifies the password against the stored scrypt hash and creates a new session row. On the client, call `authClient.signIn.email({ email, password })`. On failure, BetterAuth returns typed error codes (`INVALID_EMAIL_OR_PASSWORD`). Never reveal which of email or password was wrong — always use a generic error message.
 
 ---
 
@@ -87,7 +87,7 @@ export function SignInForm() {
      → Not found: return 401 { code: 'INVALID_EMAIL_OR_PASSWORD' }
                   (same error code as wrong password — prevents email enumeration)
   2. Find account: SELECT * FROM account WHERE user_id = $1 AND provider_id = 'credential'
-  3. Verify password: bcrypt.compare(password, account.password)
+  3. Verify password: verify scrypt hash (password, account.password)
      → Fails: return 401 { code: 'INVALID_EMAIL_OR_PASSWORD' }
   4. Check emailVerified if requireEmailVerification: true
      → Not verified: return 403 { code: 'EMAIL_NOT_VERIFIED' }

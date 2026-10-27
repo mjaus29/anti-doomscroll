@@ -164,7 +164,7 @@ function CartTotal() {
 
 export function CartForm() {
   // Parent renders once — CartTotal handles its own subscriptions
-  const methods = useForm<CartForm>({
+  const methods = useForm<z.input<typeof CartSchema>, unknown, z.output<typeof CartSchema>>({
     resolver:      zodResolver(CartSchema),
     defaultValues: { items: [{ name: '', qty: 1, unitPrice: 0 }] }
   })

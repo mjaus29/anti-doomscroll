@@ -39,15 +39,16 @@ vi.resetAllMocks()
 
 
 // ─ vi.restoreAllMocks() ──────────────────────────────────────────────────
-// Clears:    call tracking
-// Resets:    implementations
-// Restores:  vi.spyOn() methods to original implementations
+// Restores:  ONLY spies created with vi.spyOn() back to their original implementations
+// Does NOT:  clear call history or reset implementations (Vitest 4 — before that it also reset state)
+// Does NOT:  touch vi.fn() mocks or automocked modules
 // Use:       afterEach when vi.spyOn() was used anywhere
 
 const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
 vi.restoreAllMocks()
 // console.error is the original function again ✅
-// spy.mock.calls === [] (cleared)
+// spy.mock.calls is NOT cleared by restoreAllMocks — call vi.clearAllMocks() (or spy.mockRestore(),
+// which still clears + resets that one spy) if you also need a clean history
 ```
 
 ```typescript
@@ -112,12 +113,12 @@ beforeEach(() => { vi.clearAllMocks() })
 // Individual:
 mockFn.mockClear()     // clear this mock's call history
 mockFn.mockReset()     // clear + remove implementation
-mockFn.mockRestore()   // clear + reset + restore (only works on spies)
+mockFn.mockRestore()   // clear + reset + restore this one spy (only works on spies)
 
 // Global (affects ALL mocks created in this test context):
 vi.clearAllMocks()     // = mockClear() on every vi.fn() / vi.spyOn()
 vi.resetAllMocks()     // = mockReset() on every mock
-vi.restoreAllMocks()   // = mockRestore() on every spy
+vi.restoreAllMocks()   // restores every vi.spyOn spy to its original (Vitest 4: does not clear/reset state)
 ```
 
 ```typescript
@@ -149,7 +150,7 @@ export default defineConfig({
 
 ### Q: What is the difference between `vi.clearAllMocks()`, `vi.resetAllMocks()`, and `vi.restoreAllMocks()`, and which should you use in `beforeEach` vs `afterEach`?
 
-**A:** `clearAllMocks()` resets the recorded call history (`.mock.calls`, `.mock.results`) but preserves any configured return values or implementations. Use it in `beforeEach` so each test starts with a clean call count but retains the mock implementation configured in `describe`-level setup. `resetAllMocks()` does everything `clear` does, plus it removes all configured implementations — mocks return `undefined` again. Use it in `beforeEach` when every test must define its own implementation from scratch and you don't want any shared setup. `restoreAllMocks()` does everything `reset` does, plus it undoes `vi.spyOn()` wrapping and restores the original method. Use it in `afterEach` because its purpose is cleanup: removing spy wrappers after a test so the original method is available for the next test. The recommended combination: `clearAllMocks` in `beforeEach` (preserves shared setup, resets counts) and `restoreAllMocks` in `afterEach` (undoes spies). Or set both in `vitest.config.ts` to apply globally.
+**A:** `clearAllMocks()` resets the recorded call history (`.mock.calls`, `.mock.results`) but preserves any configured return values or implementations. Use it in `beforeEach` so each test starts with a clean call count but retains the mock implementation configured in `describe`-level setup. `resetAllMocks()` does everything `clear` does, plus it removes all configured implementations — mocks return `undefined` again. Use it in `beforeEach` when every test must define its own implementation from scratch and you don't want any shared setup. `restoreAllMocks()` undoes `vi.spyOn()` wrapping and restores the original method of every spy — in Vitest 4 it does NOT also clear call history or reset implementations (earlier versions did), so pair it with `clearAllMocks`/`resetAllMocks` if you need that. Use it in `afterEach` because its purpose is cleanup: removing spy wrappers after a test so the original method is available for the next test. The recommended combination: `clearAllMocks` in `beforeEach` (preserves shared setup, resets counts) and `restoreAllMocks` in `afterEach` (undoes spies). Or set both in `vitest.config.ts` to apply globally.
 
 ---
 
@@ -354,7 +355,7 @@ vi.stubGlobal / vi.stubEnv
 RESET VS CLEAR VS RESTORE
   clearAllMocks()   → resets calls; KEEPS implementation  → beforeEach
   resetAllMocks()   → resets calls + REMOVES implementation → careful
-  restoreAllMocks() → resets calls + removes impl + RESTORES spies → afterEach
+  restoreAllMocks() → RESTORES vi.spyOn originals only (no clear/reset in Vitest 4) → afterEach
 
   Config shortcut (vitest.config.ts):
     clearMocks:   true   ← auto-clear before each test

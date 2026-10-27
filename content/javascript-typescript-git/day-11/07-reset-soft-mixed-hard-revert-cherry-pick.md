@@ -23,7 +23,7 @@ git reset --mixed HEAD~1  # move pointer back  | index: cleared   | worktree: un
                            # git reset HEAD~1 = git reset --mixed HEAD~1
 
 git reset --hard  HEAD~1  # move pointer back  | index: cleared   | worktree: cleared
-                           # → changes DISCARDED — recoverable only via reflog for ~90 days
+                           # → uncommitted changes DISCARDED (not in the reflog); the old *commits* stay recoverable via reflog (~30 days for unreachable entries, 90 for reachable)
 
 # Use cases:
 # --soft:  "I committed too soon, need to add more to this commit"

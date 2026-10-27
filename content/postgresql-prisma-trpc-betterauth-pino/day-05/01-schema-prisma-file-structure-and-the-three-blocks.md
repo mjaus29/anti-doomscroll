@@ -17,15 +17,17 @@
 // Tells Prisma what to generate and where.
 // Always required. Usually one: the Prisma Client for TypeScript.
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 // ── 2. Datasource block ───────────────────────────────────────────────────
-// Tells Prisma which database to connect to and how.
-// Exactly one datasource per schema file.
+// Tells Prisma which database engine you use.
+// Exactly one datasource per schema.
+// Prisma 7: the connection URL is NOT in this block any more —
+// it lives in prisma.config.ts (see below).
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ── 3. Model blocks ───────────────────────────────────────────────────────
@@ -51,14 +53,28 @@ enum Role {
 // Omit entirely for relational databases.
 ```
 
+```ts
+// prisma.config.ts — project root (Prisma 7). Holds schema path, URL, migrations, seed.
+import 'dotenv/config'            // Prisma 7 no longer loads .env automatically
+import { defineConfig, env } from 'prisma/config'
+
+export default defineConfig({
+  schema: 'prisma/schema.prisma',
+  migrations: { path: 'prisma/migrations' },
+  datasource: { url: env('DATABASE_URL') },   // used by the CLI (migrate, db pull, studio)
+})
+// Before Prisma 7 the URL was `url = env("DATABASE_URL")` inside the datasource block
+// and the schema path was set via "prisma": { "schema": ... } in package.json.
+```
+
 ```
 ── File location and discovery ─────────────────────────────────────────────
 
 Default location (Prisma looks here automatically):
   prisma/schema.prisma
 
-Custom location (set in package.json):
-  "prisma": { "schema": "src/db/schema.prisma" }
+Custom location (set in prisma.config.ts):
+  defineConfig({ schema: 'src/db/schema.prisma' })
 
 Or with CLI flag:
   npx prisma generate --schema=./custom/path/schema.prisma
@@ -82,18 +98,18 @@ Convention: generator → datasource → enums → models (alphabetical or by do
 ```
 
 ```prisma
-// ── Multi-file schema (Prisma 5.15+ preview, standard in Prisma 7) ─────────
-// Prisma 7 supports splitting schema into multiple files.
+// ── Multi-file schema (GA since Prisma 6.7) ────────────────────────────────
+// Prisma supports splitting the schema into multiple files.
 // All files in the prisma/ directory are merged automatically.
 
 // prisma/schema.prisma — main config
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // prisma/user.prisma — user domain
@@ -140,11 +156,11 @@ model Product {
 
 ### Q: What are the three main block types in `schema.prisma` and what is each responsible for?
 
-**A:** The three block types are `datasource`, `generator`, and `model` (plus `enum` as a companion to models). The `datasource` block defines the database connection — which database provider (PostgreSQL, MySQL, SQLite) and the connection URL. The `generator` block defines what Prisma should generate from the schema — typically `prisma-client-js` which produces the typed Prisma Client and TypeScript types. The `model` blocks define the data structure — each model maps to a database table, with fields mapping to columns, complete with types, modifiers, and constraints. `enum` blocks define named sets of allowed values. All three types are processed together when you run `prisma generate` or `prisma migrate`.
+**A:** The three block types are `datasource`, `generator`, and `model` (plus `enum` as a companion to models). The `datasource` block defines the database connection — which database provider (PostgreSQL, MySQL, SQLite). In Prisma 7 the connection URL itself lives in `prisma.config.ts`, and the app connects through a driver adapter. The `generator` block defines what Prisma should generate from the schema — typically `prisma-client` (the Prisma 7 generator, which replaces `prisma-client-js`) which produces the typed Prisma Client and TypeScript types. The `model` blocks define the data structure — each model maps to a database table, with fields mapping to columns, complete with types, modifiers, and constraints. `enum` blocks define named sets of allowed values. All three types are processed together when you run `prisma generate` or `prisma migrate`.
 
 ### Q: Where does Prisma look for the schema file by default?
 
-**A:** Prisma looks for `prisma/schema.prisma` relative to the project root by default. You can override this with the `--schema` CLI flag or by setting `"prisma": { "schema": "path/to/schema.prisma" }` in `package.json`. Prisma 5.15+ and Prisma 7 support multi-file schemas — all `.prisma` files in the `prisma/` directory (or a custom directory) are automatically merged into one logical schema.
+**A:** Prisma looks for `prisma/schema.prisma` relative to the project root by default. You can override this with the `--schema` CLI flag or by setting `schema` in `prisma.config.ts`. Prisma 6.7+ (including 7) supports multi-file schemas — all `.prisma` files in the `prisma/` directory (or a custom directory) are automatically merged into one logical schema.
 
 ---
 
@@ -192,7 +208,7 @@ model User {
 
 ### Challenge
 
-Create a complete bare-bones `schema.prisma` file for a blogging platform. Include: (1) a generator for Prisma Client JS, (2) a PostgreSQL datasource reading `DATABASE_URL` from the environment, (3) a `Post` model with fields for id, title, body, published status, and timestamps, (4) a `Category` enum with values `TECH`, `LIFESTYLE`, `BUSINESS`, (5) triple-slash doc comments on at least two fields. Follow the conventional block ordering.
+Create a complete bare-bones `schema.prisma` file for a blogging platform. Include: (1) a `prisma-client` generator with an explicit `output`, (2) a PostgreSQL datasource (the `DATABASE_URL` is read in `prisma.config.ts`, not here), (3) a `Post` model with fields for id, title, body, published status, and timestamps, (4) a `Category` enum with values `TECH`, `LIFESTYLE`, `BUSINESS`, (5) triple-slash doc comments on at least two fields. Follow the conventional block ordering.
 
 ### Solution
 
@@ -201,13 +217,13 @@ Create a complete bare-bones `schema.prisma` file for a blogging platform. Inclu
 
 // ── Generator ──────────────────────────────────────────────────────────────
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 // ── Datasource ─────────────────────────────────────────────────────────────
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ── Enums ──────────────────────────────────────────────────────────────────

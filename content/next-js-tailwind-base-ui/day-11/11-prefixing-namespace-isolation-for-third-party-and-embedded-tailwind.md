@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-Tailwind's **prefix** configuration adds a custom prefix to every generated utility class — `tw-flex`, `tw-p-4`, `tw-bg-blue-600`. This is essential when embedding Tailwind-styled components into a host page that already has CSS (another framework, legacy styles, or another Tailwind instance) to prevent class name collisions.
+Tailwind's **prefix** configuration adds a custom prefix to every generated utility class, written like a variant — `tw:flex`, `tw:p-4`, `tw:bg-blue-600`. This is essential when embedding Tailwind-styled components into a host page that already has CSS (another framework, legacy styles, or another Tailwind instance) to prevent class name collisions.
 
 ---
 
@@ -24,9 +24,9 @@ Without prefix:
   Your .p-4   ↔  their .p-4   → same name, different or same values
   Your .btn   ↔  their .btn   → unpredictable styles
 
-With prefix "tw-":
-  Your .tw-flex  → no collision
-  Your .tw-p-4   → no collision
+With prefix "tw" (v4 writes it as a variant: tw:flex):
+  Your .tw\:flex → no collision
+  Your .tw\:p-4  → no collision
   Their .flex    → unaffected
 ```
 
@@ -36,11 +36,11 @@ With prefix "tw-":
 /* src/app/globals.css */
 @import "tailwindcss" prefix(tw);
 
-/* That's it — all generated utilities now have the tw- prefix */
+/* That's it — all generated utilities now need the tw: prefix (v3 used tw-flex; v4 uses tw:flex) */
 
 /* Alternative: use a more specific prefix for your library */
 @import "tailwindcss" prefix(acme);
-/* → .acme-flex, .acme-p-4, .acme-bg-blue-600, etc. */
+/* → acme:flex, acme:p-4, acme:bg-blue-600, etc. */
 ```
 
 ```tsx
@@ -50,36 +50,36 @@ With prefix "tw-":
 <div className="flex items-center gap-4 p-6 bg-white rounded-xl">
 
 {/* With prefix(tw): */}
-<div className="tw-flex tw-items-center tw-gap-4 tw-p-6 tw-bg-white tw-rounded-xl">
+<div className="tw:flex tw:items-center tw:gap-4 tw:p-6 tw:bg-white tw:rounded-xl">
 
 {/* ─── ALL utilities get the prefix */}
-<div className="tw-grid tw-grid-cols-3 tw-gap-6">
-<p  className="tw-text-xl tw-font-bold tw-text-gray-900">
-<button className="tw-hover:tw-bg-blue-700 tw-transition-colors tw-duration-150">
-{/* Variants also get the prefix on the utility part */}
-<div className="tw-dark:tw-bg-gray-900">
-<div className="tw-sm:tw-grid-cols-2">
+<div className="tw:grid tw:grid-cols-3 tw:gap-6">
+<p  className="tw:text-xl tw:font-bold tw:text-gray-900">
+<button className="tw:hover:bg-blue-700 tw:transition-colors tw:duration-150">
+{/* In v4 the prefix always comes FIRST, before any other variants */}
+<div className="tw:dark:bg-gray-900">
+<div className="tw:sm:grid-cols-2">
 ```
 
 ### Prefixed Variants — What Changes and What Doesn't
 
 ```tsx
 {/* ─── Responsive and state variants: ONLY the utility gets the prefix */}
-{/* The variant prefix (sm:, dark:, hover:) stays unchanged */}
+{/* The prefix is written like a variant at the very start: tw:sm:flex, tw:hover:bg-blue-700 */}
 
 {/* Without prefix: */}
 <div className="sm:flex dark:bg-gray-900 hover:bg-blue-700">
 
 {/* With prefix(tw): */}
-<div className="sm:tw-flex dark:tw-bg-gray-900 hover:tw-bg-blue-700">
-{/*              ↑ variant is unchanged, utility gets tw- prefix */}
+<div className="tw:sm:flex tw:dark:bg-gray-900 tw:hover:bg-blue-700">
+{/*              ↑ the tw: prefix comes first, then the other variants */}
 
 {/* ─── Arbitrary values still work */}
-<div className="tw-w-[340px] tw-h-[calc(100vh-3.5rem)]">
+<div className="tw:w-[340px] tw:h-[calc(100vh-3.5rem)]">
 
 {/* ─── Arbitrary properties still work */}
-<div className="tw-[content-visibility:auto]">
-{/* → .tw-\[content-visibility\:auto\] { content-visibility: auto } */}
+<div className="tw:[content-visibility:auto]">
+{/* → content-visibility: auto, with the tw: prefix in front */}
 ```
 
 ### `@apply` with Prefixes
@@ -91,12 +91,12 @@ With prefix "tw-":
 /* When using @apply with a prefix, include the prefix */
 @layer components {
   .btn {
-    @apply tw-inline-flex tw-items-center tw-px-4 tw-py-2
-           tw-font-semibold tw-rounded-xl tw-transition-colors;
+    @apply tw:inline-flex tw:items-center tw:px-4 tw:py-2
+           tw:font-semibold tw:rounded-xl tw:transition-colors;
   }
 
   .btn-primary {
-    @apply tw-bg-blue-600 tw-text-white tw-hover:tw-bg-blue-700;
+    @apply tw:bg-blue-600 tw:text-white tw:hover:bg-blue-700;
   }
 }
 ```
@@ -115,28 +115,28 @@ With prefix "tw-":
 export function ChatWidget() {
   return (
     <div
-      className="widget-fixed widget-bottom-4 widget-right-4
-                     widget-z-[9999] widget-w-80 widget-bg-white
-                     widget-rounded-2xl widget-shadow-xl
-                     widget-border widget-border-gray-200"
+      className="widget:fixed widget:bottom-4 widget:right-4
+                     widget:z-[9999] widget:w-80 widget:bg-white
+                     widget:rounded-2xl widget:shadow-xl
+                     widget:border widget:border-gray-200"
     >
       <div
-        className="widget-flex widget-items-center widget-justify-between
-                       widget-px-4 widget-py-3 widget-border-b
-                       widget-border-gray-100 widget-bg-blue-600
-                       widget-rounded-t-2xl"
+        className="widget:flex widget:items-center widget:justify-between
+                       widget:px-4 widget:py-3 widget:border-b
+                       widget:border-gray-100 widget:bg-blue-600
+                       widget:rounded-t-2xl"
       >
-        <span className="widget-font-semibold widget-text-white widget-text-sm">
+        <span className="widget:font-semibold widget:text-white widget:text-sm">
           Support Chat
         </span>
         <button
-          className="widget-text-white/80 widget-hover:widget-text-white
-                            widget-transition-colors"
+          className="widget:text-white/80 widget:hover:text-white
+                            widget:transition-colors"
         >
           ✕
         </button>
       </div>
-      <div className="widget-p-4 widget-h-64 widget-overflow-y-auto">
+      <div className="widget:p-4 widget:h-64 widget:overflow-y-auto">
         {/* Chat messages */}
       </div>
     </div>
@@ -151,7 +151,7 @@ export function ChatWidget() {
 // @import "tailwindcss" prefix(ds);
 
 // Usage in consuming app:
-// <ds-Button> internally uses ds-inline-flex ds-px-4 ds-py-2 etc.
+// <DsButton> internally uses ds:inline-flex ds:px-4 ds:py-2 etc.
 // Consuming app uses unprefixed flex px-4 py-2 — no conflict
 
 // ─── Scenario 3: Shadow DOM component
@@ -161,7 +161,7 @@ export function ChatWidget() {
 // ─── Scenario 4: Next.js micro-frontend
 // Multiple Next.js apps on the same domain (sub-paths)
 // App A: no prefix
-// App B: prefix(b) → b-flex, b-p-4
+// App B: prefix(b) → b:flex, b:p-4
 // Both can share the same HTML page without style conflicts
 ```
 
@@ -172,12 +172,11 @@ export function ChatWidget() {
 // @import "tailwindcss" prefix(ui);
 
 // packages/ui/src/components/button.tsx
-// ALL utilities have the ui- prefix
+// ALL utilities have the ui: prefix
 
 import { cn } from "./cn";
 
-// The cn() utility works exactly the same with prefixed classes
-// twMerge recognises prefixed Tailwind classes automatically
+// cn() must use extendTailwindMerge({ prefix: "ui" }) so twMerge recognises the ui: prefix
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "danger";
@@ -194,24 +193,24 @@ export function Button({
   return (
     <button
       className={cn(
-        // Base — all with ui- prefix
-        "ui-inline-flex ui-items-center ui-justify-center",
-        "ui-font-semibold ui-rounded-xl ui-transition-all ui-duration-150",
-        "ui-active:ui-scale-[0.98]",
-        "focus-visible:ui-outline-none focus-visible:ui-ring-2",
-        "focus-visible:ui-ring-offset-2",
-        "ui-disabled:ui-opacity-50 ui-disabled:ui-cursor-not-allowed",
+        // Base — all with ui: prefix
+        "ui:inline-flex ui:items-center ui:justify-center",
+        "ui:font-semibold ui:rounded-xl ui:transition-all ui:duration-150",
+        "ui:active:scale-[0.98]",
+        "ui:focus-visible:outline-none ui:focus-visible:ring-2",
+        "ui:focus-visible:ring-offset-2",
+        "ui:disabled:opacity-50 ui:disabled:cursor-not-allowed",
         // Variant
         variant === "primary" &&
-          "ui-bg-blue-600 ui-text-white hover:ui-bg-blue-700 focus-visible:ui-ring-blue-500",
+          "ui:bg-blue-600 ui:text-white ui:hover:bg-blue-700 ui:focus-visible:ring-blue-500",
         variant === "secondary" &&
-          "ui-bg-white ui-text-gray-700 ui-border ui-border-gray-300 hover:ui-bg-gray-50",
+          "ui:bg-white ui:text-gray-700 ui:border ui:border-gray-300 ui:hover:bg-gray-50",
         variant === "danger" &&
-          "ui-bg-red-600 ui-text-white hover:ui-bg-red-700 focus-visible:ui-ring-red-500",
+          "ui:bg-red-600 ui:text-white ui:hover:bg-red-700 ui:focus-visible:ring-red-500",
         // Size
-        size === "sm" && "ui-px-3 ui-py-1.5 ui-text-xs",
-        size === "md" && "ui-px-5 ui-py-2.5 ui-text-sm",
-        size === "lg" && "ui-px-7 ui-py-3.5 ui-text-base",
+        size === "sm" && "ui:px-3 ui:py-1.5 ui:text-xs",
+        size === "md" && "ui:px-5 ui:py-2.5 ui:text-sm",
+        size === "lg" && "ui:px-7 ui:py-3.5 ui:text-base",
         // Consumer className override
         className
       )}
@@ -254,11 +253,11 @@ Use prefixing when:
 
 ### Q1: What is Tailwind's prefix configuration and when would you use it?
 
-**A:** Adding `prefix(tw)` to the `@import "tailwindcss"` line in `globals.css` prepends `tw-` to every generated utility class — `flex` becomes `tw-flex`, `p-4` becomes `tw-p-4`, `bg-blue-600` becomes `tw-bg-blue-600`. Use it when embedding Tailwind-styled components into environments with existing CSS you don't control — third-party pages where your widget loads via script tag, npm component libraries consumed by apps that may have their own Tailwind or other CSS frameworks, and micro-frontend architectures where multiple independent apps share the same DOM. For standard standalone Next.js apps, prefixing adds boilerplate without benefit.
+**A:** Adding `prefix(tw)` to the `@import "tailwindcss"` line in `globals.css` adds a `tw:` prefix (written like a variant, before any other variants) to every generated utility class — in v3 it was `tw-flex` — `flex` becomes `tw:flex`, `p-4` becomes `tw:p-4`, `bg-blue-600` becomes `tw:bg-blue-600`. Use it when embedding Tailwind-styled components into environments with existing CSS you don't control — third-party pages where your widget loads via script tag, npm component libraries consumed by apps that may have their own Tailwind or other CSS frameworks, and micro-frontend architectures where multiple independent apps share the same DOM. For standard standalone Next.js apps, prefixing adds boilerplate without benefit.
 
 ### Q2: What changes with a Tailwind prefix and what stays the same?
 
-**A:** The generated utility class names gain the prefix — every class in your JSX must include it. Variant prefixes (`sm:`, `dark:`, `hover:`, `focus:`) stay unchanged — only the utility portion gets the prefix, so `dark:bg-gray-900` becomes `dark:tw-bg-gray-900`. Arbitrary values and arbitrary properties still work — `tw-w-[340px]`, `tw-[content-visibility:auto]`. The `@apply` directive requires the prefix — `@apply tw-flex tw-items-center`. The `cn()`/`twMerge` utilities work unchanged — `tailwind-merge` automatically recognises prefixed class groups and resolves conflicts correctly.
+**A:** The generated utility class names gain the prefix — every class in your JSX must include it. In v4 the prefix is a variant-style `tw:` that always comes first, before `sm:`, `dark:`, `hover:`, `focus:` — so `dark:bg-gray-900` becomes `tw:dark:bg-gray-900` (v3 wrote `dark:tw-bg-gray-900`). Arbitrary values and arbitrary properties still work — `tw:w-[340px]`, `tw:[content-visibility:auto]`. The `@apply` directive requires the prefix — `@apply tw:flex tw:items-center`. `cn()`/`twMerge` need to be told about the prefix — create the merger with `extendTailwindMerge({ prefix: "tw" })` (tailwind-merge v3, for Tailwind v4) so prefixed classes still resolve conflicts correctly.
 
 ---
 
@@ -273,7 +272,7 @@ Use prefixing when:
   /* ❌ @apply without prefix — classes not found */
   .btn {
     @apply inline-flex items-center px-4 py-2 font-semibold;
-    /* Error: class 'inline-flex' not found (it's now 'tw-inline-flex') */
+    /* Error: class 'inline-flex' not found (it's now 'tw:inline-flex') */
   }
 }
 ```
@@ -284,7 +283,7 @@ Use prefixing when:
 @layer components {
   /* ✅ Prefix included in @apply */
   .btn {
-    @apply tw-inline-flex tw-items-center tw-px-4 tw-py-2 tw-font-semibold;
+    @apply tw:inline-flex tw:items-center tw:px-4 tw:py-2 tw:font-semibold;
   }
 }
 ```
@@ -299,10 +298,10 @@ Use prefixing when:
   /* This is a standalone Next.js app — no third-party CSS conflict */
 }
 <div
-  className="tw-flex tw-items-center tw-gap-4 tw-p-6 tw-bg-white
-                 tw-rounded-xl tw-border tw-border-gray-200"
+  className="tw:flex tw:items-center tw:gap-4 tw:p-6 tw:bg-white
+                 tw:rounded-xl tw:border tw:border-gray-200"
 >
-  {/* Every class has tw- for no reason — harder to read, more to type */}
+  {/* Every class has tw: for no reason — harder to read, more to type */}
 </div>;
 ```
 
@@ -322,9 +321,9 @@ Use prefixing when:
 {
   /* Mixing breaks styles — unprefixed classes don't exist in the stylesheet */
 }
-<div className="tw-flex items-center tw-gap-4 p-6">
+<div className="tw:flex items-center tw:gap-4 p-6">
   {/* items-center and p-6 generate no CSS — they're not in the stylesheet */}
-  {/* Only tw-flex and tw-gap-4 have styles */}
+  {/* Only tw:flex and tw:gap-4 have styles */}
 </div>;
 ```
 
@@ -332,7 +331,7 @@ Use prefixing when:
 
 ```tsx
 {/* ✅ All utilities consistently prefixed */}
-<div className="tw-flex tw-items-center tw-gap-4 tw-p-6">
+<div className="tw:flex tw:items-center tw:gap-4 tw:p-6">
 ```
 
 ---
@@ -344,10 +343,10 @@ Use prefixing when:
 Build an embeddable `<FeedbackWidget>` component designed to be loaded on third-party pages:
 
 1. Configure `prefix(widget)` in a separate `widget-globals.css`
-2. All utilities must use the `widget-` prefix
+2. All utilities must use the `widget:` prefix
 3. The widget is fixed to `bottom-4 right-4` with `z-[9999]`
 4. It has a toggle button that shows/hides a feedback form
-5. The form has a textarea and a submit button — all with `widget-` utilities
+5. The form has a textarea and a submit button — all with `widget:` utilities
 6. Uses `data-[open]:` for show/hide state
 7. A `widgetCn()` helper (same as `cn()`) that works with prefixed classes
 
@@ -376,9 +375,11 @@ Build an embeddable `<FeedbackWidget>` component designed to be loaded on third-
 
 ```tsx
 // src/lib/widget-cn.ts
-// Same as cn() — twMerge works identically with prefixed classes
+// Same as cn(), but tailwind-merge must know the prefix (tailwind-merge v3 / Tailwind v4)
 import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { extendTailwindMerge } from "tailwind-merge";
+
+const twMerge = extendTailwindMerge({ prefix: "widget" });
 
 export function widgetCn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -415,39 +416,39 @@ export function FeedbackWidget() {
     // Scope class — resets box-sizing and font from host page
     // Fixed position — does not affect host page layout
     <div
-      className="widget-scope widget-fixed widget-bottom-4 widget-right-4
-                     widget-z-[9999] widget-flex widget-flex-col widget-items-end
-                     widget-gap-3"
+      className="widget-scope widget:fixed widget:bottom-4 widget:right-4
+                     widget:z-[9999] widget:flex widget:flex-col widget:items-end
+                     widget:gap-3"
     >
       {/* Feedback panel — shown/hidden via data-open */}
       <div
         data-open={state !== "closed"}
         className={widgetCn(
           // Base panel styles — all prefixed
-          "widget-w-80 widget-bg-white widget-rounded-2xl",
-          "widget-border widget-border-gray-200",
-          "widget-shadow-xl",
-          "widget-overflow-hidden",
+          "widget:w-80 widget:bg-white widget:rounded-2xl",
+          "widget:border widget:border-gray-200",
+          "widget:shadow-xl",
+          "widget:overflow-hidden",
           // Show/hide via data attribute
-          "data-[open=false]:widget-hidden",
-          "data-[open=true]:widget-block"
+          "widget:data-[open=false]:hidden",
+          "widget:data-[open=true]:block"
         )}
       >
         {/* Header */}
         <div
-          className="widget-flex widget-items-center widget-justify-between
-                         widget-px-4 widget-py-3
-                         widget-bg-blue-600
-                         widget-border-b widget-border-blue-700"
+          className="widget:flex widget:items-center widget:justify-between
+                         widget:px-4 widget:py-3
+                         widget:bg-blue-600
+                         widget:border-b widget:border-blue-700"
         >
-          <span className="widget-font-semibold widget-text-white widget-text-sm">
+          <span className="widget:font-semibold widget:text-white widget:text-sm">
             Share feedback
           </span>
           <button
             onClick={() => setState("closed")}
-            className="widget-text-white/70 hover:widget-text-white
-                        widget-transition-colors widget-text-lg widget-leading-none
-                        widget-p-1 widget-rounded"
+            className="widget:text-white/70 widget:hover:text-white
+                        widget:transition-colors widget:text-lg widget:leading-none
+                        widget:p-1 widget:rounded"
             aria-label="Close feedback widget"
           >
             ✕
@@ -457,41 +458,41 @@ export function FeedbackWidget() {
         {/* Done state */}
         {state === "done" ? (
           <div
-            className="widget-flex widget-flex-col widget-items-center
-                           widget-justify-center widget-py-10 widget-px-4
-                           widget-text-center widget-gap-2"
+            className="widget:flex widget:flex-col widget:items-center
+                           widget:justify-center widget:py-10 widget:px-4
+                           widget:text-center widget:gap-2"
           >
-            <span className="widget-text-4xl">🎉</span>
-            <p className="widget-font-semibold widget-text-gray-900 widget-text-sm">
+            <span className="widget:text-4xl">🎉</span>
+            <p className="widget:font-semibold widget:text-gray-900 widget:text-sm">
               Thanks for your feedback!
             </p>
-            <p className="widget-text-xs widget-text-gray-500">
+            <p className="widget:text-xs widget:text-gray-500">
               We'll use it to improve the experience.
             </p>
           </div>
         ) : (
           /* Form */
-          <form onSubmit={handleSubmit} className="widget-p-4 widget-space-y-4">
+          <form onSubmit={handleSubmit} className="widget:p-4 widget:space-y-4">
             {/* Star rating */}
             <div>
               <p
-                className="widget-text-xs widget-font-medium widget-text-gray-600
-                              widget-mb-2"
+                className="widget:text-xs widget:font-medium widget:text-gray-600
+                              widget:mb-2"
               >
                 How would you rate your experience?
               </p>
-              <div className="widget-flex widget-gap-1">
+              <div className="widget:flex widget:gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
                     type="button"
                     onClick={() => setRating(star)}
                     className={widgetCn(
-                      "widget-text-2xl widget-transition-transform hover:widget-scale-110",
-                      "widget-leading-none",
+                      "widget:text-2xl widget:transition-transform widget:hover:scale-110",
+                      "widget:leading-none",
                       star <= (rating ?? 0)
-                        ? "widget-text-amber-400"
-                        : "widget-text-gray-300"
+                        ? "widget:text-amber-400"
+                        : "widget:text-gray-300"
                     )}
                     aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
                   >
@@ -504,8 +505,8 @@ export function FeedbackWidget() {
             {/* Textarea */}
             <div>
               <label
-                className="widget-block widget-text-xs widget-font-medium
-                                  widget-text-gray-600 widget-mb-1.5"
+                className="widget:block widget:text-xs widget:font-medium
+                                  widget:text-gray-600 widget:mb-1.5"
               >
                 Tell us more (optional)
               </label>
@@ -514,14 +515,14 @@ export function FeedbackWidget() {
                 onChange={(e) => setFeedback(e.target.value)}
                 placeholder="What's working well? What could be better?"
                 rows={3}
-                className="widget-w-full widget-px-3 widget-py-2 widget-text-sm
-                             widget-rounded-xl widget-border widget-border-gray-300
-                             widget-bg-white widget-text-gray-900
-                             widget-placeholder:widget-text-gray-400
-                             widget-resize-none
-                             focus:widget-outline-none focus:widget-ring-2
-                             focus:widget-ring-blue-500 focus:widget-border-transparent
-                             widget-transition-colors widget-duration-150"
+                className="widget:w-full widget:px-3 widget:py-2 widget:text-sm
+                             widget:rounded-xl widget:border widget:border-gray-300
+                             widget:bg-white widget:text-gray-900
+                             widget:placeholder:text-gray-400
+                             widget:resize-none
+                             widget:focus:outline-none widget:focus:ring-2
+                             widget:focus:ring-blue-500 widget:focus:border-transparent
+                             widget:transition-colors widget:duration-150"
               />
             </div>
 
@@ -530,20 +531,20 @@ export function FeedbackWidget() {
               type="submit"
               disabled={state === "submitting" || rating === null}
               data-state={state}
-              className="widget-w-full widget-py-2.5 widget-rounded-xl
-                           widget-font-semibold widget-text-sm widget-text-white
-                           widget-transition-all widget-duration-150
-                           data-[state=submitting]:widget-bg-blue-400
-                           data-[state=submitting]:widget-cursor-wait
-                           data-[state=submitting]:widget-animate-pulse
-                           widget-bg-blue-600 hover:widget-bg-blue-700
-                           widget-active:widget-scale-[0.98]
-                           focus-visible:widget-outline-none
-                           focus-visible:widget-ring-2
-                           focus-visible:widget-ring-blue-500
-                           focus-visible:widget-ring-offset-2
-                           widget-disabled:widget-opacity-50
-                           widget-disabled:widget-cursor-not-allowed"
+              className="widget:w-full widget:py-2.5 widget:rounded-xl
+                           widget:font-semibold widget:text-sm widget:text-white
+                           widget:transition-all widget:duration-150
+                           widget:data-[state=submitting]:bg-blue-400
+                           widget:data-[state=submitting]:cursor-wait
+                           widget:data-[state=submitting]:animate-pulse
+                           widget:bg-blue-600 widget:hover:bg-blue-700
+                           widget:active:scale-[0.98]
+                           widget:focus-visible:outline-none
+                           widget:focus-visible:ring-2
+                           widget:focus-visible:ring-blue-500
+                           widget:focus-visible:ring-offset-2
+                           widget:disabled:opacity-50
+                           widget:disabled:cursor-not-allowed"
             >
               {state === "submitting" ? "Sending…" : "Send feedback"}
             </button>
@@ -556,14 +557,14 @@ export function FeedbackWidget() {
         onClick={() => setState((s) => (s === "closed" ? "open" : "closed"))}
         aria-label={state === "closed" ? "Open feedback" : "Close feedback"}
         aria-expanded={state !== "closed"}
-        className="widget-size-12 widget-rounded-full widget-bg-blue-600
-                     hover:widget-bg-blue-700 widget-text-white widget-text-xl
-                     widget-shadow-lg hover:widget-shadow-xl
-                     widget-transition-all widget-duration-150
-                     widget-flex widget-items-center widget-justify-center
-                     widget-active:widget-scale-95
-                     focus-visible:widget-outline-none focus-visible:widget-ring-2
-                     focus-visible:widget-ring-blue-500 focus-visible:widget-ring-offset-2"
+        className="widget:size-12 widget:rounded-full widget:bg-blue-600
+                     widget:hover:bg-blue-700 widget:text-white widget:text-xl
+                     widget:shadow-lg widget:hover:shadow-xl
+                     widget:transition-all widget:duration-150
+                     widget:flex widget:items-center widget:justify-center
+                     widget:active:scale-95
+                     widget:focus-visible:outline-none widget:focus-visible:ring-2
+                     widget:focus-visible:ring-blue-500 widget:focus-visible:ring-offset-2"
       >
         {state === "closed" ? "💬" : "✕"}
       </button>
@@ -598,7 +599,7 @@ export function FeedbackWidget() {
 ARBITRARY VALUES  [value]
   Syntax:          utility-[value] — any valid CSS value
   Spaces:          use _ (underscore) for spaces inside brackets
-  CSS vars:        bg-[--color-brand], text-[--color-text]
+  CSS vars:        bg-(--color-brand), text-(--color-text)
   calc():          h-[calc(100vh-3.5rem)], w-[calc(100%-2rem)]
   min/max/clamp:   text-[clamp(1rem,3vw,2rem)], w-[min(100%,400px)]
   Disambiguation:  text-[length:1.2rem] vs text-[color:#111]
@@ -633,7 +634,7 @@ NAMED GROUPS  group/{name}
 
 DATA ATTRIBUTES  data-[attr=value]:
   Syntax:          data-[state=open]:block, data-[active]:bg-blue-600
-  Headless UI:     Radix/Base UI emit data-state="open/closed" automatically
+  Headless UI:     Radix emits data-state="open/closed"; Base UI emits data-open / data-closed
   State machines:  Set data-state={state} once → all styles in className
   All variants:    dark:data-[state=open]:bg-gray-800, sm:data-[open]:flex
   vs JS classes:   data-[state=open]: is more semantic, testable, serializable
@@ -679,7 +680,7 @@ cn() + twMerge
   Rule:            Every component with className prop needs cn() not string concat
 
 !IMPORTANT
-  Syntax:          !utility — prefix any utility with !
+  Syntax:          utility! — append ! to any utility (v3: !utility, deprecated in v4)
   Generates:       padding: 1rem !important
   Justified:       Third-party CSS using !important internally
                    CMS/injected inline styles (specificity 1,0,0)
@@ -693,10 +694,10 @@ cn() + twMerge
 
 PREFIXING
   Syntax:          @import "tailwindcss" prefix(tw) in globals.css
-  Effect:          ALL utilities get tw- prefix: flex → tw-flex, p-4 → tw-p-4
-  Variants:        sm:tw-flex, dark:tw-bg-gray-900 (variant unchanged, utility prefixed)
-  @apply:          Must include prefix: @apply tw-flex tw-items-center
-  cn():            Works identically — twMerge recognises prefixed classes
+  Effect:          ALL utilities get the tw: prefix: flex → tw:flex, p-4 → tw:p-4
+  Variants:        tw:sm:flex, tw:dark:bg-gray-900 (prefix always first; v3 was sm:tw-flex)
+  @apply:          Must include prefix: @apply tw:flex tw:items-center
+  cn():            twMerge needs extendTailwindMerge({ prefix: "tw" })
   When needed:     Embeddable widgets on third-party pages
                    npm component libraries for diverse consumers
                    Micro-frontends sharing a DOM
@@ -719,7 +720,7 @@ DECISION FLOWCHART
                                    → NO  → plain string is fine
 
   Third-party CSS overriding Tailwind? → Is it your CSS? → YES → use @layer
-                                                          → NO  → use !utility
+                                                          → NO  → use utility!
 
   Embedding in third-party page? → YES → add prefix(widget) to @import
                                  → NO  → no prefix needed

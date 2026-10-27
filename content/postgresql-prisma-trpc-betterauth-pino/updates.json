@@ -1,0 +1,604 @@
+{
+  "updates": [
+    {
+      "lesson": "day-05/01-schema-prisma-file-structure-and-the-three-blocks",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Prisma 7 moves the connection URL to prisma.config.ts and replaces the prisma-client-js generator.",
+      "changes": [
+        "Key Concepts — generator block now `prisma-client` with `output`; datasource block no longer has `url`; added a `prisma.config.ts` example (schema path, `datasource.url`, `dotenv/config`).",
+        "Key Concepts — custom schema location is set in `prisma.config.ts` instead of `package.json` \"prisma\"; multi-file schema is GA since Prisma 6.7 (was \"Prisma 5.15 preview / standard in 7\").",
+        "Interview Q&A — generator described as `prisma-client` (not `prisma-client-js`); URL lives in `prisma.config.ts`; multi-file schema version corrected.",
+        "Coding Challenge — challenge text and solution use the `prisma-client` generator with `output` and no datasource `url`."
+      ]
+    },
+    {
+      "lesson": "day-05/02-datasource-connecting-to-postgresql",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "In Prisma 7 the datasource block has no url/directUrl/shadowDatabaseUrl: the CLI reads prisma.config.ts and the app passes a URL to a driver adapter.",
+      "changes": [
+        "TL;DR — rewritten: datasource only declares `provider`; URL goes in `prisma.config.ts` (CLI) and `PrismaPg` adapter (runtime).",
+        "Key Concepts — `url`/`directUrl`/`shadowDatabaseUrl` examples replaced by `prisma.config.ts` + adapter code; pooled-vs-direct URL split explained for Prisma 7; `?pgbouncer=true&connection_limit=1` replaced by pool option `max`; MongoDB marked unsupported in Prisma 7; `.env` is no longer auto-loaded.",
+        "Why It Matters / Interview Q&A — \"url vs directUrl\" question reworded as pooled (adapter) vs direct (config) URL.",
+        "Common Pitfalls — credentials example now shows `prisma.config.ts` instead of `url = \"...\"` in the schema.",
+        "Coding Challenge — Supabase solution now uses `prisma.config.ts` (direct URL) plus `PrismaPg` adapter (pooled URL, `max: 1`); `.env.example` no longer uses Prisma-specific pooler params."
+      ]
+    },
+    {
+      "lesson": "day-05/03-generator-prisma-client-configuration",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "The generator lesson now teaches the Prisma 7 `prisma-client` generator: required output, ESM, driver adapters, no binaryTargets.",
+      "changes": [
+        "TL;DR / Key Concepts — `prisma-client-js` → `prisma-client`; `output` is required; client no longer in `node_modules`; import path is the generated folder; adapter example added; ESM/Node requirements added.",
+        "Key Concepts — `binaryTargets` section replaced: no Rust engine binary in Prisma 7, so normally not needed; preview feature list updated (multiSchema, tracing, driverAdapters are GA).",
+        "Why It Matters / Interview Q&A — rewritten around generated source in your tree and `prisma generate` after `migrate dev`; added \"prisma-client vs prisma-client-js\" question.",
+        "Common Pitfalls — now \"old generator and import path / client without adapter\".",
+        "Coding Challenge — no `binaryTargets`; includes `prisma.config.ts`, `\"type\": \"module\"`, and a singleton using `PrismaPg`."
+      ]
+    },
+    {
+      "lesson": "day-05/04-models-declaring-tables-and-fields",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — generator `provider = \"prisma-client-js\"` → `\"prisma-client\"` with a required `output` (e.g. `../src/generated/prisma`).",
+        "Key Concepts / Coding Challenge — datasource `url` / `directUrl` / `shadowDatabaseUrl` lines removed (Prisma 7 keeps the connection URL in `prisma.config.ts`)."
+      ]
+    },
+    {
+      "lesson": "day-05/07-enums-type-safe-categorical-values",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — `import ... from \"@prisma/client\"` → import from the generated client (`@/generated/prisma/client`).",
+        "Key Concepts / Coding Challenge — `new PrismaClient()` → `new PrismaClient({ adapter })` (Prisma 7 requires a driver adapter such as `PrismaPg`)."
+      ]
+    },
+    {
+      "lesson": "day-05/09-model-to-table-mapping-map-map-schema-naming-conventions",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — generator `provider = \"prisma-client-js\"` → `\"prisma-client\"` with a required `output` (e.g. `../src/generated/prisma`).",
+        "Key Concepts / Coding Challenge — datasource `url` / `directUrl` / `shadowDatabaseUrl` lines removed (Prisma 7 keeps the connection URL in `prisma.config.ts`).",
+        "Key Concepts / Coding Challenge — `previewFeatures = [\"multiSchema\"]` removed (GA since Prisma 6.13)."
+      ]
+    },
+    {
+      "lesson": "day-05/10-prisma-client-generation-prisma-generate-output-and-usage",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Generated client location, singleton setup and key rules changed for Prisma 7 (custom output, driver adapter, explicit generate).",
+      "changes": [
+        "TL;DR / Key Concepts — generate output path is your `output` folder; singleton now builds a `PrismaPg` adapter; note that `migrate dev` no longer runs `generate`.",
+        "Interview Q&A — answer no longer says the client and engine binary live in `node_modules/.prisma/client`.",
+        "Common Pitfalls / Coding Challenge — singleton snippets create the adapter and pass it to `PrismaClient`.",
+        "End-of-day mental model — generator `prisma-client` + `output`, no datasource `url`/`directUrl`, no `binaryTargets` rule, \"run prisma generate explicitly\"."
+      ]
+    },
+    {
+      "lesson": "day-06/04-explicit-many-to-many-junction-tables-with-extra-fields",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — `import ... from \"@prisma/client\"` → import from the generated client (`@/generated/prisma/client`)."
+      ]
+    },
+    {
+      "lesson": "day-06/07-relation-modes-foreignkeys-vs-prisma",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — datasource `url` / `directUrl` / `shadowDatabaseUrl` lines removed (Prisma 7 keeps the connection URL in `prisma.config.ts`)."
+      ]
+    },
+    {
+      "lesson": "day-06/08-initial-migration-prisma-migrate-dev-from-zero",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "In Prisma 7 `migrate dev` no longer runs generate or seed, and `--skip-generate` / `--skip-seed` are gone.",
+      "changes": [
+        "TL;DR — migrate dev creates and applies the migration; it no longer regenerates the client.",
+        "Key Concepts — step \"Runs prisma generate\" updated; `--skip-generate` flag removed from the flag list; install command adds `@prisma/adapter-pg` and `dotenv`.",
+        "Coding Challenge — schema uses the `prisma-client` generator with `output` and no datasource `url`."
+      ]
+    },
+    {
+      "lesson": "day-06/09-iterative-migration-workflow-evolving-the-schema-safely",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — generator `provider = \"prisma-client-js\"` → `\"prisma-client\"` with a required `output` (e.g. `../src/generated/prisma`).",
+        "Key Concepts / Coding Challenge — datasource `url` / `directUrl` / `shadowDatabaseUrl` lines removed (Prisma 7 keeps the connection URL in `prisma.config.ts`)."
+      ]
+    },
+    {
+      "lesson": "day-06/10-migration-history-squashing-and-production-deploy",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Prisma 7 changed migrate diff flags: `--to-schema-datamodel` → `--to-schema`, `--from-url` removed.",
+      "changes": [
+        "Key Concepts — diff examples use `--from-schema` / `--to-schema`; the live-database example uses `--from-config-datasource` (URL from `prisma.config.ts`).",
+        "Common Pitfalls — baseline/consolidation diff commands use `--to-schema`."
+      ]
+    },
+    {
+      "lesson": "day-07/01-introspection-prisma-db-pull-and-reading-existing-databases",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — generator `provider = \"prisma-client-js\"` → `\"prisma-client\"` with a required `output` (e.g. `../src/generated/prisma`).",
+        "Key Concepts / Coding Challenge — datasource `url` / `directUrl` / `shadowDatabaseUrl` lines removed (Prisma 7 keeps the connection URL in `prisma.config.ts`).",
+        "Key Concepts / Coding Challenge — `previewFeatures = [\"multiSchema\"]` removed (GA since Prisma 6.13)."
+      ]
+    },
+    {
+      "lesson": "day-07/02-working-with-an-existing-database-full-adoption-workflow",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "A baseline migration must contain the full schema SQL, not an empty file; empty baselines break fresh databases and the shadow DB.",
+      "changes": [
+        "Key Concepts — Step 3 now generates `migration.sql` with `prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script` and then `migrate resolve --applied`, instead of an empty file.",
+        "Why It Matters / Interview Q&A — baseline described as full SQL that is recorded, not executed, on the existing DB.",
+        "Common Pitfalls — \"baseline first\" fix uses the generated SQL.",
+        "Coding Challenge — baseline commands use `migrate diff` output; schema uses `prisma-client` generator and no datasource `url`."
+      ]
+    },
+    {
+      "lesson": "day-07/03-baseline-migration-mindset-starting-migrations-mid-project",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "The lesson claimed an empty baseline file is correct; it must hold the full schema SQL (recorded as applied, not run on the existing DB).",
+      "changes": [
+        "Key Concepts — Scenario 1 baseline file is generated with `migrate diff --from-empty --to-schema ... --script` instead of an empty file; scenario summary and mental-model bullets rewritten; Prisma 7 `--from-url` replaced by `--from-config-datasource`.",
+        "Why It Matters — \"empty baseline is intentionally correct\" replaced by why the real SQL is required (new DBs and shadow DB replay history).",
+        "Interview Q&A — question/answer reframed from \"empty migration file\" to a full-schema baseline marked with `--applied`.",
+        "Common Pitfalls — pitfall retitled (empty or full SQL run by migrate dev); fix keeps full SQL but marks it applied.",
+        "Coding Challenge — diff flags updated (`--to-schema`)."
+      ]
+    },
+    {
+      "lesson": "day-07/05-unsupported-feature-awareness-what-prisma-cant-do-yet",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — generator `provider = \"prisma-client-js\"` → `\"prisma-client\"` with a required `output` (e.g. `../src/generated/prisma`).",
+        "Key Concepts / Coding Challenge — datasource `url` / `directUrl` / `shadowDatabaseUrl` lines removed (Prisma 7 keeps the connection URL in `prisma.config.ts`).",
+        "Key Concepts / Coding Challenge — `import ... from \"@prisma/client\"` → import from the generated client (`@/generated/prisma/client`)."
+      ]
+    },
+    {
+      "lesson": "day-07/06-prisma-migrate-diff-generating-and-auditing-sql-diffs",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "`migrate diff` flags changed: `--*-schema-datamodel` is now `--*-schema`, and `--from-url` / `--to-url` were removed in Prisma 7.",
+      "changes": [
+        "Key Concepts — option list rewritten: `--from-schema`/`--to-schema`, `--from-config-datasource`/`--to-config-datasource`; note that `--from-url`/`--to-url`/`--*-schema-datasource` are gone.",
+        "Key Concepts — drift/prod/staging examples set `DATABASE_URL` for the command; comparing two live DBs now means `prisma db pull --print` for each, then diffing the files.",
+        "Why It Matters / Interview Q&A — `--from-url $PROD_URL` wording replaced by `--from-config-datasource`.",
+        "Common Pitfalls — backwards-direction example uses `--to-config-datasource`.",
+        "Coding Challenge — CI drift script uses `--from-config-datasource` with `DATABASE_URL` set to production."
+      ]
+    },
+    {
+      "lesson": "day-07/07-raw-sql-with-queryraw-and-executeraw",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — `import ... from \"@prisma/client\"` → import from the generated client (`@/generated/prisma/client`)."
+      ]
+    },
+    {
+      "lesson": "day-07/08-custom-sql-in-migrations-triggers-views-functions",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — generator `provider = \"prisma-client-js\"` → `\"prisma-client\"` with a required `output` (e.g. `../src/generated/prisma`)."
+      ]
+    },
+    {
+      "lesson": "day-07/09-prisma-db-seed-seeding-and-test-data-workflows",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Prisma 7 registers the seed command in prisma.config.ts and no longer seeds automatically after migrate dev/reset.",
+      "changes": [
+        "Key Concepts — seed registered under `migrations.seed` in `prisma.config.ts` (was `package.json` \"prisma\": { \"seed\" }), tsx recommended; seed script builds a `PrismaPg` adapter and imports the generated client.",
+        "Key Concepts — \"Running the seed\": auto-seeding after `migrate reset` / `migrate dev` and `--skip-seed` no longer exist; run `prisma db seed` yourself.",
+        "Why It Matters — reset + seed described as two commands.",
+        "Coding Challenge — seed.ts uses the generated client path and an adapter."
+      ]
+    },
+    {
+      "lesson": "day-07/10-prisma-studio-and-introspection-debugging",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — `import ... from \"@prisma/client\"` → import from the generated client (`@/generated/prisma/client`).",
+        "Key Concepts / Coding Challenge — `new PrismaClient()` → `new PrismaClient({ adapter })` (Prisma 7 requires a driver adapter such as `PrismaPg`).",
+        "Key Concepts / Coding Challenge — `migrate diff` flags `--to-schema-datamodel` → `--to-schema` (and `--from-url` → `--from-config-datasource`)."
+      ]
+    },
+    {
+      "lesson": "day-08/01-crud-create-findunique-update-delete-upsert",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — `import ... from \"@prisma/client\"` → import from the generated client (`@/generated/prisma/client`).",
+        "Key Concepts / Coding Challenge — `new PrismaClient()` → `new PrismaClient({ adapter })` (Prisma 7 requires a driver adapter such as `PrismaPg`)."
+      ]
+    },
+    {
+      "lesson": "day-08/02-select-field-selection-and-partial-return-types",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — `import ... from \"@prisma/client\"` → import from the generated client (`@/generated/prisma/client`)."
+      ]
+    },
+    {
+      "lesson": "day-08/03-include-loading-relations-eagerly",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — `import ... from \"@prisma/client\"` → import from the generated client (`@/generated/prisma/client`)."
+      ]
+    },
+    {
+      "lesson": "day-08/04-filtering-where-operators-and-field-filters",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — `import ... from \"@prisma/client\"` → import from the generated client (`@/generated/prisma/client`)."
+      ]
+    },
+    {
+      "lesson": "day-08/07-nested-reads-deep-select-include-and-combining-both",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — `import ... from \"@prisma/client\"` → import from the generated client (`@/generated/prisma/client`)."
+      ]
+    },
+    {
+      "lesson": "day-08/08-nested-writes-creating-and-updating-across-relations",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — `import ... from \"@prisma/client\"` → import from the generated client (`@/generated/prisma/client`)."
+      ]
+    },
+    {
+      "lesson": "day-08/09-relation-queries-filtering-some-every-none-count",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — `import ... from \"@prisma/client\"` → import from the generated client (`@/generated/prisma/client`)."
+      ]
+    },
+    {
+      "lesson": "day-08/10-aggregation-count-sum-avg-min-max-groupby",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — `import ... from \"@prisma/client\"` → import from the generated client (`@/generated/prisma/client`)."
+      ]
+    },
+    {
+      "lesson": "day-09/01-transactions-interactive-and-batch",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — `import ... from \"@prisma/client\"` → import from the generated client (`@/generated/prisma/client`)."
+      ]
+    },
+    {
+      "lesson": "day-09/02-batching-mindset-promise-all-avoiding-n-1-query-counting",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — `new PrismaClient()` → `new PrismaClient({ adapter })` (Prisma 7 requires a driver adapter such as `PrismaPg`)."
+      ]
+    },
+    {
+      "lesson": "day-09/03-raw-sql-queryraw-executeraw-safety-rules",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — `import ... from \"@prisma/client\"` → import from the generated client (`@/generated/prisma/client`)."
+      ]
+    },
+    {
+      "lesson": "day-09/04-consistency-patterns-optimistic-locking-idempotency-retry",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — `import ... from \"@prisma/client\"` → import from the generated client (`@/generated/prisma/client`)."
+      ]
+    },
+    {
+      "lesson": "day-09/05-data-layer-organization-services-repositories-procedures",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — `import ... from \"@prisma/client\"` → import from the generated client (`@/generated/prisma/client`).",
+        "Key Concepts / Coding Challenge — `new PrismaClient()` → `new PrismaClient({ adapter })` (Prisma 7 requires a driver adapter such as `PrismaPg`)."
+      ]
+    },
+    {
+      "lesson": "day-10/01-betterauth-overview-what-it-is-and-how-it-fits",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "BetterAuth sign-in verifies a scrypt hash (not bcrypt), and Next.js 16 uses proxy.ts.",
+      "changes": [
+        "Key Concepts — \"Verifies password hash (bcrypt compare)\" → scrypt verify; project tree `middleware.ts` → `proxy.ts` (middleware.ts before Next.js 16)."
+      ]
+    },
+    {
+      "lesson": "day-10/02-auth-instance-setup-auth-ts-and-core-config",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Default password hashing in BetterAuth is scrypt.",
+      "changes": [
+        "Key Concepts — config comment \"default: bcrypt, cost 10\" → \"default: scrypt\"."
+      ]
+    },
+    {
+      "lesson": "day-10/03-prisma-adapter-schema-migration-db-persistence",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "BetterAuth CLI is `npx auth@latest generate` and the default hasher is scrypt.",
+      "changes": [
+        "TL;DR / Key Concepts — `npx better-auth generate` → `npx auth@latest generate`.",
+        "Key Concepts / Interview Q&A — \"bcrypt-hashed password\" → scrypt-hashed."
+      ]
+    },
+    {
+      "lesson": "day-10/05-sign-up-email-password-registration-flow",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Sign-up hashes the password with scrypt (BetterAuth default), not bcrypt.",
+      "changes": [
+        "TL;DR / Key Concepts — \"bcrypt-hashed\", \"bcrypt(password, costFactor=10)\" → scrypt.",
+        "Interview Q&A — answer says scrypt, configurable via `emailAndPassword.password.hash`."
+      ]
+    },
+    {
+      "lesson": "day-10/06-sign-in-email-password-authentication-flow",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Sign-in verifies a scrypt hash, not bcrypt.",
+      "changes": [
+        "TL;DR / Key Concepts — \"stored bcrypt hash\" and `bcrypt.compare(...)` → scrypt verify."
+      ]
+    },
+    {
+      "lesson": "day-10/09-server-side-usage-auth-api-getsession-route-protection",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Next.js 16 renames middleware.ts to proxy.ts (Node runtime), so a DB-backed getSession can run there; on older Next.js middleware ran on the Edge runtime and could not.",
+      "changes": [
+        "TL;DR — \"middleware.ts at the edge\" → `proxy.ts` (called middleware.ts before Next.js 16).",
+        "Key Concepts — route-protection example renamed to `src/proxy.ts` / `export async function proxy`; added note on Edge-runtime limits for Prisma-backed `getSession` on Next 13-15.1 and the `getSessionCookie` / `runtime: \"nodejs\"` alternatives.",
+        "Why It Matters / Interview Q&A — no longer says middleware runs \"at the edge\"; caveat added for older versions."
+      ]
+    },
+    {
+      "lesson": "day-10/10-trusted-origins-cors-and-environment-config",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Production checklist updated: scrypt not bcrypt, auth@latest CLI, proxy.ts.",
+      "changes": [
+        "Key Concepts / end-of-day recap — flow diagrams and security rules say scrypt instead of bcrypt.",
+        "Key Concepts / end-of-day recap — `npx better-auth generate` → `npx auth@latest generate`; `middleware.ts` → `proxy.ts`."
+      ]
+    },
+    {
+      "lesson": "day-11/01-email-password-options-rules-auto-sign-in-custom-hashing",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "BetterAuth hashes passwords with scrypt by default, not bcrypt.",
+      "changes": [
+        "Key Concepts — comments saying the default is bcrypt (cost 10) now say scrypt; maxPasswordLength comment no longer cites bcrypt's 72-byte truncation.",
+        "Why It Matters — default hasher bullet rewritten for scrypt.",
+        "Interview Q&A — maxPasswordLength / DoS answer now talks about scrypt (memory-hard, slow) instead of bcrypt."
+      ]
+    },
+    {
+      "lesson": "day-11/03-password-reset-flow-token-lifecycle-sending",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Password reset re-hashes with scrypt, not bcrypt.",
+      "changes": [
+        "Key Concepts — `bcrypt(newPassword)` → `scrypt(newPassword)` in the reset flow."
+      ]
+    },
+    {
+      "lesson": "day-11/04-session-control-listing-revoking-rotating-force-sign-out",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Session-rotation snippet uses Next.js 16 proxy.ts.",
+      "changes": [
+        "Key Concepts — \"implement via middleware\" / `export async function middleware` → `proxy.ts` / `export async function proxy`."
+      ]
+    },
+    {
+      "lesson": "day-11/05-oauth-providers-google-and-github-setup",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "OAuth lesson no longer cites bcrypt overhead.",
+      "changes": [
+        "Why It Matters — \"no bcrypt overhead\" → \"no password-hashing overhead\"."
+      ]
+    },
+    {
+      "lesson": "day-11/06-plugins-what-they-are-built-in-options-wiring",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "BetterAuth CLI command is `npx auth@latest generate`.",
+      "changes": [
+        "Key Concepts — `better-auth generate` references updated to `npx auth@latest generate`."
+      ]
+    },
+    {
+      "lesson": "day-11/08-schema-generation-and-migration-options",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "BetterAuth CLI command, Prisma 7 seed config, generator and binaryTargets were updated in the schema-generation lesson.",
+      "changes": [
+        "TL;DR / Key Concepts — CLI command `npx better-auth generate` → `npx auth@latest generate`; multi-file schema is GA since Prisma 6.7 (not a \"Prisma 7\" feature); note that `prisma generate` is not run by `migrate dev` in Prisma 7.",
+        "Key Concepts — seed registered in `prisma.config.ts` (`migrations.seed`) rather than package.json \"prisma\".",
+        "Coding Challenge — package.json no longer has a \"prisma.seed\" block; generator uses `prisma-client` with `output` and no `binaryTargets`; seed script creates `PrismaClient` with `PrismaPg`.",
+        "Key Concepts — password hasher default is scrypt (was \"bcrypt cost 10\")."
+      ]
+    },
+    {
+      "lesson": "day-12/01-what-is-trpc-and-how-it-fits",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Same fix as the queries lesson: superjson does not switch queries to POST; also removed a bcrypt mention.",
+      "changes": [
+        "Key Concepts — request flow note: \"GET for queries with superjson\" → GET for queries and POST for mutations, transformer does not change the method.",
+        "Coding Challenge — mention of bcrypt in the imported-server-code example reworded to \"password hashing\"."
+      ]
+    },
+    {
+      "lesson": "day-12/03-procedures-publicprocedure-and-the-procedure-builder",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "tRPC v11 handlers do not receive rawInput; middleware uses getRawInput().",
+      "changes": [
+        "Key Concepts — handler argument list no longer includes `rawInput`; note that middleware gets `getRawInput()`."
+      ]
+    },
+    {
+      "lesson": "day-12/04-queries-defining-and-calling",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "A transformer such as superjson does not change the HTTP method; tRPC queries use GET by default.",
+      "changes": [
+        "TL;DR — \"GET (or POST with superjson)\" → GET by default; only `methodOverride: 'POST'` on the link and server forces POST."
+      ]
+    },
+    {
+      "lesson": "day-13/01-middleware-t-middleware-next-context-transformation",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "tRPC v11 middleware reads raw input with `await getRawInput()`, not a `rawInput` property.",
+      "changes": [
+        "Key Concepts — rate-limit middleware example uses `getRawInput()`; note on input availability updated (no longer says `.input()` is terminal)."
+      ]
+    },
+    {
+      "lesson": "day-13/02-stacked-input-chaining-and-middleware-input",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "In tRPC v11 chained `.input()` calls are merged (object schemas), not replaced; middleware uses `getRawInput()` rather than `rawInput`.",
+      "changes": [
+        "TL;DR — rewritten: stacked `.input()` merges object inputs (later call wins on duplicate keys); `getRawInput()` replaces `rawInput`.",
+        "Key Concepts — \"calling it twice replaces\" example replaced with a merging example; `rawInput` middleware example now `await getRawInput()`.",
+        "Why It Matters / Interview Q&A — answers changed from \"No, it replaces\" to \"Yes, object schemas merge\".",
+        "Common Pitfalls — pitfall changed to chaining a non-object schema / relying on duplicate keys."
+      ]
+    },
+    {
+      "lesson": "day-13/03-authorization-patterns-ownership-and-rbac",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "tRPC v11 middleware reads raw input with `await getRawInput()`.",
+      "changes": [
+        "Key Concepts — workspace-member middleware uses `getRawInput()` instead of `rawInput`."
+      ]
+    },
+    {
+      "lesson": "day-13/07-prisma-integration-transactions-error-codes",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — `import ... from \"@prisma/client\"` → import from the generated client (`@/generated/prisma/client`)."
+      ]
+    },
+    {
+      "lesson": "day-13/08-betterauth-session-based-access-control-full-patterns",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "tRPC v11 middleware reads raw input with `await getRawInput()`.",
+      "changes": [
+        "Coding Challenge / end-of-day recap — middleware signature and notes use `getRawInput()` (v10: `rawInput`).",
+        "Coding Challenge / end-of-day recap — `PrismaClient` import path updated to the generated client."
+      ]
+    },
+    {
+      "lesson": "day-14/01-structured-logging-with-pino-why-json-logs-win",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "pino ships its own TypeScript types; @types/pino is only a stub.",
+      "changes": [
+        "Key Concepts — install snippet no longer installs `@types/pino`."
+      ]
+    },
+    {
+      "lesson": "day-14/05-request-ids-correlation-across-layers",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Request-ID example uses Next.js 16 proxy.ts.",
+      "changes": [
+        "Coding Challenge — challenge and solution: `middleware.ts` / `export function middleware` → `proxy.ts` / `export function proxy`."
+      ]
+    },
+    {
+      "lesson": "day-14/06-serializers-shaping-log-output",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Code samples updated to the Prisma 7 setup (prisma-client generator, generated client import, driver adapter).",
+      "changes": [
+        "Key Concepts / Coding Challenge — `import ... from \"@prisma/client\"` → import from the generated client (`@/generated/prisma/client`)."
+      ]
+    },
+    {
+      "lesson": "day-14/09-end-to-end-backend-flow-composition",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "End-to-end flow names the Next.js 16 proxy.ts.",
+      "changes": [
+        "Key Concepts — \"Next.js middleware (middleware.ts)\" → proxy.ts (middleware.ts before Next.js 16)."
+      ]
+    },
+    {
+      "lesson": "day-14/11-auth-hardening-betterauth-production-checklist",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Rate-limit example uses Next.js 16 proxy.ts.",
+      "changes": [
+        "Key Concepts — rate-limit snippet: `middleware.ts` → `proxy.ts`, `middleware()` → `proxy()`.",
+        "Coding Challenge / recap — request IDs \"generate at edge (middleware.ts)\" → in proxy.ts."
+      ]
+    }
+  ]
+}

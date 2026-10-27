@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-Borders (`border`, `border-*`, `rounded-*`), shadows (`shadow-*`), rings (`ring-*`), and effects (`blur-*`, `backdrop-blur-*`, `opacity-*`) handle visual depth and separation. The `ring-*` utilities are Tailwind's preferred way to show focus states — they use `outline` and avoid layout shifts.
+Borders (`border`, `border-*`, `rounded-*`), shadows (`shadow-*`), rings (`ring-*`), and effects (`blur-*`, `backdrop-blur-*`, `opacity-*`) handle visual depth and separation. The `ring-*` utilities are Tailwind's preferred way to show focus states — they are built on `box-shadow` (not `outline`), so they never affect layout and avoid layout shifts.
 
 ---
 
@@ -106,7 +106,7 @@ Borders (`border`, `border-*`, `rounded-*`), shadows (`shadow-*`), rings (`ring-
 
 ```tsx
 {/* ─── Ring is the CORRECT way to show focus in Tailwind */}
-{/* Ring uses CSS outline (not box-shadow) — no layout shift */}
+{/* Ring is implemented with box-shadow (not outline) — it takes no layout space, so no layout shift */}
 
 {/* ─── Ring width */}
 <button className="ring-0">     {/* no ring */}
@@ -173,7 +173,7 @@ Borders (`border`, `border-*`, `rounded-*`), shadows (`shadow-*`), rings (`ring-
 
 ## W — Why It Matters
 
-- `ring-*` over `outline-*` is Tailwind's approach to focus indicators — `ring-2 ring-blue-500 ring-offset-2` creates a visible, accessible focus ring using CSS outline under the hood. The `focus-visible:` variant (see subtopic 8) ensures it only shows for keyboard users, not mouse users.
+- `ring-*` over `outline-*` is Tailwind's approach to focus indicators — `ring-2 ring-blue-500 ring-offset-2` creates a visible, accessible focus ring using `box-shadow` under the hood (Tailwind's separate `outline-*` utilities use the real CSS `outline`). The `focus-visible:` variant (see subtopic 8) ensures it only shows for keyboard users, not mouse users.
 - `divide-y divide-gray-200` is the clean way to add borders between list items — it adds a top border to every child except the first, replacing the need for `:not(:last-child)` margin hacks or manual `border-b` on each item except the last.
 - The frosted glass pattern (`bg-white/80 backdrop-blur-md`) is ubiquitous in modern design — it creates depth without heavy shadow, and is now achievable with just two utility classes.
 
@@ -183,7 +183,7 @@ Borders (`border`, `border-*`, `rounded-*`), shadows (`shadow-*`), rings (`ring-
 
 ### Q1: What is the difference between `shadow-*` and `ring-*` in Tailwind?
 
-**A:** `shadow-*` applies `box-shadow` — it creates a visual shadow effect for depth and elevation (cards, modals, dropdowns). It adds to the visual layer outside the element's border-box. `ring-*` applies `outline` — it creates a ring around the element for focus/selection states. Unlike `box-shadow`, `outline` doesn't affect layout and renders outside the border-box without taking up space. The `ring-*` utilities are specifically designed for accessibility focus indicators — they're visible to keyboard users and screen reader users. Using `box-shadow` for focus indicators can create layout shifts; `ring-*` does not.
+**A:** `shadow-*` applies `box-shadow` — it creates a visual shadow effect for depth and elevation (cards, modals, dropdowns). It adds to the visual layer outside the element's border-box. `ring-*` is also implemented with `box-shadow` (a spread-only, zero-blur shadow in the ring colour) — it creates a ring around the element for focus/selection states. Like any `box-shadow`, it doesn't affect layout and renders outside the border-box without taking up space; the difference from `shadow-*` is intent and API (width, colour, offset), not the underlying property. The `ring-*` utilities are specifically designed for accessibility focus indicators — they're visible to keyboard users and screen reader users. Using `border` for focus indicators can create layout shifts; `ring-*` does not.
 
 ---
 

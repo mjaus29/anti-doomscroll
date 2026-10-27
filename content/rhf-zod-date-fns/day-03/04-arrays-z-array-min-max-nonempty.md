@@ -22,8 +22,9 @@ z.array(z.object({ id: z.string(), label: z.string() }))
 z.array(z.string()).min(1)    // at least 1 item
 z.array(z.string()).max(10)   // at most 10 items
 z.array(z.string()).length(3) // exactly 3 items
-z.array(z.string()).nonempty()// at least 1 item (shorthand for min(1))
-// nonempty() also narrows the type to [string, ...string[]]
+z.array(z.string()).nonempty()// at least 1 item — in Zod 4 this is just min(1); the type stays string[]
+// Need the [string, ...string[]] type? Use a tuple with a rest element:
+const NonEmptyTuple = z.tuple([z.string()], z.string())   // [string, ...string[]]
 
 // Custom messages
 z.array(z.string()).min(1, 'Select at least one option')
@@ -40,7 +41,7 @@ PointSchema.parse([10.5, 20.3])   // ✅
 PointSchema.parse([10.5, 'bad'])  // ❌
 
 // Tuple with rest
-const VarArgs = z.tuple([z.string(), z.number()]).rest(z.boolean())
+const VarArgs = z.tuple([z.string(), z.number()], z.boolean())   // 2nd arg = rest schema
 // [string, number, ...boolean[]]
 ```
 
@@ -51,7 +52,7 @@ const FormSchema = z.object({
   tags:        z.array(z.string().min(1).max(20)).max(5),
   attachments: z.array(z.object({
     name: z.string(),
-    url:  z.string().url(),
+    url:  z.url(),
     size: z.number().positive()
   })).optional()
 })
@@ -65,7 +66,7 @@ const UniqueTagsSchema = z.array(z.string())
 
 ## W — Why It Matters
 
-- `.nonempty()` not only validates but also **narrows the TypeScript type** to a non-empty tuple `[T, ...T[]]` — downstream code gets the guarantee that `array[0]` exists without a `?` check.
+- `.nonempty()` is a readable alias for `.min(1)` — it does **not** change the inferred type in Zod 4 (in Zod 3 it narrowed to `[T, ...T[]]`). If downstream code needs the guarantee that `array[0]` exists, model it as a tuple with a rest element: `z.tuple([item], item)`.
 - Array schemas are essential for multi-select inputs, tag fields, and checklist forms — each item in the array gets individually validated against the element schema, with precise error paths (`items[2].name`).
 - `.transform(arr => [...new Set(arr)])` deduplication in the schema means your API handler never needs to deduplicate manually — the parsed output is already clean.
 
@@ -75,7 +76,7 @@ const UniqueTagsSchema = z.array(z.string())
 
 ### Q: What is the TypeScript difference between `z.array(z.string()).min(1)` and `z.array(z.string()).nonempty()`?
 
-**A:** Both reject empty arrays at runtime. But `nonempty()` additionally narrows the TypeScript type to `[string, ...string[]]` — a tuple with at least one element. This means TypeScript knows `result[0]` is always defined. `min(1)` validates but leaves the type as `string[]`, so TypeScript still considers `result[0]` potentially `undefined`. Use `nonempty()` when downstream code reads the first element without a null check.
+**A:** In Zod 4 there is no difference: `nonempty()` is the same as `min(1)`, and both leave the type as `string[]`. Before Zod 4, `nonempty()` additionally narrowed the type to `[string, ...string[]]` (so `result[0]` was never `undefined`). To get that type today, use `z.tuple([z.string()], z.string())`, or keep `string[]` and handle `result[0]` as possibly `undefined`.
 
 ---
 

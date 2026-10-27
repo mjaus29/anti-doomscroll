@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-TypeScript has four directive comments to suppress errors: `@ts-ignore` (silences the next line), `@ts-expect-error` (silences and fails if no error — for tests), `@ts-nocheck` (disables the whole file). The **non-null assertion operator** (`!`) tells TypeScript a value is definitely not null/undefined. All are escape hatches — use them deliberately with comments.
+TypeScript has three directive comments to suppress errors: `@ts-ignore` (silences the next line), `@ts-expect-error` (silences and fails if no error — for tests), `@ts-nocheck` (disables the whole file). The **non-null assertion operator** (`!`) tells TypeScript a value is definitely not null/undefined. All are escape hatches — use them deliberately with comments.
 
 ---
 

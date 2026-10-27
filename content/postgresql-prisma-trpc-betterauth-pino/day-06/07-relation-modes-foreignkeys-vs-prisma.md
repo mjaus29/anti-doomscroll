@@ -14,7 +14,6 @@ The `relationMode` setting in the datasource block controls how Prisma enforces 
 // ── foreignKeys mode (default for PostgreSQL) ──────────────────────────────
 datasource db {
   provider     = "postgresql"
-  url          = env("DATABASE_URL")
   relationMode = "foreignKeys"   // explicit (this is the default — can omit)
 }
 
@@ -30,7 +29,6 @@ datasource db {
 // ── prisma mode (for databases without native FK support) ─────────────────
 datasource db {
   provider     = "mysql"   // e.g. PlanetScale (MySQL without FK constraints)
-  url          = env("DATABASE_URL")
   relationMode = "prisma"
 }
 
@@ -118,7 +116,6 @@ Required @@index on FKs     │ Recommended (perf)    │ Required (correctness)
 // ❌ Unnecessary and harmful for PostgreSQL — removes FK constraints from DB
 datasource db {
   provider     = "postgresql"
-  url          = env("DATABASE_URL")
   relationMode = "prisma"   // ← NEVER for PostgreSQL ❌
 }
 // Result: no FOREIGN KEY constraints in PostgreSQL
@@ -131,7 +128,6 @@ datasource db {
 // ✅ For PostgreSQL: use foreignKeys mode (or just omit it — it's the default)
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
   // relationMode = "foreignKeys"  ← this is the default, can be omitted
 }
 ```
@@ -153,7 +149,6 @@ Show side-by-side schemas for a `Blog → Post → Comment` chain: (1) Version A
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
   // relationMode defaults to "foreignKeys" — FK constraints created in PostgreSQL
 }
 
@@ -214,7 +209,6 @@ model Comment {
 
 datasource db {
   provider     = "mysql"
-  url          = env("DATABASE_URL")
   relationMode = "prisma"  // ← required for PlanetScale (no DB FK constraints)
 }
 

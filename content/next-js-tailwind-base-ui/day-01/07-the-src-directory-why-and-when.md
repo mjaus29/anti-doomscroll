@@ -21,10 +21,9 @@ my-app/
 ├── hooks/                 ← custom hooks
 ├── types/                 ← TypeScript types
 ├── next.config.ts         ← config files mixed with source
-├── tailwind.config.ts
 ├── tsconfig.json
 ├── package.json
-├── .eslintrc.json
+├── eslint.config.mjs
 └── postcss.config.mjs
 → Config files and source code mixed at root — gets messy at 20+ files
 
@@ -37,10 +36,9 @@ my-app/
 │   ├── hooks/
 │   └── types/
 ├── next.config.ts         ← only config files at root
-├── tailwind.config.ts
 ├── tsconfig.json
 ├── package.json
-├── .eslintrc.json
+├── eslint.config.mjs
 └── postcss.config.mjs
 → Clean separation — source is in src/, config is at root
 ```
@@ -51,13 +49,13 @@ my-app/
 With src/:
   app/         → src/app/
   public/      → stays at root (not in src/)
-  middleware   → src/middleware.ts
+  proxy   → src/proxy.ts
   @/* alias   → src/* (configured in tsconfig.json)
 
 Without src/:
   app/         → app/
   public/      → public/
-  middleware   → middleware.ts (root level)
+  proxy   → proxy.ts (root level)
 ```
 
 ### The `@/*` Import Alias with `src/`
@@ -98,11 +96,10 @@ src/         ← application code (everything you write)
 
 Root level  ← configuration files (only one of each)
   next.config.ts
-  tailwind.config.ts
   tsconfig.json
   package.json
   .env.local
-  .eslintrc.json / eslint.config.mjs
+  eslint.config.mjs
   postcss.config.mjs
   .gitignore
   README.md
@@ -123,8 +120,8 @@ mv lib src/         # (if exists)
 # 3. Update next.config.ts if you have custom webpack/turbopack config
 # that references app/ directly
 
-# 4. Move middleware.ts into src/ if it exists
-mv middleware.ts src/
+# 4. Move proxy.ts into src/ if it exists
+mv proxy.ts src/
 ```
 
 ---
@@ -156,36 +153,31 @@ mv middleware.ts src/
 
 ## C — Common Pitfalls + Fix
 
-### ❌ Pitfall: Forgetting to update `tailwind.config.ts` content paths when using `src/`
+### ❌ Pitfall: Tailwind not seeing files outside the auto-detected sources (v4)
 
-```ts
-// tailwind.config.ts — wrong paths without src/
-const config: Config = {
-  content: [
-    "./app/**/*.{ts,tsx}", // ← wrong: should be ./src/app/**
-    "./components/**/*.{ts,tsx}", // ← wrong: should be ./src/components/**
-  ],
-};
-// Result: Tailwind purges all classes because no files match
+```css
+/* globals.css — Tailwind v4 has no tailwind.config.ts / content array.
+   It scans your project automatically, but skips .gitignore'd files and
+   packages in node_modules, so classes used there generate no CSS. */
+@import "tailwindcss";
 ```
 
-**Fix:**
+**Fix:** Register extra locations explicitly with `@source`:
 
-```ts
-const config: Config = {
-  content: [
-    "./src/**/*.{js,ts,jsx,tsx,mdx}", // ✅ covers all src/ files
-  ],
-};
+```css
+@import "tailwindcss";
+@source "../../packages/ui/src"; /* ✅ e.g. a shared package in a monorepo */
 ```
 
-### ❌ Pitfall: Putting `middleware.ts` in the wrong location
+Moving files into `src/` needs no Tailwind change in v4. (Before v4 you had to update the `content` array in `tailwind.config.ts`, e.g. to `./src/**/*.{js,ts,jsx,tsx,mdx}`.)
+
+### ❌ Pitfall: Putting `proxy.ts` in the wrong location
 
 ```
 my-app/
 ├── src/
 │   └── app/
-│       └── middleware.ts   ← WRONG: middleware.ts must be in src/ root or project root
+│       └── proxy.ts        ← WRONG: proxy.ts must be in src/ root or project root
 ```
 
 **Fix:**
@@ -193,7 +185,7 @@ my-app/
 ```
 my-app/
 ├── src/
-│   ├── middleware.ts       ← ✅ correct (when using src/)
+│   ├── proxy.ts            ← ✅ correct (when using src/)
 │   └── app/
 ```
 
@@ -213,7 +205,7 @@ import { Button } from "@/components/ui/button";
 
 ### Challenge
 
-Given the messy project structure below (no `src/`), reorganize it with `src/`, update the `tsconfig.json` `paths`, and update the `tailwind.config.ts` `content` array:
+Given the messy project structure below (no `src/`), reorganize it with `src/`, update the `tsconfig.json` `paths`, and confirm no Tailwind change is needed (v4 auto-detects sources; before v4 you updated the `content` array in `tailwind.config.ts`):
 
 ```
 my-app/
@@ -226,7 +218,6 @@ my-app/
 ├── lib/
 │   └── utils.ts
 ├── next.config.ts
-├── tailwind.config.ts
 ├── tsconfig.json
 └── package.json
 ```
@@ -245,7 +236,6 @@ my-app/                     ← after reorganization
 │   └── lib/
 │       └── utils.ts
 ├── next.config.ts
-├── tailwind.config.ts
 ├── tsconfig.json
 └── package.json
 ```
@@ -259,17 +249,6 @@ my-app/                     ← after reorganization
     }
   }
 }
-```
-
-```ts
-// tailwind.config.ts — updated content
-import type { Config } from "tailwindcss";
-
-const config: Config = {
-  content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
-};
-
-export default config;
 ```
 
 ```tsx

@@ -13,7 +13,7 @@ Pino writes logs as newline-delimited JSON. Every log line is a parseable object
 ```bash
 # Install
 npm install pino pino-pretty
-npm install --save-dev @types/pino
+# No @types/pino needed — pino ships its own TypeScript types (@types/pino is a stub)
 ```
 
 ```typescript

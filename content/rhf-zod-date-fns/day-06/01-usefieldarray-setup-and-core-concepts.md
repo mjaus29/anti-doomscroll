@@ -28,7 +28,7 @@ type InvoiceForm = z.infer<typeof InvoiceSchema>
 
 function InvoiceForm() {
   const { register, control, handleSubmit, formState: { errors } } =
-    useForm<InvoiceForm>({
+    useForm<z.input<typeof InvoiceSchema>, unknown, z.output<typeof InvoiceSchema>>({
       resolver:      zodResolver(InvoiceSchema),
       defaultValues: {
         clientName: '',
@@ -162,7 +162,7 @@ const TeamSchema = z.object({
   teamName: z.string().min(1, 'Required'),
   members:  z.array(z.object({
     name:  z.string().min(1, 'Name required'),
-    email: z.string().email('Invalid email')
+    email: z.email('Invalid email')
   })).min(1, 'At least one member required')
 })
 type TeamForm = z.infer<typeof TeamSchema>

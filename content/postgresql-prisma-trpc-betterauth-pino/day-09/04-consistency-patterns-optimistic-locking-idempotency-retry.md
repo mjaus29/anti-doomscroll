@@ -276,7 +276,7 @@ Build a `submitForm` function that demonstrates all three patterns together: (1)
 
 ```typescript
 import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
+import { Prisma } from '@/generated/prisma/client'
 
 // ── Error types ────────────────────────────────────────────────────────────
 class DuplicateSubmissionError extends Error { constructor() { super('Already submitted') } }

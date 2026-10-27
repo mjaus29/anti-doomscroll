@@ -158,7 +158,7 @@ import { zodResolver }                           from '@hookform/resolvers/zod'
 import { z }                                     from 'zod'
 
 const RegSchema = z.object({
-  email:       z.string().email('Invalid email'),
+  email:       z.email('Invalid email'),
   password:    z.string().min(8, 'Min 8 characters'),
   firstName:   z.string().min(1, 'Required'),
   lastName:    z.string().min(1, 'Required'),
@@ -230,7 +230,7 @@ function PreferencesSection() {
 }
 
 export function RegistrationForm() {
-  const methods = useForm<RegForm>({
+  const methods = useForm<z.input<typeof RegSchema>, unknown, z.output<typeof RegSchema>>({
     resolver:      zodResolver(RegSchema),
     mode:          'onTouched',
     defaultValues: { email: '', password: '', firstName: '', lastName: '',

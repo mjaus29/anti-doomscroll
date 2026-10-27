@@ -16,7 +16,7 @@
 // src/components/ui/dialog.tsx
 "use client";
 
-import * as DialogPrimitive from "@base-ui/react/dialog";
+import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { cn } from "@/lib/cn";
 
 const DialogRoot = DialogPrimitive.Root;

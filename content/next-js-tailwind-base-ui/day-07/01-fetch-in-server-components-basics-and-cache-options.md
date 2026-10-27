@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-In Server Components, `fetch` is enhanced by Next.js with a built-in caching layer — every `fetch` call is automatically memoized within the same request and can be cached across requests using `next.revalidate` or `next.tags`. It runs on the server, keeps secrets safe, and produces data that arrives in the initial HTML.
+In Server Components, `fetch` is enhanced by Next.js with a built-in caching layer — every `fetch` call is automatically memoized within the same request and is NOT cached across requests by default (since Next.js 15) — you opt in with `cache: 'force-cache'`, `next.revalidate` or `next.tags`. It runs on the server, keeps secrets safe, and produces data that arrives in the initial HTML.
 
 ---
 
@@ -16,8 +16,9 @@ In Server Components, `fetch` is enhanced by Next.js with a built-in caching lay
 // Next.js extends the native fetch API with a `next` option
 // This is ONLY available in Server Components and Server Actions
 
-// ─── The four cache behaviors:
-fetch(url); // ← default: cached (static)
+// ─── The cache behaviors:
+fetch(url); // ← default "auto no cache": not persisted in the Data Cache (since Next 15; v14 cached it)
+fetch(url, { cache: "force-cache" }); // ← opt in: cached indefinitely (static)
 fetch(url, { cache: "no-store" }); // ← never cached (dynamic)
 fetch(url, { next: { revalidate: 3600 } }); // ← ISR: cached for 1 hour
 fetch(url, { next: { tags: ["products"] } }); // ← tagged: on-demand revalidation
@@ -31,19 +32,20 @@ fetch(url, {
 });
 ```
 
-### Cache Option 1 — Default (Static Caching)
+### Cache Option 1 — `cache: 'force-cache'` (Static Caching, opt-in)
 
 ```tsx
 // src/app/products/page.tsx
-// Default behavior: fetch is cached indefinitely (treated as static)
+// Opt-in: force-cache caches the response indefinitely (treated as static)
 // Cached in the Data Cache — persists across deploys until revalidated
+// (Next.js 14 did this by default; since Next.js 15 a bare fetch(url) is NOT cached)
 
 export default async function ProductsPage() {
   // ✅ Cached: same response returned for ALL requests
   // until revalidatePath() or revalidateTag() is called
-  const products = await fetch("https://api.example.com/products").then((r) =>
-    r.json()
-  );
+  const products = await fetch("https://api.example.com/products", {
+    cache: "force-cache",
+  }).then((r) => r.json());
 
   return <ProductList products={products} />;
 }
@@ -92,7 +94,7 @@ const posts = await fetch("https://cms.example.com/posts", {
 // ✅ Tagged: cached until you explicitly call revalidateTag('products')
 const products = await fetch("https://api.example.com/products", {
   next: {
-    revalidate: false, // ← never auto-expire (optional — this is the default)
+    revalidate: false, // ← never auto-expire
     tags: ["products"], // ← tag this fetch for on-demand invalidation
   },
 }).then((r) => r.json());
@@ -178,7 +180,7 @@ Use direct DB (db.product.findMany()) when:
 
 ### Q1: How does Next.js enhance the native `fetch` API?
 
-**A:** Next.js extends `fetch` with a `next` option that controls caching behavior. By default, `fetch` in Server Components is cached indefinitely across requests (static behavior). You can opt into ISR with `next: { revalidate: N }` — the response is cached and automatically re-fetched in the background after N seconds. You can tag fetches with `next: { tags: ['tag'] }` to enable on-demand invalidation via `revalidateTag('tag')`. You can bypass caching entirely with `cache: 'no-store'` for always-fresh data. Additionally, Next.js automatically deduplicates identical `fetch` calls within the same request through request memoization.
+**A:** Next.js extends `fetch` with a `next` option that controls caching behavior. Since Next.js 15, `fetch` in Server Components is not cached across requests by default (`auto no cache` — in a statically prerendered route it still runs once at build time). You can cache indefinitely with `cache: 'force-cache'` or opt into ISR with `next: { revalidate: N }` — the response is cached and automatically re-fetched in the background after N seconds. You can tag fetches with `next: { tags: ['tag'] }` to enable on-demand invalidation via `revalidateTag('tag')`. You can bypass caching entirely with `cache: 'no-store'` for always-fresh data. Additionally, Next.js automatically deduplicates identical `fetch` calls within the same request through request memoization.
 
 ### Q2: What is the difference between request memoization and the Data Cache?
 
@@ -286,7 +288,7 @@ const nav = await fetch("/api/nav", {
 
 Build a `/shop` page with four fetch calls demonstrating all four cache options:
 
-1. A `store config` fetch — static (default caching)
+1. A `store config` fetch — static (`cache: 'force-cache'`)
 2. A `product catalog` fetch — ISR every 30 minutes
 3. A `featured products` fetch — tagged with `['featured', 'products']`
 4. A `live inventory` fetch — no cache, always fresh
@@ -305,9 +307,11 @@ export const metadata: Metadata = { title: "Shop" };
 // ─── Data fetching helpers ────────────────────────────────────────────────────
 
 async function getStoreConfig() {
-  // Strategy 1: DEFAULT — cached indefinitely (static)
+  // Strategy 1: force-cache — cached indefinitely (static); not the default since Next 15
   // Changes only when code is deployed or revalidatePath/Tag is called
-  const res = await fetch("https://api.example.com/config/store");
+  const res = await fetch("https://api.example.com/config/store", {
+    cache: "force-cache",
+  });
   if (!res.ok) throw new Error("Failed to load store config");
   return res.json() as Promise<{
     name: string;
@@ -370,7 +374,7 @@ export default async function ShopPage() {
         <p className="text-sm text-gray-400 mt-1">
           Currency: {config.currency} · Locale: {config.locale}{" "}
           <span className="text-xs bg-gray-100 px-2 py-0.5 rounded font-mono">
-            static (default cache)
+            static (force-cache)
           </span>
         </p>
       </header>
@@ -463,7 +467,7 @@ export default async function ShopPage() {
 /*
   Cache strategy summary for /shop:
   ─────────────────────────────────────────────────────────
-  getStoreConfig()      → default cache (static, CDN)
+  getStoreConfig()      → force-cache (static, CDN)
   getProductCatalog()   → ISR, 30 min revalidate
   getFeaturedProducts() → tagged, on-demand + 24h max
   getLiveInventory()    → no-store (forces dynamic route)

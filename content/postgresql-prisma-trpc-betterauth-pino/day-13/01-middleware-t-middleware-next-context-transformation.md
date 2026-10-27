@@ -89,14 +89,13 @@ const billingProcedure = t.procedure
 
 ```typescript
 // ── Middleware receiving input ─────────────────────────────────────────────
-// rawInput: the input BEFORE Zod validation — use carefully
-// input:    only available after .input() is declared on the procedure
-//           middleware declared BEFORE .input() sees rawInput: unknown
-//           middleware declared AFTER .input() (not possible — .input is terminal)
+// getRawInput(): the input BEFORE Zod validation — use carefully (tRPC v11; v10 had a `rawInput` property)
+// input:    typed only for middleware placed AFTER the .input() it depends on
+//           middleware declared BEFORE .input() only gets unknown via getRawInput()
 // Pattern: access input in the handler, not middleware, unless you need pre-validation logic
 
-const rateLimitMiddleware = t.middleware(async ({ ctx, rawInput, next, path }) => {
-  // rawInput is the unvalidated client payload — unknown type
+const rateLimitMiddleware = t.middleware(async ({ ctx, getRawInput, next, path }) => {
+  const rawInput = await getRawInput()   // the unvalidated client payload — unknown type
   const key = `rate:${ctx.ip}:${path}`
   // check redis rate limit here...
   return next()

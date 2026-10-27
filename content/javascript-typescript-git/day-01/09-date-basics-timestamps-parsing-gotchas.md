@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-`Date` stores time as a Unix timestamp in milliseconds since 1970-01-01 UTC. `Date.now()` is the fastest way to get the current timestamp. Date parsing from strings is notoriously inconsistent — always use `new Date(year, month, day)` (note: month is 0-indexed) or ISO 8601 strings (`'2025-06-15'`). For production, prefer `date-fns` or `Temporal` (Stage 3).
+`Date` stores time as a Unix timestamp in milliseconds since 1970-01-01 UTC. `Date.now()` is the fastest way to get the current timestamp. Date parsing from strings is notoriously inconsistent — always use `new Date(year, month, day)` (note: month is 0-indexed) or ISO 8601 strings (`'2025-06-15'`). For production, prefer `date-fns` or `Temporal` (Stage 4 — part of the language standard, shipped in Firefox 139 and Chrome 144; check support or use a polyfill for older runtimes).
 
 ---
 

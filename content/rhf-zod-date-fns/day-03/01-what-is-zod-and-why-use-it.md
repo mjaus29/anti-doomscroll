@@ -28,7 +28,7 @@ function validate(data: unknown) {
 import { z } from 'zod'
 
 const UserSchema = z.object({
-  email: z.string().email(),
+  email: z.email(),
   age:   z.number().int().min(18)
 })
 
@@ -125,9 +125,9 @@ const r2 = ProductSchema.safeParse({ name: '', price: -5, inStock: 'yes' })
 console.log(r2.success) // false
 console.log(r2.error.issues)
 // [
-//   { path: ['name'],    message: 'String must contain at least 1 character(s)' },
-//   { path: ['price'],   message: 'Number must be greater than 0' },
-//   { path: ['inStock'], message: 'Expected boolean, received string' }
+//   { path: ['name'],    message: 'Too small: expected string to have >=1 characters' },
+//   { path: ['price'],   message: 'Too small: expected number to be >0' },
+//   { path: ['inStock'], message: 'Invalid input: expected boolean, received string' }
 // ]
 ```
 

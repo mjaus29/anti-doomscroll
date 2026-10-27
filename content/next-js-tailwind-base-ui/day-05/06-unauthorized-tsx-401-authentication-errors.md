@@ -10,6 +10,23 @@
 
 ## K — Key Concepts
 
+### Enable It First — `experimental.authInterrupts`
+
+`unauthorized()` and `unauthorized.tsx` are still experimental. Without this flag, calling `unauthorized()` throws an error and the file is ignored:
+
+``ts
+// next.config.ts
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  experimental: {
+    authInterrupts: true,
+  },
+};
+
+export default nextConfig;
+``
+
 ### `unauthorized()` vs `redirect('/login')`
 
 ```

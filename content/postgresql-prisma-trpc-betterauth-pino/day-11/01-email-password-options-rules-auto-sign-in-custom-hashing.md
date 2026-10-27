@@ -27,7 +27,7 @@ export const auth = betterAuth({
 
     // ── Password length constraints ───────────────────────────────────
     minPasswordLength: 8,     // default: 8
-    maxPasswordLength: 128,   // default: 128 — bcrypt truncates at 72 bytes anyway
+    maxPasswordLength: 128,   // default: 128 — caps the work done hashing a password
 
     // ── Auto sign-in after sign-up ────────────────────────────────────
     // true  → session created immediately after sign-up (default)
@@ -40,8 +40,8 @@ export const auth = betterAuth({
     requireEmailVerification: false,
 
     // ── Password hashing — custom implementation ──────────────────────
-    // Default: bcrypt (cost factor 10) — safe to leave as default
-    // Custom example: use Node.js crypto scrypt
+    // Default: scrypt (memory-hard, built into Better Auth) — safe to leave as default
+    // Custom example: roll your own scrypt/argon2 via hash + verify
     password: {
       hash:   hashPassword,
       verify: verifyPassword,
@@ -49,7 +49,7 @@ export const auth = betterAuth({
   },
 })
 
-// ── Custom hasher example (scrypt) ────────────────────────────────────────
+// ── Custom hasher example (scrypt — shown for the hash/verify shape; the default is already scrypt) ────────────────────────────────────────
 const scryptAsync = promisify(scrypt)
 
 async function hashPassword(password: string): Promise<string> {
@@ -63,7 +63,7 @@ async function verifyPassword(password: string, hash: string): Promise<boolean> 
   const derived = await scryptAsync(password, salt, 64) as Buffer
   return derived.toString('hex') === stored
 }
-// Leave password: { hash, verify } out entirely to use the default bcrypt — recommended
+// Leave password: { hash, verify } out entirely to use the default scrypt hasher — recommended
 ```
 
 ```typescript
@@ -99,9 +99,9 @@ const passwordSchema = z
 
 ## W — Why It Matters
 
-- `maxPasswordLength: 128` is required to prevent a DoS attack — bcrypt is intentionally slow, so hashing an extremely long password (e.g. 1 MB) takes seconds per attempt. Capping at 128 characters eliminates this attack surface while being longer than any reasonable human password.
+- `maxPasswordLength: 128` is required to prevent a DoS attack — scrypt is intentionally slow and memory-hungry, so hashing an extremely long password (e.g. 1 MB) takes seconds per attempt. Capping at 128 characters eliminates this attack surface while being longer than any reasonable human password.
 - `autoSignIn: false` is necessary when `requireEmailVerification: true` — if you auto sign-in but also require verification, the user gets a session but immediately hits a `EMAIL_NOT_VERIFIED` error on every protected route. The correct flow with verification: `autoSignIn: false`, send verification email, user verifies, then signs in.
-- The default bcrypt (cost 10) is the right choice for almost all applications — it takes ~100ms per hash, which is imperceptible to users but makes brute force computationally expensive. Only change the hasher if you have a specific operational reason (migrating from an existing system with a different hash format).
+- The default hasher (scrypt, per the Better Auth docs) is the right choice for almost all applications — it is deliberately slow and memory-hard, which is imperceptible to users but makes brute force computationally expensive. Only change the hasher if you have a specific operational reason (migrating from an existing system with a different hash format).
 
 ---
 
@@ -109,7 +109,7 @@ const passwordSchema = z
 
 ### Q: Why is there a `maxPasswordLength` limit in BetterAuth and what attack does it prevent?
 
-**A:** The limit prevents a bcrypt denial-of-service attack. bcrypt is intentionally slow — its cost factor means each hash takes ~100ms of CPU time. This is good security for normal passwords. But bcrypt does not limit the input length — if you accept a 10 MB password string, bcrypt must process it entirely, taking seconds. An attacker can send many requests with extremely long passwords, exhausting server CPU with minimal effort. BetterAuth defaults to a 128-character maximum. This is well beyond any human-chosen password but prevents the attack. Note that bcrypt itself truncates at 72 bytes (an implementation detail), but having an explicit `maxPasswordLength` check before hashing provides a clear, documented security boundary.
+**A:** The limit prevents a password-hashing denial-of-service attack. scrypt (Better Auth's default) is intentionally slow and memory-hard, which is good security for normal passwords. But the hasher doesn't protect you from huge inputs — if you accept a 10 MB password string, it must be processed entirely, taking seconds. An attacker can send many requests with extremely long passwords, exhausting server CPU with minimal effort. BetterAuth defaults to a 128-character maximum. This is well beyond any human-chosen password but prevents the attack. An explicit `maxPasswordLength` check before hashing provides a clear, documented security boundary.
 
 ---
 

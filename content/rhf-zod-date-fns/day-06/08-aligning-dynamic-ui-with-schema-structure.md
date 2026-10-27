@@ -126,7 +126,7 @@ const Schema = z.object({
   companyName: z.string().optional()
 }).superRefine((d, ctx) => {
   if (d.type === 'business' && !d.companyName?.trim())
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Required', path: ['companyName'] })
+    ctx.addIssue({ code: 'custom', message: 'Required', path: ['companyName'] })
 })
 
 // ✅ Option B: discriminatedUnion (schema branches = UI branches)
@@ -168,7 +168,7 @@ const ShipmentSchema = z.object({
   const hasFragile = data.packages.some(p => p.fragile)
   if (hasFragile && !data.handlingInstructions?.trim()) {
     ctx.addIssue({
-      code:    z.ZodIssueCode.custom,
+      code:    'custom',
       message: 'Required when any package is fragile',
       path:    ['handlingInstructions']
     })

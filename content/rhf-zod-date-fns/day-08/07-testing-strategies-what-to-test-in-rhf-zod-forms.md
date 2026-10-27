@@ -155,7 +155,7 @@ await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
 
 ### Challenge
 
-Write Vitest tests for a `ContactSchema` (name min 2, email valid, message min 10). Test: valid passes, invalid email fails on `email` path, short message fails on `message` path, empty name fails with `required_error`. No DOM needed.
+Write Vitest tests for a `ContactSchema` (name min 2, email valid, message min 10). Test: valid passes, invalid email fails on `email` path, short message fails on `message` path, empty name fails with its missing-value message. No DOM needed.
 
 ### Solution
 
@@ -165,9 +165,9 @@ import { describe, it, expect } from 'vitest'
 import { z }                    from 'zod'
 
 const ContactSchema = z.object({
-  name:    z.string({ required_error: 'Name is required' }).min(2, 'Min 2 characters'),
-  email:   z.string({ required_error: 'Email is required' }).email('Invalid email'),
-  message: z.string({ required_error: 'Message is required' }).min(10, 'Min 10 characters')
+  name:    z.string({ error: iss => iss.input === undefined ? 'Name is required' : undefined }).min(2, 'Min 2 characters'),
+  email:   z.email({ error: iss => iss.input === undefined ? 'Email is required' : 'Invalid email' }),
+  message: z.string({ error: iss => iss.input === undefined ? 'Message is required' : undefined }).min(10, 'Min 10 characters')
 })
 
 describe('ContactSchema', () => {
@@ -191,7 +191,7 @@ describe('ContactSchema', () => {
     expect(msgIssue?.message).toBe('Min 10 characters')
   })
 
-  it('uses required_error when name is undefined', () => {
+  it('uses the missing-value message when name is undefined', () => {
     const r = ContactSchema.safeParse({ email: 'a@a.com', message: 'Hello there!' })
     expect(r.success).toBe(false)
     const nameIssue = r.error!.issues.find(i => i.path[0] === 'name')

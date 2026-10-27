@@ -147,7 +147,7 @@ await authClient.admin.stopImpersonating()
 // twoFactorMethod     String?
 
 // Run after adding plugins:
-// npx better-auth generate
+// npx auth@latest generate
 // npx prisma migrate dev --name add-two-factor
 ```
 

@@ -85,14 +85,14 @@ export const auth = betterAuth({
 ```typescript
 // ── Rate limiting auth endpoints ──────────────────────────────────────────
 // BetterAuth supports rate limiting via plugins
-// Or implement at the middleware level
+// Or implement at the proxy level
 
-// middleware.ts — rate limit /api/auth paths
+// proxy.ts (middleware.ts before Next.js 16) — rate limit /api/auth paths
 import { NextResponse, type NextRequest } from 'next/server'
 
 const authAttempts = new Map<string, { count: number; resetAt: number }>()
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   if (req.nextUrl.pathname.startsWith('/api/auth/sign-in')) {
     const ip    = req.headers.get('x-forwarded-for')?.split(',')[0] ?? 'unknown'
     const now   = Date.now()
@@ -391,7 +391,7 @@ PINO-HTTP
   req.log available in handlers for correlated logging
 
 REQUEST IDs
-  Generate at edge (middleware.ts) or read from upstream proxy (x-request-id)
+  Generate in the proxy (proxy.ts) or read from upstream proxy (x-request-id)
   Inject into createTRPCContext headers → ctx.requestId + ctx.log
   Pass to external API calls as X-Request-Id / Idempotency-Key header
   Return in response headers → client shows in error messages, user reports to support

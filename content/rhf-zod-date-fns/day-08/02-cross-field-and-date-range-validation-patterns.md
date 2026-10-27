@@ -21,7 +21,7 @@ const DateRangeSchema = z.object({
   endDate:   z.coerce.date()
 })
 .refine(d => isAfter(d.endDate, d.startDate), {
-  message: 'End must be after start',
+  error: 'End must be after start',
   path:    ['endDate']
 })
 
@@ -32,16 +32,16 @@ const BookingSchema = z.object({
   maxNights: z.number().default(14)
 })
 .refine(d => isFuture(d.checkIn), {
-  message: 'Check-in must be in the future', path: ['checkIn']
+  error: 'Check-in must be in the future', path: ['checkIn']
 })
 .refine(d => isAfter(d.checkOut, d.checkIn), {
-  message: 'Check-out must be after check-in', path: ['checkOut']
+  error: 'Check-out must be after check-in', path: ['checkOut']
 })
 .refine(d => differenceInDays(d.checkOut, d.checkIn) <= d.maxNights, {
-  message: `Cannot exceed ${14} nights`, path: ['checkOut']
+  error: `Cannot exceed ${14} nights`, path: ['checkOut']
 })
 .refine(d => differenceInDays(d.checkOut, d.checkIn) >= 1, {
-  message: 'Minimum 1 night stay', path: ['checkOut']
+  error: 'Minimum 1 night stay', path: ['checkOut']
 })
 ```
 
@@ -57,7 +57,7 @@ const BudgetSchema = z.object({
   const allocated = d.designCost + d.devCost + d.qaaCost
   if (allocated > d.totalBudget) {
     ctx.addIssue({
-      code:    z.ZodIssueCode.custom,
+      code:    'custom',
       message: `Allocated $${allocated} exceeds total budget $${d.totalBudget}`,
       path:    ['totalBudget']
     })
@@ -73,11 +73,11 @@ const TravelSchema = z.object({
 .superRefine((d, ctx) => {
   if (d.tripType === 'round-trip') {
     if (!isAfter(d.returnDate, d.departDate)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom,
+      ctx.addIssue({ code: 'custom',
         message: 'Return must be after departure', path: ['returnDate'] })
     }
     if (differenceInDays(d.returnDate, d.departDate) > 365) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom,
+      ctx.addIssue({ code: 'custom',
         message: 'Trip cannot exceed 1 year', path: ['returnDate'] })
     }
   }
@@ -125,7 +125,7 @@ const Schema = z.object({
   startDate: z.coerce.date(),
   endDate:   z.coerce.date()
 }).refine(d => isAfter(d.endDate, d.startDate), {
-  message: 'End must be after start', path: ['endDate']
+  error: 'End must be after start', path: ['endDate']
 })
 ```
 
@@ -152,19 +152,19 @@ const ProjectBidSchema = z.object({
   budgetMax:    z.coerce.number().positive()
 })
 .refine(d => isFuture(d.bidDeadline), {
-  message: 'Deadline must be in the future', path: ['bidDeadline']
+  error: 'Deadline must be in the future', path: ['bidDeadline']
 })
 .refine(d => isAfter(d.projectStart, d.bidDeadline), {
-  message: 'Project must start after bid deadline', path: ['projectStart']
+  error: 'Project must start after bid deadline', path: ['projectStart']
 })
 .refine(d => isAfter(d.projectEnd, d.projectStart), {
-  message: 'End must be after start', path: ['projectEnd']
+  error: 'End must be after start', path: ['projectEnd']
 })
 .refine(d => differenceInDays(d.projectEnd, d.projectStart) <= 90, {
-  message: 'Project duration cannot exceed 90 days', path: ['projectEnd']
+  error: 'Project duration cannot exceed 90 days', path: ['projectEnd']
 })
 .refine(d => d.budgetMax >= d.budgetMin, {
-  message: 'Max budget must be ≥ min budget', path: ['budgetMax']
+  error: 'Max budget must be ≥ min budget', path: ['budgetMax']
 })
 
 const result = ProjectBidSchema.safeParse({

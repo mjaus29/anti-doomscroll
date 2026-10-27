@@ -20,7 +20,7 @@ WORKDIR /app                 # set working directory (creates if missing)
 COPY package*.json ./        # copy files from host into image
 ADD  archive.tar.gz /app/    # like COPY but auto-extracts archives (prefer COPY)
 
-RUN npm ci --frozen-lockfile  # execute command → creates a layer
+RUN npm ci                    # execute command → creates a layer
                               # use && to chain commands in ONE layer
 
 ENV NODE_ENV=production       # set environment variable (available at runtime)
@@ -53,7 +53,7 @@ RUN npm ci                  # ← always runs even if package.json unchanged ❌
 FROM node:22-alpine
 WORKDIR /app
 COPY package.json package-lock.json ./   # ← invalidated only when deps change
-RUN npm ci --frozen-lockfile             # ← cached unless deps change ✅
+RUN npm ci             # ← cached unless deps change ✅
 COPY . .                                  # ← source changes don't rebuild node_modules
 RUN npm run build
 ```
@@ -100,7 +100,7 @@ WORKDIR /app
 
 # 1. Install deps (cached unless package files change)
 COPY package.json package-lock.json ./
-RUN npm ci --frozen-lockfile
+RUN npm ci
 
 # 2. Copy source (cache busted on any change — expected)
 COPY . .
@@ -143,7 +143,7 @@ CMD ["node", ".next/standalone/server.js"]
 RUN npm install
 
 # ✅ npm ci uses lockfile exactly — reproducible and faster
-RUN npm ci --frozen-lockfile
+RUN npm ci
 ```
 
 ---
@@ -164,7 +164,7 @@ WORKDIR /app
 
 # Layer 1: deps (cached until lockfile changes)
 COPY package.json package-lock.json ./
-RUN npm ci --frozen-lockfile
+RUN npm ci
 
 # Layer 2: source + build
 COPY . .

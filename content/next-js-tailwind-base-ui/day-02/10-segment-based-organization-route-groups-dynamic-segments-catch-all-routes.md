@@ -570,7 +570,7 @@ SPECIAL FILES — only these create routes or affect routing behavior
   error.tsx       → error boundary ('use client' required, has reset() prop)
   not-found.tsx   → shown when notFound() is called
   route.ts        → API endpoint (GET/POST/etc. named exports, no page.tsx conflict)
-  middleware.ts   → runs before routing (src/ root or project root)
+  proxy.ts   → runs before routing (src/ root or project root)
 
 ROUTE EXPOSURE RULES
   Only page.tsx and route.ts create accessible URLs

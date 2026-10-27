@@ -152,7 +152,7 @@ const Schema = z.object({
 type F = z.infer<typeof Schema>
 
 export function ProfileForm() {
-  const { control, handleSubmit } = useForm<F>({
+  const { control, handleSubmit } = useForm<z.input<typeof Schema>, unknown, z.output<typeof Schema>>({
     resolver:      zodResolver(Schema),
     defaultValues: { username: '', bio: '', active: true }
   })

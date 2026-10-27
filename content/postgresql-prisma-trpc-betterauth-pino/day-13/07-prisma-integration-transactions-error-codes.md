@@ -25,7 +25,7 @@ const postRouter = createTRPCRouter({
 
 ```typescript
 // ── Prisma error codes → TRPCError translation ────────────────────────────
-import { Prisma }    from '@prisma/client'
+import { Prisma }    from '@/generated/prisma/client'
 import { TRPCError } from '@trpc/server'
 
 function handlePrismaError(err: unknown): never {
@@ -236,7 +236,7 @@ Write a `transferCredits` mutation that: atomically debits credits from one user
 // src/server/routers/wallet.ts
 import { createTRPCRouter, protectedProcedure } from '@/server/trpc'
 import { TRPCError }   from '@trpc/server'
-import { Prisma }      from '@prisma/client'
+import { Prisma }      from '@/generated/prisma/client'
 import { z }           from 'zod'
 
 export const walletRouter = createTRPCRouter({

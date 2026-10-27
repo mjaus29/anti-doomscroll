@@ -191,7 +191,7 @@ import { z }           from 'zod'
 // ─── Schema
 const ProfileSchema = z.object({
   displayName:   z.string().min(2, 'Min 2 characters'),
-  email:         z.string().email('Invalid email'),
+  email:         z.email('Invalid email'),
   currentPassword: z.string().min(8, 'Min 8 characters').optional().or(z.literal('')),
   emailOnComment: z.boolean().default(true),
   emailOnMention: z.boolean().default(true),
@@ -274,7 +274,7 @@ function FormActions() {
 
 // ─── Level 3: Organism — owns schema, state, submit
 export function ProfileSettingsForm() {
-  const methods = useForm<ProfileSettings>({
+  const methods = useForm<z.input<typeof ProfileSchema>, unknown, z.output<typeof ProfileSchema>>({
     resolver:      zodResolver(ProfileSchema),
     mode:          'onTouched',
     defaultValues: { displayName: 'Mark Austin', email: 'mark@example.com',

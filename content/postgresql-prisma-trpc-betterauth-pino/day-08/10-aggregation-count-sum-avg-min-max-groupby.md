@@ -233,7 +233,7 @@ Build a `getDashboardStats` function that returns a complete analytics summary f
 
 ```typescript
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 
 // ── Return type ────────────────────────────────────────────────────────────
 interface DashboardStats {

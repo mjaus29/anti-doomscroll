@@ -11,8 +11,9 @@ Vitest Browser Mode runs your tests inside a real browser (Chromium, Firefox, or
 ## K — Key Concepts
 
 ```bash
-# Install Vitest Browser Mode with Playwright provider
-npm install -D @vitest/browser playwright
+# Install Vitest Browser Mode with the Playwright provider (Vitest 4)
+npm install -D vitest @vitest/browser-playwright
+# Before Vitest 4: npm install -D @vitest/browser playwright
 
 # Install the browser binaries
 npx playwright install chromium
@@ -23,14 +24,15 @@ npx playwright install chromium
 ```typescript
 // vitest.config.ts — Browser Mode configuration
 import { defineConfig } from 'vitest/config'
+import { playwright } from '@vitest/browser-playwright'
 
 export default defineConfig({
   test: {
     browser: {
-      enabled:  true,
-      name:     'chromium',   // 'chromium' | 'firefox' | 'webkit'
-      provider: 'playwright', // 'playwright' | 'webdriverio'
-      headless: true,         // false = see the browser during tests
+      enabled:   true,
+      provider:  playwright(),                  // Vitest 4: a provider factory, not the string 'playwright'
+      instances: [{ browser: 'chromium' }],     // 'chromium' | 'firefox' | 'webkit' (was `name: 'chromium'`)
+      headless:  true,                          // false = see the browser during tests
     },
     // Note: when browser.enabled = true, environment: 'jsdom' is ignored
     // browser mode uses the real browser as the environment
@@ -53,10 +55,10 @@ export default defineConfig({
   test: {
     include:  ['src/**/*.browser.test.ts'],
     browser: {
-      enabled:  true,
-      name:     'chromium',
-      provider: 'playwright',
-      headless: true,
+      enabled:   true,
+      provider:  playwright(),                 // import { playwright } from '@vitest/browser-playwright'
+      instances: [{ browser: 'chromium' }],
+      headless:  true,
     }
   }
 })
@@ -66,33 +68,38 @@ export default defineConfig({
 ```
 
 ```typescript
-// ── Workspace config — run both simultaneously ─────────────────────────────
-// vitest.workspace.ts
-import { defineWorkspace } from 'vitest/config'
+// ── Projects config — run both simultaneously ───────────────────────────────
+// vitest.config.ts (Vitest 4: `test.projects` replaced vitest.workspace.ts / defineWorkspace)
+import { defineConfig } from 'vitest/config'
+import { playwright } from '@vitest/browser-playwright'
 
-export default defineWorkspace([
-  {
-    test: {
-      name:        'unit',
-      include:     ['src/**/*.test.ts'],
-      environment: 'jsdom',
-    }
-  },
-  {
-    test: {
-      name:    'browser',
-      include: ['src/**/*.browser.test.ts'],
-      browser: {
-        enabled:  true,
-        name:     'chromium',
-        provider: 'playwright',
-        headless: true,
+export default defineConfig({
+  test: {
+    projects: [
+      {
+        test: {
+          name:        'unit',
+          include:     ['src/**/*.test.ts'],
+          environment: 'jsdom',
+        }
+      },
+      {
+        test: {
+          name:    'browser',
+          include: ['src/**/*.browser.test.ts'],
+          browser: {
+            enabled:   true,
+            provider:  playwright(),
+            instances: [{ browser: 'chromium' }],
+            headless:  true,
+          }
+        }
       }
-    }
+    ]
   }
-])
+})
 
-// Run: npx vitest --workspace=vitest.workspace.ts
+// Run everything: npx vitest      Run one project: npx vitest --project browser
 ```
 
 ```typescript
@@ -117,9 +124,10 @@ describe('Real browser environment', () => {
 ```
 
 ```typescript
-// ── @vitest/browser userEvent API ─────────────────────────────────────────
+// ── userEvent API (import from 'vitest/browser') ──────────────────────────
 // Browser Mode provides a userEvent helper that simulates real user interactions
-import { userEvent } from '@vitest/browser/context'
+// Before Vitest 4 this import was '@vitest/browser/context' (still works for now, deprecated)
+import { userEvent } from 'vitest/browser'
 
 it('types into an input', async () => {
   document.body.innerHTML = '<input id="name" type="text" />'
@@ -147,7 +155,7 @@ it('clicks a button', async () => {
 
 - Browser Mode gives you `getBoundingClientRect()` with real values — layout-dependent features like tooltips, popovers, scroll-based animations, and sticky headers require real rendering to test correctly. jsdom returns zeros for all geometry.
 - The `userEvent` API in Browser Mode dispatches real browser events in the right order — hover → pointerenter → pointerover → mousemove → mousedown → focus → mouseup → click — matching what a human user would produce. Manually dispatching `click` skips all preceding events and may miss hover-state logic.
-- Running both jsdom and browser tests in a workspace lets you keep fast unit tests in jsdom and promote specific tests to real browser only when needed — best of both speed and fidelity.
+- Running both jsdom and browser tests as separate `projects` lets you keep fast unit tests in jsdom and promote specific tests to real browser only when needed — best of both speed and fidelity.
 
 ---
 
@@ -169,11 +177,11 @@ element.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 // Hover states, pointer events, focus management — all skipped ❌
 ```
 
-**Fix:** Use the `userEvent` API from `@vitest/browser/context`:
+**Fix:** Use the `userEvent` API from `vitest/browser` (was `@vitest/browser/context` before Vitest 4):
 
 ```typescript
 // ✅ Real user-like interaction
-import { userEvent } from '@vitest/browser/context'
+import { userEvent } from 'vitest/browser'
 await userEvent.click(element)  // triggers full event sequence ✅
 ```
 
@@ -183,44 +191,49 @@ await userEvent.click(element)  // triggers full event sequence ✅
 
 ### Challenge
 
-Write a `vitest.workspace.ts` that runs: (1) all `*.test.ts` files in jsdom; (2) all `*.browser.test.ts` in Chromium via Playwright. Write one browser test that: uses `userEvent.type` to fill an input, checks `input.value`, clicks a button that copies input text to a `<p>`, and verifies the `<p>` text.
+Write a `vitest.config.ts` with two `projects` that runs: (1) all `*.test.ts` files in jsdom; (2) all `*.browser.test.ts` in Chromium via Playwright. Write one browser test that: uses `userEvent.type` to fill an input, checks `input.value`, clicks a button that copies input text to a `<p>`, and verifies the `<p>` text.
 
 ### Solution
 
 ```typescript
-// vitest.workspace.ts
-import { defineWorkspace } from 'vitest/config'
+// vitest.config.ts
+import { defineConfig } from 'vitest/config'
+import { playwright } from '@vitest/browser-playwright'
 
-export default defineWorkspace([
-  {
-    test: {
-      name:        'unit',
-      include:     ['src/**/*.test.ts'],
-      exclude:     ['src/**/*.browser.test.ts'],
-      environment: 'jsdom',
-      clearMocks:  true,
-      restoreMocks: true,
-    }
-  },
-  {
-    test: {
-      name:    'browser',
-      include: ['src/**/*.browser.test.ts'],
-      browser: {
-        enabled:  true,
-        name:     'chromium',
-        provider: 'playwright',
-        headless: true,
+export default defineConfig({
+  test: {
+    projects: [
+      {
+        test: {
+          name:        'unit',
+          include:     ['src/**/*.test.ts'],
+          exclude:     ['src/**/*.browser.test.ts'],
+          environment: 'jsdom',
+          clearMocks:  true,
+          restoreMocks: true,
+        }
+      },
+      {
+        test: {
+          name:    'browser',
+          include: ['src/**/*.browser.test.ts'],
+          browser: {
+            enabled:   true,
+            provider:  playwright(),
+            instances: [{ browser: 'chromium' }],
+            headless:  true,
+          }
+        }
       }
-    }
+    ]
   }
-])
+})
 ```
 
 ```typescript
 // src/copy-text.browser.test.ts
 import { describe, it, expect, afterEach } from 'vitest'
-import { userEvent }                       from '@vitest/browser/context'
+import { userEvent }                       from 'vitest/browser'
 
 function setupCopyText() {
   document.body.innerHTML = `

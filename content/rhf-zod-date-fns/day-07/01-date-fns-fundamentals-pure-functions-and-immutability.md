@@ -24,30 +24,32 @@ const next  = addDays(today, 7)           // June 22, 2025
 console.log(today.toISOString())          // '2025-06-15...' — unchanged ✅
 console.log(next.toISOString())           // '2025-06-22...'
 
-// ─── Every function accepts Date | number (timestamp)
+// ─── Every function accepts Date | number (timestamp) | string (v4 — parsed with new Date(str))
 const ts  = Date.now()                    // number
 format(ts, 'yyyy-MM-dd')                  // works ✅
 format(new Date(), 'yyyy-MM-dd')          // works ✅
 
-// ─── date-fns v4 — no more submodules, direct imports everywhere
-// v3 and below: import from 'date-fns/addDays'
-// v4:           import { addDays } from 'date-fns'  ← only way
+// ─── Imports: named imports from the package root are the standard style
+// import { addDays } from 'date-fns'       ← use this (works in v2, v3 and v4, tree-shaken)
+// import { addDays } from 'date-fns/addDays' still works in v4 (subpath exports), but is rarely needed
+// v4 headline feature: first-class time zones — pass an `in` option (from the @date-fns/tz package),
+//   e.g. format(date, 'HH:mm', { in: tz('Asia/Manila') })
 ```
 
 ```ts
 // ─── Core mental model
-// Input:  Date | number (timestamp) | string (via parse/parseISO)
+// Input:  Date | number (timestamp) | string (v4 accepts ISO-like strings; prefer parseISO/parse for user input)
 // Output: Date (new object) | string | number | boolean | object
 
 // Every call is stateless — no global config, no side effects
 // Exception: locale — passed explicitly per call, not set globally
 
 import { format }    from 'date-fns'
-import { enUS, fil } from 'date-fns/locale'
+import { enUS, es } from 'date-fns/locale'
 
 const d = new Date(2025, 0, 15)
 format(d, 'MMMM d, yyyy', { locale: enUS })  // 'January 15, 2025'
-format(d, 'MMMM d, yyyy', { locale: fil  })  // 'Enero 15, 2025'
+format(d, 'MMMM d, yyyy', { locale: es   })  // 'enero 15, 2025'
 ```
 
 ```
@@ -67,7 +69,7 @@ date-fns function categories:
 
 - Tree-shaking means `import { format } from 'date-fns'` adds ~2KB to your bundle — not the full library. Moment.js imported the entire library (>200KB) regardless of what you used. date-fns has no equivalent penalty.
 - Pure functions compose safely in React — you can call them directly in `useMemo`, Zod transforms, and formatters without worrying about side effects or mutated state.
-- v4's unified import path means no more confusion between `date-fns/format` vs `date-fns/esm/format` vs subpath imports from v2/v3 — one import style, always.
+- Named imports from the package root (`import { format } from 'date-fns'`) are the one import style to use — older posts show `date-fns/esm/format` or `date-fns/format` subpaths, which you can ignore. v4 also adds first-class time-zone support via the `in` option and the `@date-fns/tz` package.
 
 ---
 

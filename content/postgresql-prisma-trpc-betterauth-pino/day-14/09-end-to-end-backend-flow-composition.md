@@ -13,7 +13,7 @@ The production backend is a composed stack: `Next.js middleware` (request ID) �
 ```typescript
 // ── Complete request flow — annotated ─────────────────────────────────────
 //
-// 1. Next.js middleware (middleware.ts)
+// 1. Next.js proxy (proxy.ts; middleware.ts before Next.js 16)
 //    - Read or generate x-request-id
 //    - Forward to handler via request headers
 //    - Add x-request-id to response headers

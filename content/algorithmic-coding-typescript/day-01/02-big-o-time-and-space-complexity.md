@@ -34,7 +34,7 @@ Use the input size to guess what the interviewer expects (about 10⁸ simple ste
 | Input size `n` | Usually OK |
 | :------------- | :--------- |
 | `n ≤ 20` | `O(2ⁿ)` — try every subset |
-| `n ≤ 10³` | `O(n²)` — nested loops |
+| `n ≤ 10³`–`10⁴` | `O(n²)` — nested loops |
 | `n ≤ 10⁵`–`10⁶` | `O(n log n)` or `O(n)` |
 | larger, or many queries | `O(log n)` or `O(1)` per query |
 

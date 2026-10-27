@@ -176,13 +176,13 @@ const PrioritySchema = z.enum(['low', 'medium', 'high'])
 const TaskSchema     = z.object({
   title:      z.string().min(3, 'Min 3 characters'),
   priority:   PrioritySchema,
-  dueDate:    z.coerce.date({ required_error: 'Due date required' }),
+  dueDate:    z.coerce.date({ error: 'Due date required' }),
   notifyMe:   z.boolean().default(false)
 })
 type TaskForm = z.infer<typeof TaskSchema>
 
 export function TaskForm() {
-  const { register, control, handleSubmit, formState: { errors } } = useForm<TaskForm>({
+  const { register, control, handleSubmit, formState: { errors } } = useForm<z.input<typeof TaskSchema>, unknown, z.output<typeof TaskSchema>>({
     resolver:      zodResolver(TaskSchema),
     defaultValues: { title: '', priority: 'medium', notifyMe: false }
   })

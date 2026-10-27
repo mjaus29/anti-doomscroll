@@ -134,7 +134,7 @@ const categories = await prisma.category.findMany({
 
 ```typescript
 // ── Deep nesting type derivation ───────────────────────────────────────────
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 
 // Define the full nested shape once
 const orderWithFullDetails = {
@@ -242,7 +242,7 @@ Build a `getProjectDashboard` function for a project management app. It should r
 
 ```typescript
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 
 const projectDashboardArgs = {
   include: {

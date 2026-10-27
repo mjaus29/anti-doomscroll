@@ -354,7 +354,7 @@ RESET-STATE PATTERNS
   On logout: store.resetAll() + queryClient.clear() + persist.clearStorage()
 
 MAP + SET USAGE
-  In-memory (no persist) + Immer: Set/Map work natively — .add, .delete, .set ✅
+  In-memory (no persist) + Immer: Set/Map work after a one-time enableMapSet() — .add, .delete, .set ✅
   Persisted: JSON.stringify converts Set/Map to {} silently ❌
   Fix A: custom replacer/reviver in createJSONStorage
   Fix B (simpler): use arrays for persisted selection state

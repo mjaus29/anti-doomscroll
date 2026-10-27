@@ -99,27 +99,33 @@ import { describe, it, expect } from 'vitest'
 ```
 
 ```typescript
-// ── Workspace config — multiple environments in one project ───────────────
-// vitest.workspace.ts (Vitest 1.1+)
-import { defineWorkspace } from 'vitest/config'
+// ── Projects config — multiple environments in one project ───────────────
+// vitest.config.ts (Vitest 4: `test.projects`; vitest.workspace.ts / defineWorkspace were removed)
+import { defineConfig } from 'vitest/config'
 
-export default defineWorkspace([
-  {
-    test: {
-      name:        'unit',
-      environment: 'node',
-      include:     ['src/**/*.test.ts'],
-    },
+export default defineConfig({
+  test: {
+    projects: [
+      {
+        extends: true,               // inherit root plugins, aliases, etc.
+        test: {
+          name:        'unit',
+          environment: 'node',
+          include:     ['src/**/*.test.ts'],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name:        'components',
+          environment: 'jsdom',
+          include:     ['src/**/*.test.tsx'],
+        },
+      },
+    ],
   },
-  {
-    test: {
-      name:        'components',
-      environment: 'jsdom',
-      include:     ['src/**/*.test.tsx'],
-    },
-  },
-])
-// Run specific workspace: vitest --project unit
+})
+// Run one project: vitest --project unit
 ```
 
 ---

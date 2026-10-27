@@ -96,7 +96,7 @@ const posts = await prisma.post.findMany({
 
 ```typescript
 // ── Prisma.PostGetPayload — derive type from include ──────────────────────
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 
 const postWithRelations = {
   include: {
@@ -203,7 +203,7 @@ Build a `getOrderDetails` function that returns a single order with: the full cu
 
 ```typescript
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 
 // ── getOrderDetails ────────────────────────────────────────────────────────
 const orderDetailsArgs = {

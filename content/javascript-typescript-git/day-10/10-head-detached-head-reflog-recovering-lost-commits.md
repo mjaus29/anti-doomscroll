@@ -66,7 +66,7 @@ git reflog --all          # all refs
 # jkl3456 HEAD@{3}: rebase -i (squash): feat: stub login endpoint
 # mno7890 HEAD@{4}: reset: moving to HEAD~2
 
-# Reflog entries expire after 90 days (default)
+# Reflog entries expire after 90 days (reachable) / 30 days (unreachable, e.g. after reset --hard) by default
 # Only local — reflog is NOT pushed to remote
 ```
 
@@ -119,7 +119,7 @@ git reset --hard ORIG_HEAD   # after merge completed — ORIG_HEAD saves pre-mer
 
 ### Q: How would you recover commits after an accidental `git reset --hard`?
 
-**A:** `git reset --hard` moves the branch pointer and discards working tree changes, but the commit objects still exist in Git's object database — they're just unreachable from any branch. Use `git reflog` to find the SHA of the commit you want to recover — it shows every position HEAD has been. Once you have the SHA: `git reset --hard <SHA>` restores the branch to that state, or `git cherry-pick <SHA>` if you only want specific commits. The reflog keeps entries for 90 days by default. The only truly unrecoverable situation is running `git gc --prune=now` or running `git reflog expire --expire=now --all` — normal development never hits these.
+**A:** `git reset --hard` moves the branch pointer and discards working tree changes, but the commit objects still exist in Git's object database — they're just unreachable from any branch. Use `git reflog` to find the SHA of the commit you want to recover — it shows every position HEAD has been. Once you have the SHA: `git reset --hard <SHA>` restores the branch to that state, or `git cherry-pick <SHA>` if you only want specific commits. The reflog keeps entries for 90 days by default (30 days for entries whose commits are no longer reachable, which is the case after a `reset --hard`). The only truly unrecoverable situation is running `git gc --prune=now` or running `git reflog expire --expire=now --all` — normal development never hits these.
 
 ---
 

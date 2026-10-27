@@ -433,14 +433,14 @@ FORMS
   Test recovery: fix error → resubmit → error cleared, onSubmit called
 
 BROWSER MODE
-  browser.enabled: true + provider: 'playwright' in vitest.config.ts
-  npm install -D @vitest/browser playwright + npx playwright install chromium
+  browser.enabled: true + provider: playwright() + instances: [{ browser: 'chromium' }] in vitest.config.ts
+  npm install -D @vitest/browser-playwright + npx playwright install chromium   (Vitest 4)
   headless: true for CI, false for debugging
   Docker: args: ['--no-sandbox', '--disable-dev-shm-usage']
   Fresh browser CONTEXT per test FILE (isolated localStorage, cookies)
-  userEvent from @vitest/browser/context → real event sequences
-  page.locator() → Playwright locator (auto-retry until found)
-  await expect(locator).toBeVisible() → Playwright assertions with retry
+  userEvent from 'vitest/browser' → real event sequences
+  page.getByRole()/getByTestId() → Vitest locator (lazy, auto-retry until found)
+  await expect.element(locator).toBeVisible() → assertions with retry
   Screenshots: page.screenshot() + afterEach on failure
 
 SIMULATED vs REAL BROWSER

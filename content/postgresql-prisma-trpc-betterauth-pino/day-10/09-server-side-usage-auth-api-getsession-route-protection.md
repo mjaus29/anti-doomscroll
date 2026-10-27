@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-On the server, use `auth.api.getSession({ headers: request.headers })` to read the current session from the incoming request's cookies. This works in Next.js Server Components, Route Handlers, and Server Actions. Use Next.js `middleware.ts` to protect routes at the edge before rendering. The session returned is fully typed from your auth config.
+On the server, use `auth.api.getSession({ headers: request.headers })` to read the current session from the incoming request's cookies. This works in Next.js Server Components, Route Handlers, and Server Actions. Use Next.js `proxy.ts` (called `middleware.ts` before Next.js 16) for a fast route-level redirect before rendering. The session returned is fully typed from your auth config.
 
 ---
 
@@ -82,8 +82,12 @@ export async function updateProfileAction(formData: FormData) {
 ```
 
 ```typescript
-// ── Middleware — protect routes at the edge ───────────────────────────────
-// src/middleware.ts
+// ── Proxy (Next.js 16; was middleware.ts) — protect routes before rendering ─
+// src/proxy.ts
+// Next 16 proxy runs on the Node.js runtime, so a Prisma-backed getSession works here.
+// In Next 13–15.1 middleware ran on the Edge runtime and could NOT make DB calls —
+// there you used getSessionCookie() from 'better-auth/cookies' (cookie existence only,
+// NOT validated) or set `runtime: 'nodejs'` (Next 15.2+, experimental before 16).
 import { NextRequest, NextResponse } from 'next/server'
 import { auth }                      from '@/lib/auth'
 
@@ -92,7 +96,7 @@ const PROTECTED_PATHS = ['/dashboard', '/settings', '/admin']
 // Routes that require admin role
 const ADMIN_PATHS     = ['/admin']
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const session = await auth.api.getSession({
     headers: req.headers,
   })
@@ -172,7 +176,7 @@ export default async function AdminPage() {
 ## W — Why It Matters
 
 - Server-side session checks are the real security boundary — client-side `useSession` checks are UX-only. An attacker can bypass client-side checks by calling your API directly. Always check the session in Route Handlers, Server Actions, and Server Components before returning sensitive data or performing mutations.
-- Next.js middleware runs at the edge (before the page renders) — this means the redirect for unauthenticated users happens before any data fetching or rendering, making protected pages feel instant rather than rendering a flash of content before redirecting.
+- The Next.js proxy (formerly middleware) runs before the page renders — this means the redirect for unauthenticated users happens before any data fetching or rendering, making protected pages feel instant rather than rendering a flash of content before redirecting.
 - The `requireSession()` helper pattern eliminates repetitive `if (!session) redirect(...)` boilerplate across Server Components — define it once, use it everywhere, and TypeScript infers the non-null session type after the call.
 
 ---
@@ -181,7 +185,7 @@ export default async function AdminPage() {
 
 ### Q: How do you protect a Next.js App Router page from unauthenticated access, and what are the two levels of protection?
 
-**A:** There are two levels. The first is **middleware protection** in `src/middleware.ts` — it runs at the edge before any page renders, reads the session cookie, and redirects unauthenticated users to the sign-in page. This is efficient and prevents even the page's Server Components from executing. Configure the `matcher` to cover protected path patterns. The second is **component-level protection** in the Server Component itself — calling `auth.api.getSession({ headers: await headers() })` and redirecting if the session is null. This is the security backstop — it catches cases where middleware config doesn't cover a path, or where you need fine-grained checks (e.g. "user can only view their own profile"). Both layers are defense-in-depth: middleware is fast and broad, component-level is thorough and specific.
+**A:** There are two levels. The first is **proxy protection** in `src/proxy.ts` (`middleware.ts` before Next.js 16) — it runs before any page renders, reads the session, and redirects unauthenticated users to the sign-in page. This is efficient and prevents even the page's Server Components from executing. (Caveat: on older Next.js versions where middleware ran on the Edge runtime, a DB-backed `getSession` could not run there — only a cookie-existence check could, which is not secure on its own.) Configure the `matcher` to cover protected path patterns. The second is **component-level protection** in the Server Component itself — calling `auth.api.getSession({ headers: await headers() })` and redirecting if the session is null. This is the security backstop — it catches cases where middleware config doesn't cover a path, or where you need fine-grained checks (e.g. "user can only view their own profile"). Both layers are defense-in-depth: the proxy is fast and broad, component-level is thorough and specific.
 
 ---
 

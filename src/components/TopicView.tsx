@@ -4,6 +4,7 @@ import { useSwipe } from "@/hooks/useSwipe";
 import { LAST_VISITED_STATE_KEY } from "@/lib/app-state";
 import { writeAppState } from "@/lib/app-state-client";
 import type { TopicChallenge } from "@/lib/content";
+import type { LessonUpdate } from "@/lib/lesson-updates";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -11,6 +12,7 @@ import {
   ChallengeAssistant,
   type LessonQueryRequest,
 } from "./ChallengeAssistant";
+import { LessonUpdateBanner } from "./LessonUpdates";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { Sidebar } from "./Sidebar";
 
@@ -74,6 +76,7 @@ type TopicViewProps = Readonly<{
   prevTopic: { id: string; title: string } | null;
   nextTopic: { id: string; title: string } | null;
   sidebarGroups: SidebarGroup[];
+  lessonUpdates?: LessonUpdate[];
 }>;
 
 export function TopicView({
@@ -92,6 +95,7 @@ export function TopicView({
   prevTopic,
   nextTopic,
   sidebarGroups,
+  lessonUpdates = [],
 }: TopicViewProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
@@ -393,6 +397,7 @@ export function TopicView({
             onPointerDown={() => setSelectionTooltip(null)}
             className="relative rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-6 sm:p-8 lg:p-10"
           >
+            <LessonUpdateBanner updates={lessonUpdates} />
             <div className="markdown-body">
               <MarkdownRenderer content={topicContent} allowHtml />
             </div>

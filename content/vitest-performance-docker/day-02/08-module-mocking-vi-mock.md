@@ -80,13 +80,16 @@ vi.mock('nodemailer', () => ({
 }))
 
 vi.mock('@prisma/client', () => ({
-  PrismaClient: vi.fn().mockImplementation(() => ({
-    user: {
-      findUnique: vi.fn(),
-      create:     vi.fn(),
-    },
-    $disconnect: vi.fn(),
-  }))
+  // Vitest 4: a mock called with `new` needs a `function`/`class` implementation (arrow functions throw "is not a constructor")
+  PrismaClient: vi.fn().mockImplementation(function () {
+    return {
+      user: {
+        findUnique: vi.fn(),
+        create:     vi.fn(),
+      },
+      $disconnect: vi.fn(),
+    }
+  })
 }))
 ```
 

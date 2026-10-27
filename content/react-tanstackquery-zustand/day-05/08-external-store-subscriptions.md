@@ -278,14 +278,14 @@ useRef
 DOM ACCESS + forwardRef
   ref={myRef} → myRef.current = DOM node after mount, null after unmount
   Type: useRef<HTMLInputElement>(null) — TypeScript knows the element API
-  forwardRef: lets parent access child's internal DOM node
+  React 19: `ref` is a normal prop — child passes it to its DOM node (pre-19: forwardRef)
   Use: focus management, scroll control, canvas drawing, measurements
   Ref callback: fires synchronously on attach/detach — no useEffect needed
   ⚠️ Never access ref.current during render — DOM doesn't exist yet
 
 useImperativeHandle
   Replaces raw DOM node with a custom API object for the parent's ref
-  Always used with forwardRef
+  Takes the `ref` prop (React 19) / forwardRef's ref (pre-19)
   Restricts what parents can do — only exposed methods are callable
   Common: modal.open/close, input.focus/clear, player.play/pause/seek
   Deps array: include any state/props the handle methods close over

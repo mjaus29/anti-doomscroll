@@ -96,7 +96,7 @@ export async function archiveProduct(id: string) {
   // Invalidate all pages that show product data
   revalidatePath("/products");
   revalidatePath(`/products/${id}`);
-  revalidateTag("products"); // clears all fetches tagged 'products'
+  revalidateTag("products", "max"); // clears all fetches tagged 'products'
 }
 ```
 
@@ -345,7 +345,7 @@ const post = await fetch(`${CMS_URL}/posts/${slug}`, {
 export async function publishPost(slug: string) {
   "use server";
   await cms.publishPost(slug);
-  revalidateTag(`post-${slug}`); // ← instant cache purge
+  revalidateTag(`post-${slug}`, "max"); // ← instant cache purge
 }
 ```
 
@@ -469,8 +469,8 @@ export async function archiveCustomer(customerId: string): Promise<void> {
   console.log("Archived customer:", customerId);
 
   // Invalidate all customer-related caches instantly
-  revalidateTag("customers");
-  revalidateTag(`customer-${customerId}`);
+  revalidateTag("customers", "max");
+  revalidateTag(`customer-${customerId}`, "max");
 }
 ```
 

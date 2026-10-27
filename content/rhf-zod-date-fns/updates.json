@@ -1,0 +1,456 @@
+{
+  "updates": [
+    {
+      "lesson": "day-03/01-what-is-zod-and-why-use-it",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 top-level `z.email()` and new default error message wording.",
+      "changes": [
+        "Key Concepts — `z.string().email()` → `z.email()`.",
+        "Key Concepts — example issue messages 'String must contain at least 1 character(s)' / 'Expected boolean, received string' → Zod 4 wording ('Too small: expected string to have >=1 characters', 'Invalid input: expected boolean, received string')."
+      ]
+    },
+    {
+      "lesson": "day-03/02-primitive-schemas-string-number-boolean-date",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 moved string formats to top-level schemas: `z.string().email()` / `.url()` / `.uuid()` are now `z.email()` / `z.url()` / `z.uuid()`. Also `{ message }` → `{ error }`, `.nonempty()`/`.safe()`/`.finite()` dropped, and a `z.coerce.boolean()` caveat.",
+      "changes": [
+        "TL;DR — string formats described as top-level `z.email()`, `z.url()`, `z.uuid()`.",
+        "Key Concepts — `z.string().email()/.url()/.uuid()/.cuid()` → `z.email()/z.url()/z.uuid()/z.cuid()`; `z.string().nonempty()` → `.min(1)`; removed `z.number().finite()` and `.safe()`, added `z.int()`; `{ message: ... }` → `{ error: ... }`.",
+        "Key Concepts — `z.coerce.boolean()` comment: `\"true\" → true` → `Boolean(input)`, so `\"false\"` also becomes `true`.",
+        "Why It Matters — `.email()` → `z.email()`."
+      ]
+    },
+    {
+      "lesson": "day-03/03-objects-z-object-shape-strict-passthrough",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 prefers `z.strictObject()` / `z.looseObject()` over `.strict()` / `.passthrough()`.",
+      "changes": [
+        "TL;DR — `.strict()` / `.passthrough()` → `z.strictObject()` / `z.looseObject()`.",
+        "Key Concepts — strict and passthrough examples rewritten with the new factories (old methods kept only as a 'Before Zod 4' note); `z.string().uuid()/.email()` → `z.uuid()/z.email()`; `keyof()` result shown as the Zod 4 enum type.",
+        "Interview Q&A / Common Pitfalls — `.strict()` / `.passthrough()` → `z.strictObject()` / `z.looseObject()` (Zod 3 names in parentheses).",
+        "Coding Challenge — `ServerConfigSchema` now built with `z.strictObject`; unknown-key message is `Unrecognized key: \"unknownKey\"`."
+      ]
+    },
+    {
+      "lesson": "day-03/04-arrays-z-array-min-max-nonempty",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "In Zod 4 `.nonempty()` no longer narrows the type to `[T, ...T[]]`; it is just `.min(1)`.",
+      "changes": [
+        "Key Concepts — comment 'nonempty() also narrows the type to [string, ...string[]]' → it equals `min(1)` and the type stays `string[]`; added `z.tuple([z.string()], z.string())` for the non-empty tuple type.",
+        "Key Concepts — tuple rest `.rest(z.boolean())` → `z.tuple([...], z.boolean())`.",
+        "Why It Matters — first bullet rewritten: `.nonempty()` is an alias of `.min(1)` in Zod 4.",
+        "Interview Q&A — the 'min(1) vs nonempty()' answer now says there is no difference in Zod 4 (Zod 3 narrowed the type).",
+        "Key Concepts / Coding Challenge — `z.string().url()` → `z.url()`."
+      ]
+    },
+    {
+      "lesson": "day-03/05-enums-and-literals",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 deprecates `z.nativeEnum` (use `z.enum(TsEnum)`) and replaces `errorMap` with `error`.",
+      "changes": [
+        "TL;DR — 'Use `z.nativeEnum`' → 'Use `z.enum(TsEnum)`'.",
+        "Key Concepts — `z.nativeEnum(Direction)` → `z.enum(Direction)`; enum custom error `errorMap: () => ({ message })` → `error: '...'`.",
+        "Why It Matters / Interview Q&A — `z.nativeEnum` described as the Zod 3 name of `z.enum(TsEnum)`.",
+        "Coding Challenge — `z.nativeEnum(TaskType)` → `z.enum(TaskType)`; invalid-enum message → 'Invalid option: expected one of \"todo\"|\"in-progress\"|\"done\"'."
+      ]
+    },
+    {
+      "lesson": "day-03/06-optional-nullable-and-default-values",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 changed `.default()`: the default is returned as-is (output type) and `.prefault()` keeps the old behavior.",
+      "changes": [
+        "Key Concepts — added comment block: default must match the OUTPUT type and short-circuits; `.prefault()` parses it through the schema like Zod 3; `.default().optional()` now applies the default.",
+        "Key Concepts / Common Pitfalls / Coding Challenge — `z.string().url()` → `z.url()`."
+      ]
+    },
+    {
+      "lesson": "day-03/07-parse-vs-safeparse",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 deprecates `error.flatten()` / `error.format()` in favor of `z.flattenError()` / `z.treeifyError()` and changes default messages.",
+      "changes": [
+        "Key Concepts — `err.flatten()` → `z.flattenError(err)`; `err.format()` → `z.treeifyError(err)` (new `{ errors, properties }` tree shape); added `z.prettifyError`.",
+        "Key Concepts — sample messages 'String must contain at least 2 character(s)' / 'Number must be greater than or equal to 18' → 'Too small: expected string to have >=2 characters' / 'Too small: expected number to be >=18'.",
+        "Why It Matters — `error.flatten()` bullet → `z.flattenError(error)`.",
+        "Common Pitfalls / Coding Challenge — API route examples now use `z.flattenError(result.error)`; `z.string().email()` → `z.email()`."
+      ]
+    },
+    {
+      "lesson": "day-03/08-schema-composition-extend-merge-pick-omit-partial",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 deprecates `.merge()`; combine objects with `.extend(Other.shape)`.",
+      "changes": [
+        "TL;DR — removed `.merge()` from the list of composition methods.",
+        "Key Concepts — `BaseUserSchema.merge(AddressSchema)` → `BaseUserSchema.extend(AddressSchema.shape)` (or spread both `.shape`s).",
+        "Why It Matters — '.extend() is safer than .merge()' bullet rewritten; added that `.extend()` throws on refined schemas (`.safeExtend()`).",
+        "Key Concepts / Common Pitfalls / Coding Challenge — `z.string().uuid()/.email()/.url()` → `z.uuid()/z.email()/z.url()`."
+      ]
+    },
+    {
+      "lesson": "day-03/09-typescript-inference-z-infer",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 renamed/replaced several APIs shown in the Day 3 one-page mental model.",
+      "changes": [
+        "Key Concepts — `z.string().uuid()` → `z.uuid()`; `.flatten()` → `z.flattenError()` in the API route examples.",
+        "Mental Model — string formats, `.strict()/.passthrough()`, `.nonempty()` type claim, `z.nativeEnum`, `error.flatten()/format()` and `.merge()` lines updated to the Zod 4 names."
+      ]
+    },
+    {
+      "lesson": "day-04/01-zodresolver-connecting-zod-to-rhf",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 `z.email()` and the new `invalid_format` error type; resolvers v5+ install note.",
+      "changes": [
+        "Key Concepts — install command now `npm install zod @hookform/resolvers` with a note that v5+ supports Zod 4; `z.string().email()` → `z.email()`.",
+        "Key Concepts — mapped error type `'invalid_string'` → `'invalid_format'`.",
+        "Coding Challenge — `rememberMe: z.boolean().default(false)` → `z.boolean()` so one `useForm<LoginForm>` generic still type-checks."
+      ]
+    },
+    {
+      "lesson": "day-04/02-typed-form-values-from-schemas",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 + @hookform/resolvers 5+ infer form input and output types separately, so schemas with `.default()` / `z.coerce` need `useForm<z.input<S>, unknown, z.output<S>>` instead of a single `useForm<z.infer<S>>`.",
+      "changes": [
+        "TL;DR — now says to pass `z.input` as form values type and `z.output` as the submit type (or omit the generic).",
+        "Key Concepts — `useForm<ProfileForm>` / `useForm<FormOutput>` → `useForm<Input, unknown, Output>`; coerce input type shown as `unknown`; removed the claim that a single output generic is correct.",
+        "Interview Q&A — 'z.infer or z.input?' answer rewritten: use both via the 3-generic form.",
+        "Common Pitfalls / Coding Challenge — `useForm<ProfileForm>` and `useForm<CreateProduct>` → three-generic form."
+      ]
+    },
+    {
+      "lesson": "day-04/03-input-coercion-handling-html-string-inputs",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Empty string coerces to `0` (not `NaN`), `z.coerce.boolean()` turns `'false'` into `true`, and `errorMap` became `error`.",
+      "changes": [
+        "Key Concepts — `Number('')` is `0`, so `z.coerce.number().safeParse('')` PASSES as `0` (lesson said it failed with NaN); `'abc'` is the NaN case ('Invalid input: expected number, received NaN').",
+        "Key Concepts — `z.coerce.boolean()` comment now `Boolean(input)` (so `'false'` → `true`); checkbox section says a registered checkbox is already boolean, don't use `z.coerce.boolean()`.",
+        "Why It Matters / Interview Q&A — 'empty string → NaN' rewritten to 'empty string → 0'; added that Zod 4 coerce input type is `unknown`.",
+        "Common Pitfalls — message 'Expected number, received string' → 'Invalid input: expected number, received string'.",
+        "Coding Challenge — `z.literal(true, { errorMap })` → `{ error: '...' }`; `useForm<EventForm>` → `useForm<EventInput, unknown, EventOutput>`."
+      ]
+    },
+    {
+      "lesson": "day-04/05-custom-error-messages-per-rule-and-per-field",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 replaced `message`, `required_error`, `invalid_type_error`, `errorMap` and `z.setErrorMap` with a single `error` param and `z.config`.",
+      "changes": [
+        "TL;DR / Key Concepts — `{ message }` → `{ error }`; `required_error` + `invalid_type_error` → `error: (iss) => iss.input === undefined ? ... : ...`; per-schema `errorMap` → `error` functions; `z.setErrorMap` → `z.config({ customError })` / `z.config(z.locales.xx())`.",
+        "Why It Matters / Interview Q&A — rewritten around the `error` function and `iss.input === undefined` check.",
+        "Common Pitfalls — default message 'Expected string, received undefined' → 'Invalid input: expected string, received undefined'; fix uses `error` instead of `required_error`.",
+        "Coding Challenge — `SignupSchema` rewritten with `error` functions and `z.email({ error })`; `useForm<SignupForm>` → three-generic form."
+      ]
+    },
+    {
+      "lesson": "day-04/06-error-path-mapping-how-zod-errors-become-rhf-errors",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "A `.refine()` without `path` does NOT land in `errors.root`; zodResolver stores it under `errors['']`. Use `path: ['root']` for a form-level error.",
+      "changes": [
+        "Key Concepts — 'path: [] → errors.root' corrected to `errors['']`; added the explicit `path: ['root']` option; refine `message` → `error`.",
+        "Why It Matters / Interview Q&A — 'goes to errors.root' → empty-string key, nothing renders; set `path: ['root']` for form-level messages.",
+        "Common Pitfalls — heading and comments changed from `errors.root` to `errors['']`.",
+        "Coding Challenge — second refine now uses `path: ['root']` so the `errors.root` banner actually shows."
+      ]
+    },
+    {
+      "lesson": "day-04/07-cross-field-validation-with-refine-and-superrefine",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4: `ZodIssueCode` deprecated, `too_small` issue shape changed, `z.NEVER` doesn't abort, and sync `safeParse` on async refine now throws.",
+      "changes": [
+        "Key Concepts — `z.ZodIssueCode.too_small` with `type: 'string'` → `code: 'too_small'` with `origin: 'string'` and `input`; refine `message` → `error`.",
+        "Interview Q&A — 'short-circuit using `z.NEVER`' → use `fatal: true` (or `abort: true` on `.refine`); `z.NEVER` alone does not abort.",
+        "Common Pitfalls — sync `safeParse` on an async refine now throws 'Encountered Promise during synchronous parse' instead of returning a Promise.",
+        "Coding Challenge — `z.ZodIssueCode.custom` → `'custom'`; `useForm<Booking>` → three-generic form."
+      ]
+    },
+    {
+      "lesson": "day-04/08-schema-as-single-source-of-truth",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4: `z.flattenError`, `error` instead of `errorMap`/`required_error`/`message`, and resolver input/output generics.",
+      "changes": [
+        "Key Concepts — `useForm<CreateUser>` → `useForm<CreateUserInput, unknown, CreateUser>`; `result.error.flatten()` → `z.flattenError(result.error)` (added `import { z }`).",
+        "Coding Challenge — `errorMap: () => ({ message })` → `error: '...'`; `.flatten().fieldErrors` → `z.flattenError(...).fieldErrors`.",
+        "Mental Model — `useForm<z.infer<...>>` → inferred/three-generic form; coercion, error-message, error-path and cross-field cheat lines updated (`error` param, `z.config`, `errors['']` vs `path: ['root']`)."
+      ]
+    },
+    {
+      "lesson": "day-05/01-controller-when-and-why",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 removed `required_error`.",
+      "changes": [
+        "Key Concepts — `z.number({ required_error: 'Please rate' })` → `z.number({ error: 'Please rate' })`."
+      ]
+    },
+    {
+      "lesson": "day-05/02-controller-with-native-inputs",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 + @hookform/resolvers 5+ infer form input and output types separately, so schemas with `.default()` / `z.coerce` need `useForm<z.input<S>, unknown, z.output<S>>` instead of a single `useForm<z.infer<S>>`.",
+      "changes": [
+        "Key Concepts / Coding Challenge — `useForm<Type>` → `useForm<z.input<typeof Schema>, unknown, z.output<typeof Schema>>` (the schema uses `.default()`)."
+      ]
+    },
+    {
+      "lesson": "day-05/04-reusable-field-wrapper-components",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 + @hookform/resolvers 5+ infer form input and output types separately, so schemas with `.default()` / `z.coerce` need `useForm<z.input<S>, unknown, z.output<S>>` instead of a single `useForm<z.infer<S>>`.",
+      "changes": [
+        "Key Concepts / Coding Challenge — `useForm<Type>` → `useForm<z.input<typeof Schema>, unknown, z.output<typeof Schema>>` (the schema uses `.default()`).",
+        "Coding Challenge — `z.string().email('...')` → `z.email('...')`."
+      ]
+    },
+    {
+      "lesson": "day-05/06-nested-field-paths-dot-notation-and-objects",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 + @hookform/resolvers 5+ infer form input and output types separately, so schemas with `.default()` / `z.coerce` need `useForm<z.input<S>, unknown, z.output<S>>` instead of a single `useForm<z.infer<S>>`.",
+      "changes": [
+        "Key Concepts / Coding Challenge — `useForm<Type>` → `useForm<z.input<typeof Schema>, unknown, z.output<typeof Schema>>` (the schema uses `.default()`).",
+        "Coding Challenge — `z.string().email('...')` → `z.email('...')`."
+      ]
+    },
+    {
+      "lesson": "day-05/07-component-composition-patterns",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 + @hookform/resolvers 5+ infer form input and output types separately, so schemas with `.default()` / `z.coerce` need `useForm<z.input<S>, unknown, z.output<S>>` instead of a single `useForm<z.infer<S>>`.",
+      "changes": [
+        "Key Concepts / Coding Challenge — `useForm<Type>` → `useForm<z.input<typeof Schema>, unknown, z.output<typeof Schema>>` (the schema uses `.default()`).",
+        "Coding Challenge — `z.string().email('...')` → `z.email('...')`."
+      ]
+    },
+    {
+      "lesson": "day-05/03-controller-with-third-party-components",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 + @hookform/resolvers 5+ infer form input and output types separately, so schemas with `.default()` / `z.coerce` need `useForm<z.input<S>, unknown, z.output<S>>` instead of a single `useForm<z.infer<S>>`. Also `required_error` is gone.",
+      "changes": [
+        "Coding Challenge — `z.coerce.date({ required_error })` → `z.coerce.date({ error })`; `useForm<TaskForm>` → three-generic form."
+      ]
+    },
+    {
+      "lesson": "day-05/05-formprovider-and-useformcontext",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 + @hookform/resolvers 5+ infer form input and output types separately, so schemas with `.default()` / `z.coerce` need `useForm<z.input<S>, unknown, z.output<S>>` instead of a single `useForm<z.infer<S>>`.",
+      "changes": [
+        "Coding Challenge — `z.string().email('...')` → `z.email('...')`; `useForm<RegForm>` → three-generic form."
+      ]
+    },
+    {
+      "lesson": "day-05/08-scalable-form-module-structure",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 + @hookform/resolvers 5+ infer form input and output types separately, so schemas with `.default()` / `z.coerce` need `useForm<z.input<S>, unknown, z.output<S>>` instead of a single `useForm<z.infer<S>>`.",
+      "changes": [
+        "Key Concepts / Coding Challenge — `z.string().email()` → `z.email()`; `useForm<CheckoutForm>` / `useForm<CreateProject>` → three-generic form."
+      ]
+    },
+    {
+      "lesson": "day-06/01-usefieldarray-setup-and-core-concepts",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 + @hookform/resolvers 5+ infer form input and output types separately, so schemas with `.default()` / `z.coerce` need `useForm<z.input<S>, unknown, z.output<S>>` instead of a single `useForm<z.infer<S>>`.",
+      "changes": [
+        "Key Concepts — `useForm<InvoiceForm>` → three-generic form (schema uses `z.coerce`).",
+        "Coding Challenge — `z.string().email()` → `z.email()`."
+      ]
+    },
+    {
+      "lesson": "day-06/04-nested-arrays-and-objects-inside-field-arrays",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 + @hookform/resolvers 5+ infer form input and output types separately, so schemas with `.default()` / `z.coerce` need `useForm<z.input<S>, unknown, z.output<S>>` instead of a single `useForm<z.infer<S>>`.",
+      "changes": [
+        "Key Concepts — `useForm<SurveyForm>` → three-generic form (schema uses `.default()`)."
+      ]
+    },
+    {
+      "lesson": "day-06/05-field-array-validation-with-zod",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 deprecated `z.ZodIssueCode`; resolver input/output generics.",
+      "changes": [
+        "Key Concepts — `z.ZodIssueCode.custom` → `'custom'` in `superRefine`.",
+        "Coding Challenge — `useForm<InventoryForm>` → `useForm<z.input<typeof InventorySchema>, unknown, z.output<typeof InventorySchema>>`."
+      ]
+    },
+    {
+      "lesson": "day-06/06-dependent-and-conditional-fields",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 deprecated `z.ZodIssueCode`.",
+      "changes": [
+        "Key Concepts / Coding Challenge — `code: z.ZodIssueCode.custom` → `code: 'custom'`."
+      ]
+    },
+    {
+      "lesson": "day-06/07-discriminated-unions-schema-branching",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 moved string formats to top-level schemas: `z.string().email()` / `.url()` / `.uuid()` are now `z.email()` / `z.url()` / `z.uuid()`.",
+      "changes": [
+        "Key Concepts / Coding Challenge — `z.string().email()` → `z.email()`, `z.string().uuid()` → `z.uuid()`."
+      ]
+    },
+    {
+      "lesson": "day-06/08-aligning-dynamic-ui-with-schema-structure",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 deprecated `z.ZodIssueCode`.",
+      "changes": [
+        "Key Concepts / Coding Challenge — `code: z.ZodIssueCode.custom` → `code: 'custom'`."
+      ]
+    },
+    {
+      "lesson": "day-07/01-date-fns-fundamentals-pure-functions-and-immutability",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "The `fil` locale does not exist in date-fns, and v4 did not remove subpath imports; v4 accepts date strings and adds time-zone support.",
+      "changes": [
+        "Key Concepts — `import { enUS, fil }` / `'Enero 15, 2025'` → `import { enUS, es }` / `'enero 15, 2025'` (`fil` is not exported).",
+        "Key Concepts — 'v4: no more submodules, `date-fns/addDays` v3 only' replaced with: root named imports are the standard; v4 headline is the `in` time-zone option (`@date-fns/tz`); v4 functions accept `Date | number | string`.",
+        "Why It Matters — 'v4's unified import path' bullet rewritten accordingly."
+      ]
+    },
+    {
+      "lesson": "day-07/03-parse-and-parseiso-parsing-user-input-and-iso-strings",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "UTC-midnight example used the wrong time zone and `parse()` with 2 args returns Invalid Date rather than throwing.",
+      "changes": [
+        "Interview Q&A — 'in UTC+8 it shows June 14 20:00' → the off-by-one appears in time zones west of UTC (e.g. UTC-5, June 14 19:00).",
+        "Common Pitfalls — `parse()` without the reference date: 'TypeError at runtime' → TypeScript error, but at runtime you silently get Invalid Date.",
+        "Key Concepts — Zod `.refine(..., { message })` → `{ error }`."
+      ]
+    },
+    {
+      "lesson": "day-07/05-date-comparisons-isbefore-isafter-isvalid",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4: `.refine()` options use `error` instead of `message`.",
+      "changes": [
+        "Key Concepts / Interview Q&A / Coding Challenge — `.refine(fn, { message, path })` → `{ error, path }`."
+      ]
+    },
+    {
+      "lesson": "day-07/06-intervals-and-duration",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "`eachDayOfInterval` with end before start does not throw, and `intervalToDuration` omits zero units.",
+      "changes": [
+        "Key Concepts — `intervalToDuration` result `{ years: 0, months: 2, days: 21, hours: 0, ... }` → `{ months: 2, days: 21 }` (zero units omitted).",
+        "Interview Q&A — duration object lists non-zero units; example '1 year 35 days' corrected to '1 year 1 month 4 days'.",
+        "Common Pitfalls — 'Throws RangeError if start > end' → returns the days in reverse (descending) order; `min`/`max` guard still gives ascending order."
+      ]
+    },
+    {
+      "lesson": "day-07/07-formatdistance-and-formatrelative",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Several example outputs were wrong (`'about 3 days'`, `'next Tuesday'`).",
+      "changes": [
+        "Key Concepts — `formatDistance` for ~3 days returns `'3 days'` / `'in 3 days'` (not 'about 3 days').",
+        "Key Concepts — `formatRelative` +6 days returns `'Saturday at 2:00 PM'` (weekday name; past dates 'last Saturday'), not 'next Tuesday at ...'.",
+        "TL;DR / Why It Matters — 'next Tuesday' examples → plain weekday."
+      ]
+    },
+    {
+      "lesson": "day-07/08-display-vs-storage-normalization-in-form-workflows",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Zod 4 `error` option, resolver generics, and the `eachDayOfInterval` reversed-range claim was wrong.",
+      "changes": [
+        "Key Concepts — `z.coerce.date({ required_error })` → `{ error }`; refine `message` → `error`.",
+        "Coding Challenge — `useForm<BookingForm>` → three-generic form.",
+        "Mental Model — 'eachDayOfInterval end < start → RangeError' → returns days in reverse order, no error."
+      ]
+    },
+    {
+      "lesson": "day-08/01-advanced-refine-and-superrefine",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "`return z.NEVER` does not abort later checks; use `fatal: true` (or `abort: true`) and a plain `return`. Also `ZodIssueCode` is deprecated.",
+      "changes": [
+        "TL;DR / Key Concepts — 'abort early with `z.NEVER`' → `return` exits your callback, `fatal: true` on the issue stops later chained checks; `.refine(fn, { abort: true })`.",
+        "Key Concepts — `z.ZodIssueCode.*` list → plain string codes (`'custom'`, `'too_small'`, `'invalid_value'`).",
+        "Why It Matters / Interview Q&A — rewritten: `z.NEVER` only satisfies the return type and does not abort anything.",
+        "Common Pitfalls — pitfall and fix rewritten; shows `return z.NEVER` failing to stop a later chained `.refine`.",
+        "Coding Challenge — abort-early phone rule now uses a plain `return`."
+      ]
+    },
+    {
+      "lesson": "day-08/02-cross-field-and-date-range-validation-patterns",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4: `.refine()` options use `error`; `ZodIssueCode` deprecated.",
+      "changes": [
+        "Key Concepts / Coding Challenge — `.refine(fn, { message, path })` → `{ error, path }`; `z.ZodIssueCode.custom` → `'custom'`."
+      ]
+    },
+    {
+      "lesson": "day-08/03-async-validation-debounced-server-checks",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4: `z.email()` and `error` in `.refine()`.",
+      "changes": [
+        "Key Concepts — `z.string().email()` → `z.email()`; async refine `{ message }` → `{ error }`."
+      ]
+    },
+    {
+      "lesson": "day-08/04-create-vs-edit-flows-schema-variants-and-api-hydration",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 moved string formats to top-level schemas: `z.string().email()` / `.url()` / `.uuid()` are now `z.email()` / `z.url()` / `z.uuid()`.",
+      "changes": [
+        "Key Concepts — `id: z.string().uuid()` → `id: z.uuid()`."
+      ]
+    },
+    {
+      "lesson": "day-08/06-performance-tuning-re-render-control",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 + @hookform/resolvers 5+ infer form input and output types separately, so schemas with `.default()` / `z.coerce` need `useForm<z.input<S>, unknown, z.output<S>>` instead of a single `useForm<z.infer<S>>`.",
+      "changes": [
+        "Coding Challenge — `useForm<CartForm>` → `useForm<z.input<typeof CartSchema>, unknown, z.output<typeof CartSchema>>` (schema uses `z.coerce`)."
+      ]
+    },
+    {
+      "lesson": "day-08/07-testing-strategies-what-to-test-in-rhf-zod-forms",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 removed `required_error`.",
+      "changes": [
+        "Coding Challenge — `ContactSchema` rewritten with `error: iss => iss.input === undefined ? ...` and `z.email()`; challenge text and test name no longer mention `required_error`."
+      ]
+    },
+    {
+      "lesson": "day-08/08-discriminated-union-caveats-refined-schemas-and-date-interval-edge-cases",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "In Zod 4, `.refine()` on a discriminated-union member works; the new caveat is that `.pick/.omit/.partial/.extend`-overwrite throw on refined objects. Also `eachDayOfInterval` reversed ranges don't throw.",
+      "changes": [
+        "TL;DR / Key Concepts — 'refine on a union member breaks the union (ZodEffects)' → Zod 3 behavior only; Zod 4 stores refinements on the object so the union works; `z.union` fallback removed as a 'fix'.",
+        "Key Concepts / Common Pitfalls / Interview Q&A — 'extend() after refine() is a TypeError' → Zod 4 throws for `.pick()`, `.omit()`, `.partial()` and key-overwriting `.extend()`; adding new keys works; use `.safeExtend()` or refine last.",
+        "Key Concepts — 'eachDayOfInterval end < start throws RangeError' → returns days in reverse order; UTC midnight comment fixed to UTC-5 (was UTC+8).",
+        "Coding Challenge — challenge reworded to refactor into one `superRefine` on the union (headings unchanged); refine `message` → `error`.",
+        "Mental Model — union and date-interval lines updated; `return z.NEVER` → `fatal: true`."
+      ]
+    }
+  ]
+}

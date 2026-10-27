@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-An **iterator** has `next()` → `{value, done}`. Optionally: `return(value)` for early termination (cleanup), `throw(err)` to inject an error. These are used by `for...of` internally — `break` calls `return()`, thrown errors inside the loop call `throw()`. Understanding this enables correct resource cleanup in custom iterators.
+An **iterator** has `next()` → `{value, done}`. Optionally: `return(value)` for early termination (cleanup), `throw(err)` to inject an error. These are used by `for...of` internally — `break`, `return`, or an error thrown inside the loop body call `return()` (never `throw()` — `for...of` doesn't call `throw()`; only `yield*` delegation and manual calls do). Understanding this enables correct resource cleanup in custom iterators.
 
 ---
 
@@ -112,7 +112,7 @@ isIterable(42)         // false
 
 ### Q: What does `return()` on an iterator do and when is it called?
 
-**A:** `return(value)` is an optional method on iterators that signals early termination — a chance for the iterator to release resources. It's called automatically by `for...of` when the loop exits early via `break`, `return`, or a `throw`. It must return `{ value, done: true }`. If your iterator holds resources (open file handle, database cursor, network connection), implement `return()` to close them — otherwise `break`ing out of a `for...of` over your iterator leaks the resource. Generators automatically handle `return()` by resuming the generator at the `yield` and running any `finally` blocks.
+**A:** `return(value)` is an optional method on iterators that signals early termination — a chance for the iterator to release resources. It's called automatically by `for...of` when the loop exits early via `break`, `return`, or an error thrown in the loop body (`for...of` never calls the iterator's `throw()`). It must return `{ value, done: true }`. If your iterator holds resources (open file handle, database cursor, network connection), implement `return()` to close them — otherwise `break`ing out of a `for...of` over your iterator leaks the resource. Generators automatically handle `return()` by resuming the generator at the `yield` and running any `finally` blocks.
 
 ---
 

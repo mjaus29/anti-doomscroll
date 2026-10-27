@@ -125,7 +125,7 @@ function PaginatedPosts() {
 
 ### Q: How does TanStack Query know when to refetch after a variable changes?
 
-**A:** TanStack Query watches the `queryKey` array. On every render, it serializes the current key with `JSON.stringify` and compares it to the previously rendered key. If the serialized strings differ, the key has changed — TanStack Query either serves the cached entry for the new key (instant, if previously fetched) or starts a new fetch. The component never needs to explicitly "trigger a refetch" — including the variable in the key means the cache identity changes when the variable changes, and TanStack Query handles the rest. This replaces the `useEffect([variable], () => fetch(variable))` pattern entirely.
+**A:** TanStack Query watches the `queryKey` array. On every render, it hashes the current key (deterministically — object keys are sorted before stringifying) and compares the hash to the previously rendered key. If the hashes differ, the key has changed — TanStack Query either serves the cached entry for the new key (instant, if previously fetched) or starts a new fetch. The component never needs to explicitly "trigger a refetch" — including the variable in the key means the cache identity changes when the variable changes, and TanStack Query handles the rest. This replaces the `useEffect([variable], () => fetch(variable))` pattern entirely.
 
 ---
 

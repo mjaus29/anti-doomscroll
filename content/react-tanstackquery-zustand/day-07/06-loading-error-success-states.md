@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-TanStack Query provides a complete async state machine: `pending → loading → success | error`. Render each state explicitly — skeleton for loading, error message with retry for failure, data for success. Never show a blank screen when you can show something useful.
+TanStack Query v5 provides a complete async state machine: `status` is `'pending'`, `'error'` or `'success'` (there is no `'loading'` status — `isLoading` is a derived flag, `isPending && isFetching`). Render each state explicitly — skeleton for the first load, error message with retry for failure, data for success. Never show a blank screen when you can show something useful.
 
 ---
 

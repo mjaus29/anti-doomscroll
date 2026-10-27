@@ -35,12 +35,12 @@ npx prisma db pull
 ```prisma
 // prisma/schema.prisma — before db pull
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 // ← No models yet — db pull will generate them from the database
 ```
@@ -128,13 +128,12 @@ git stash pop                    # re-apply your manual edits
 ```prisma
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
   schemas  = ["public", "auth", "billing"]
 }
 
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["multiSchema"]
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
 }
 // db pull will introspect all three PostgreSQL schemas and add @@schema() to each model
 ```
@@ -196,12 +195,12 @@ Given the following raw PostgreSQL schema (already created via SQL), run a `db p
 // ── BEFORE: raw db pull output ────────────────────────────────────────────
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model tenant_accounts {
@@ -236,12 +235,12 @@ model app_users {
 // ── AFTER: cleaned-up idiomatic schema ────────────────────────────────────
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model TenantAccount {

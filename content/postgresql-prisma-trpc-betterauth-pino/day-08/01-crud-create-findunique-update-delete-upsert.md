@@ -11,8 +11,8 @@ Prisma Client exposes one property per model on the `prisma` instance. Each prop
 ## K — Key Concepts
 
 ```typescript
-import { PrismaClient, UserRole } from "@prisma/client";
-const prisma = new PrismaClient();
+import { PrismaClient, UserRole } from "@/generated/prisma/client";
+const prisma = new PrismaClient({ adapter });
 
 // ── CREATE ─────────────────────────────────────────────────────────────────
 
@@ -234,7 +234,7 @@ Write a `UserService` module with five functions demonstrating all CRUD methods:
 // src/services/user.service.ts
 
 import { prisma } from "@/lib/prisma";
-import { Prisma, User, UserRole } from "@prisma/client";
+import { Prisma, User, UserRole } from "@/generated/prisma/client";
 
 // ── (1) createUser ─────────────────────────────────────────────────────────
 interface CreateUserInput {

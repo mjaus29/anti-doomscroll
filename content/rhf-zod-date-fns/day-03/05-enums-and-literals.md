@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-`z.enum(['a', 'b', 'c'])` validates that a value is one of a fixed set of strings and infers the literal union type. `z.literal('exact')` validates a single exact value. Use `z.nativeEnum` to integrate TypeScript `enum` declarations.
+`z.enum(['a', 'b', 'c'])` validates that a value is one of a fixed set of strings and infers the literal union type. `z.literal('exact')` validates a single exact value. Use `z.enum(TsEnum)` to integrate TypeScript `enum` declarations (Zod 3: `z.nativeEnum`).
 
 ---
 
@@ -39,9 +39,10 @@ const StatusSchema = z.union([
 type Status = z.infer<typeof StatusSchema>
 // 'pending' | 'active' | 'archived'
 
-// ─── z.nativeEnum — TypeScript enum integration
+// ─── z.enum(TsEnum) — TypeScript enum integration
+// Before Zod 4 this was z.nativeEnum(Direction) (now deprecated)
 enum Direction { Up = 'UP', Down = 'DOWN', Left = 'LEFT', Right = 'RIGHT' }
-const DirectionSchema = z.nativeEnum(Direction)
+const DirectionSchema = z.enum(Direction)
 type Dir = z.infer<typeof DirectionSchema>
 // Direction (the TypeScript enum type)
 
@@ -53,7 +54,7 @@ DirectionSchema.parse('up')          // ❌ case-sensitive
 ```ts
 // ─── Enum with custom error
 const PrioritySchema = z.enum(['low', 'medium', 'high'], {
-  errorMap: () => ({ message: 'Priority must be low, medium, or high' })
+  error: 'Priority must be low, medium, or high'   // Before Zod 4: errorMap: () => ({ message })
 })
 
 // ─── Using enum values in UI
@@ -67,15 +68,15 @@ const ROLES = RoleSchema.options  // ['admin', 'editor', 'viewer']
 
 - `z.enum` infers a literal union type automatically — no need to write `type Role = 'admin' | 'editor' | 'viewer'` separately. The schema IS the type definition.
 - `RoleSchema.options` gives you the valid values as an array — use it to populate `<select>` options or radio buttons, ensuring your UI and validation are always in sync.
-- `z.nativeEnum` is the bridge for codebases that already use TypeScript `enum` declarations — you get schema validation without rewriting existing enums.
+- `z.enum(TsEnum)` (formerly `z.nativeEnum`) is the bridge for codebases that already use TypeScript `enum` declarations — you get schema validation without rewriting existing enums.
 
 ---
 
 ## I — Interview Q&A
 
-### Q: What is the difference between `z.enum` and `z.nativeEnum`?
+### Q: What is the difference between `z.enum(['a', 'b'])` and `z.enum(TsEnum)`?
 
-**A:** `z.enum` takes a plain string array (`['a', 'b', 'c']`) and infers a literal union type. It's the Zod-native approach — no TypeScript `enum` keyword needed. `z.nativeEnum` wraps an existing TypeScript `enum` declaration, accepting both the enum member (`Direction.Up`) and its underlying string/number value (`'UP'`). Use `z.enum` for new code. Use `z.nativeEnum` when integrating with existing TypeScript enums from your codebase or a third-party library.
+**A:** `z.enum` takes a plain string array (`['a', 'b', 'c']`) and infers a literal union type. It's the Zod-native approach — no TypeScript `enum` keyword needed. Passing a TypeScript `enum` object to `z.enum(Direction)` wraps an existing declaration, accepting both the enum member (`Direction.Up`) and its underlying string/number value (`'UP'`). Before Zod 4 this was a separate API, `z.nativeEnum`, which is now deprecated. Use the array form for new code. Use `z.enum(TsEnum)` when integrating with existing TypeScript enums from your codebase or a third-party library.
 
 ---
 
@@ -115,7 +116,7 @@ enum TaskType { Bug = 'BUG', Feature = 'FEATURE', Chore = 'CHORE' }
 
 const StatusSchema   = z.enum(['todo', 'in-progress', 'done'])
 const PrioritySchema = z.enum(['low', 'medium', 'high'])
-const TypeSchema     = z.nativeEnum(TaskType)
+const TypeSchema     = z.enum(TaskType)
 
 // Export arrays for UI select options
 export const STATUS_OPTIONS   = StatusSchema.options
@@ -143,7 +144,7 @@ const r = TaskSchema.safeParse({
   title: 'Fix', status: 'done-ish', priority: 'low', type: TaskType.Chore
 })
 console.log(r.error?.issues[0].message)
-// "Invalid enum value. Expected 'todo' | 'in-progress' | 'done', received 'done-ish'"
+// 'Invalid option: expected one of "todo"|"in-progress"|"done"'
 ```
 
 ---

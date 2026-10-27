@@ -53,7 +53,7 @@ type SurveyForm = z.infer<typeof SurveySchema>
 
 // ─── Outer field array component
 function SurveyForm() {
-  const { register, control, handleSubmit } = useForm<SurveyForm>({
+  const { register, control, handleSubmit } = useForm<z.input<typeof SurveySchema>, unknown, z.output<typeof SurveySchema>>({
     resolver:      zodResolver(SurveySchema),
     defaultValues: { title: '', sections: [{ heading: '', questions: [] }] }
   })

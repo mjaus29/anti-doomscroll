@@ -140,7 +140,7 @@ export function ProductCard({ product }: { product: Product }) {
 // 2. Authenticated/sensitive routes
 <Link href="/admin/users" prefetch={false}>Admin</Link>
 // ← Don't prefetch admin routes even for logged-in users
-//   (prefetch requests go through auth middleware — but still conservative)
+//   (prefetch requests go through auth proxy — but still conservative)
 
 // 3. Low-probability navigation (rarely clicked links)
 <Link href="/legal/privacy-policy" prefetch={false}>Privacy</Link>

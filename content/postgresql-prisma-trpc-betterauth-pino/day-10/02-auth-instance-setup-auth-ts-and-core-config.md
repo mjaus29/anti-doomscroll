@@ -67,7 +67,7 @@ export const auth = betterAuth({
     requireEmailVerification: false,   // set true to enforce email verify before login
     minPasswordLength:   8,
     maxPasswordLength:   128,
-    // Custom password hashing (default: bcrypt, cost 10)
+    // Custom password hashing (default: scrypt)
     // password: { hash: customHash, verify: customVerify }
   },
 

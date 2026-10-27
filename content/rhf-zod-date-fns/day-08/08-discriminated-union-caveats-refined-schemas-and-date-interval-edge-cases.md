@@ -4,42 +4,37 @@
 
 ## T — TL;DR
 
-Discriminated unions break when you add `.refine()` to member schemas — the union can no longer read the discriminator. Wrap refinements outside the union or use `superRefine` on the union itself. Date intervals have three silent bugs: UTC midnight, end-before-start, and same-day zero-duration. Know the fix for each.
+In Zod 4, `.refine()` on a discriminated-union member works (Zod 3 wrapped it in `ZodEffects` and broke the union), but refined object schemas can no longer be `.pick()`ed, `.omit()`ed or `.partial()`ed, and `.extend()` cannot overwrite their keys. Date intervals have three silent bugs: UTC midnight, end-before-start, and same-day zero-duration. Know the fix for each.
 
 ---
 
 ## K — Key Concepts
 
 ```ts
-// ─── CAVEAT 1: refine on a discriminated union member breaks the union
-
-// ❌ Adding .refine() to a member wraps it in ZodEffects
-// ZodEffects hides the discriminator — z.discriminatedUnion can't read it
-const BrokenUnion = z.discriminatedUnion('type', [
+// ─── CAVEAT 1: refine on a discriminated union member
+// Zod 3: .refine() wrapped the member in ZodEffects, which hid the discriminator, so this threw
+//        "The discriminator value for the schema at index 0 could not be parsed".
+// Zod 4: refinements are checks stored ON the object schema (ZodEffects is gone), so this just works ✅
+const MemberRefinedUnion = z.discriminatedUnion('type', [
   z.object({ type: z.literal('card'), cardNumber: z.string() })
-   .refine(d => d.cardNumber.length === 16, 'Must be 16 digits'), // ← breaks union ❌
+   .refine(d => d.cardNumber.length === 16, { error: 'Must be 16 digits', path: ['cardNumber'] }),
   z.object({ type: z.literal('bank'), bsb: z.string() })
 ])
-// ZodError: The discriminator value for the schema at index 0 could not be parsed
 
-// ✅ Fix A: move refinement outside the union member — on the wrapping object
+// ✅ Still a good option: one superRefine on the union, branching on data.type
+// (keeps every cross-branch rule in one place)
 const WorkingUnion = z.discriminatedUnion('type', [
   z.object({ type: z.literal('card'), cardNumber: z.string() }),
   z.object({ type: z.literal('bank'), bsb: z.string() })
 ]).superRefine((data, ctx) => {
   if (data.type === 'card' && data.cardNumber.length !== 16) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom,
+    ctx.addIssue({ code: 'custom',
       message: 'Must be 16 digits', path: ['cardNumber'] })
   }
 })
 
-// ✅ Fix B: use z.union instead of z.discriminatedUnion when refines are needed
-const FlexibleUnion = z.union([
-  z.object({ type: z.literal('card'), cardNumber: z.string() })
-   .refine(d => d.cardNumber.length === 16, { message: '16 digits', path: ['cardNumber'] }),
-  z.object({ type: z.literal('bank'), bsb: z.string() })
-])
-// z.union tries each branch — slower but compatible with branch-level refines
+// z.union also still works with branch-level refines — it just tries each branch in turn
+// (slower, and worse error messages) — only reach for it when there is no shared discriminator.
 ```
 
 ```ts
@@ -49,26 +44,26 @@ const FlexibleUnion = z.union([
 
 // When to use which:
 // All branches share a unique discriminator key → discriminatedUnion
-// Branches need .refine() on individual schemas    → z.union + comment why
+// Branches have no shared literal discriminator    → z.union
 
 // ─── DATE INTERVAL EDGE CASES
 
 // Bug 1: UTC midnight — new Date('2025-06-15') is UTC, not local
 import { parseISO, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns'
 
-const d1 = new Date('2025-06-15')           // 2025-06-14T16:00:00 in UTC+8
+const d1 = new Date('2025-06-15')           // UTC midnight → 2025-06-14 19:00 local in UTC-5
 const d2 = parseISO('2025-06-15')           // 2025-06-15T00:00:00 local ✅
 // For form date inputs: always use parseISO, never new Date(string)
 ```
 
 ```ts
-// Bug 2: end before start in eachDayOfInterval — throws
+// Bug 2: end before start in eachDayOfInterval — does NOT throw, it silently returns the days in REVERSE order
 import { eachDayOfInterval, min, max } from 'date-fns'
 
-// ❌ Throws RangeError
+// ❌ Surprise: a reversed interval gives [Jun 5, Jun 4, ... Jun 1] (descending), not an error or []
 eachDayOfInterval({ start: end, end: start })
 
-// ✅ Always guard order
+// ✅ Normalise order yourself (and reject end < start with a refine if that is invalid for your form)
 function safeInterval(a: Date, b: Date) {
   return eachDayOfInterval({ start: min([a, b]), end: max([a, b]) })
 }
@@ -86,19 +81,23 @@ differenceInDays(new Date(2025,5,16), new Date(2025,5,15))  // 1 ✅
 
 // For "same day = invalid":
 .refine(d => differenceInDays(d.checkOut, d.checkIn) >= 1, {
-  message: 'Minimum 1 night stay', path: ['checkOut']
+  error: 'Minimum 1 night stay', path: ['checkOut']
 })
 ```
 
 ```ts
-// ─── Refined schema composition caveat — extends after refine
-// .extend() AFTER .refine() doesn't work — can't extend ZodEffects
-
-// ❌ Can't extend a refined schema
+// ─── Refined schema composition caveat — shape methods AFTER .refine()
+// Zod 3: refine() returned ZodEffects, so .extend/.pick/.omit/.partial were not even methods (TypeError).
+// Zod 4: the schema stays an object, but the shape methods guard against silently dropping refinements:
 const RefinedSchema = z.object({ name: z.string() }).refine(d => !!d.name)
-const Extended = RefinedSchema.extend({ email: z.string() })  // TypeError ❌
 
-// ✅ Extend FIRST, then refine
+RefinedSchema.extend({ email: z.string() })          // ✅ adding NEW keys is allowed (refinement kept)
+RefinedSchema.extend({ name: z.string().min(3) })    // ❌ throws: "Cannot overwrite keys on object schemas containing refinements. Use .safeExtend()"
+RefinedSchema.pick({ name: true })                   // ❌ throws: ".pick() cannot be used on object schemas containing refinements"
+// same for .omit() and .partial()
+RefinedSchema.safeExtend({ email: z.string() })      // ✅ Zod 4.1+: extend that is safe on refined schemas
+
+// ✅ Best habit: shape methods FIRST, then refine
 const Base     = z.object({ name: z.string() })
 const Extended = Base.extend({ email: z.string() })
 const Final    = Extended.refine(d => !!d.name && !!d.email)  // ✅
@@ -112,29 +111,30 @@ const CreateSchema = Base.extend({ role: z.string() })
 
 ## W — Why It Matters
 
-- The discriminated union + `.refine()` pitfall is the most silent bug in Zod schemas — the error message says the discriminator "could not be parsed" which doesn't hint at the cause. Knowing to move refinements outside the union saves debugging time.
+- In Zod 3, the discriminated union + `.refine()` pitfall was one of the most confusing errors — the message said the discriminator "could not be parsed" without hinting at the cause. Zod 4 removed it (members can be refined), so if you see that error you are probably on an old Zod 3 install.
 - The UTC midnight bug (`new Date('2025-06-15')`) causes off-by-one-day display for users in UTC-negative and UTC-positive timezones. `parseISO` is the consistent fix — always.
-- `.extend()` after `.refine()` is a schema composition order error that TypeScript catches — but only at the method call site, not earlier. Remember: transform, refine, and superRefine are always the last step.
+- Shape methods after `.refine()` are a schema composition order error: `.pick()`, `.omit()`, `.partial()` and key-overwriting `.extend()` throw at schema-build time in Zod 4 (a TypeError in Zod 3). Remember: transform, refine, and superRefine are always the last step.
 
 ---
 
 ## I — Interview Q&A
 
-### Q: Why does adding `.refine()` to a `z.discriminatedUnion` member schema break the union, and what is the fix?
+### Q: Why did adding `.refine()` to a `z.discriminatedUnion` member break the union in Zod 3, and what changed in Zod 4?
 
-**A:** `z.discriminatedUnion` reads the discriminator field from each member schema to build a lookup map. When you add `.refine()` to a member, Zod wraps it in a `ZodEffects` object — and `ZodEffects` doesn't expose the inner schema's discriminator value directly. Zod can no longer extract `z.literal('card')` from the wrapped schema and throws a parse error. The fix is to move the refinement outside the member schemas and onto the union itself using `.superRefine()`. Inside `superRefine`, check `data.type` first to apply branch-specific validation. Alternatively, switch from `z.discriminatedUnion` to `z.union` — which doesn't require a readable discriminator and is compatible with branch-level refinements (at the cost of trying all branches on every parse).
+**A:** `z.discriminatedUnion` reads the discriminator field from each member schema to build a lookup map. In Zod 3, `.refine()` wrapped a member in a `ZodEffects` object that didn't expose the inner schema's discriminator, so Zod threw "The discriminator value for the schema at index 0 could not be parsed". The Zod 3 fixes were to move the refinement onto the union with `.superRefine()` (check `data.type` first) or to fall back to `z.union`. Zod 4 removed `ZodEffects` — refinements are checks stored on the schema itself — so a refined object is still an object and can be a union member. `.superRefine()` on the union remains a good way to keep branch-specific rules in one place. The Zod 4 caveat to remember instead: refined object schemas cannot be `.pick()`ed, `.omit()`ed or `.partial()`ed, and `.extend()` cannot overwrite their keys — build the shape first, refine last (or use `.safeExtend()`).
 
 ---
 
 ## C — Common Pitfalls + Fix
 
-### ❌ `.extend()` called after `.refine()` — TypeScript error
+### ❌ `.pick()` / `.omit()` / `.partial()` called after `.refine()` — throws
 
 ```ts
-// ❌ Cannot extend ZodEffects — .refine() returns ZodEffects, not ZodObject
+// ❌ Zod 4 throws at build time: ".partial() cannot be used on object schemas containing refinements"
+// (Zod 3: TypeError — .refine() returned ZodEffects, which has no .partial/.extend)
 const Schema = z.object({ name: z.string() })
   .refine(d => d.name.length > 2)
-  .extend({ email: z.string() })  // TypeScript error: .extend is not a function ❌
+const PatchSchema = Schema.partial()  // ❌
 ```
 
 **Fix:** Extend first, then refine:
@@ -152,7 +152,7 @@ const Schema = z.object({ name: z.string() })
 
 ### Challenge
 
-Fix a broken `PaymentUnion` that has `.refine()` on a discriminated union member. Rewrite using `superRefine` on the union. Also write a `safeBookingInterval` function that handles all three date edge cases (UTC midnight, end-before-start, same-day).
+Refactor a `PaymentUnion` that has `.refine()` on a discriminated union member so all branch-specific rules live in one `superRefine` on the union. Also write a `safeBookingInterval` function that handles all three date edge cases (UTC midnight, end-before-start, same-day).
 
 ### Solution
 
@@ -177,17 +177,17 @@ const PaymentUnion = z.discriminatedUnion('method', [
 .superRefine((data, ctx) => {
   if (data.method === 'card') {
     if (!/^\d{16}$/.test(data.cardNumber)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom,
+      ctx.addIssue({ code: 'custom',
         message: 'Card number must be 16 digits', path: ['cardNumber'] })
     }
     if (!/^\d{2}\/\d{2}$/.test(data.expiry)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom,
+      ctx.addIssue({ code: 'custom',
         message: 'Expiry must be MM/YY', path: ['expiry'] })
     }
   }
   if (data.method === 'paypal') {
     if (!data.email.includes('@')) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom,
+      ctx.addIssue({ code: 'custom',
         message: 'Invalid PayPal email', path: ['email'] })
     }
   }
@@ -271,10 +271,11 @@ REFINE / SUPERREFINE
   .refine(fn, msg)              → one issue, one path, all refines run
   .superRefine((data, ctx) => { → multiple issues, multiple paths
     ctx.addIssue({code, message, path})
-    return z.NEVER              → abort — stop subsequent refinements
+    return                      → ends YOUR callback only
+    { fatal: true } on addIssue → stops later chained checks from running
   })
   Chain .refine for independent rules — all show simultaneously
-  Use z.NEVER after critical issue — prevent cascading noise
+  Use fatal: true after a critical issue — prevent cascading noise
 
 CROSS-FIELD RULES
   Always on z.object({}).refine/superRefine — not on individual fields
@@ -288,7 +289,7 @@ ASYNC VALIDATION
   Never: async .refine with mode: 'onChange' — server per keystroke
 
 CREATE vs EDIT
-  Edit schema  = Base.extend({ id: z.string().uuid() })
+  Edit schema  = Base.extend({ id: z.uuid() })
   Patch schema = Base.partial().extend({ id })
   Load data:   reset(apiToFormDefaults(apiData))  — NOT setValue
   After reset: isDirty = false ✅
@@ -318,15 +319,14 @@ TESTING
   Do NOT test: RHF internals, Zod's own validation, CSS classes
 
 DISCRIMINATED UNION CAVEATS
-  .refine() on a member → wraps in ZodEffects → discriminator hidden → error
-  Fix A: superRefine on the union itself, branch by data.type
-  Fix B: switch to z.union (slower, but accepts branch-level refines)
-  .extend() after .refine() → TypeScript error (extend ZodEffects fails)
-  Fix: extend FIRST, then refine last
+  Zod 4: .refine() on a member is fine (Zod 3: ZodEffects hid the discriminator → error)
+  superRefine on the union itself, branch by data.type = one place for all branch rules
+  .pick/.omit/.partial/.extend-overwrite AFTER .refine() → throws (Zod 3: TypeError)
+  Fix: shape methods FIRST, then refine last (or .safeExtend())
 
 DATE INTERVAL EDGE CASES
   new Date('2025-06-15')  → UTC midnight bug → use parseISO always
-  eachDayOfInterval end < start → RangeError → guard with min/max
+  eachDayOfInterval end < start → no error: days come back in REVERSE order → normalise with min/max
   same-day differenceInDays → 0 → add .refine(d => diff >= 1, 'Min 1 night')
   formatISO with offset    → prevents timezone storage bugs
 ```

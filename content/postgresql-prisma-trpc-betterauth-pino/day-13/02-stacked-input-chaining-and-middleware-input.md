@@ -4,21 +4,23 @@
 
 ## T — TL;DR
 
-`.input()` can only be called once per procedure chain — calling it again replaces the schema. To compose inputs, use Zod's `.merge()`, `.extend()`, or `.and()`. Middleware cannot access typed input (it runs before Zod parsing), but it can access `rawInput` for pre-validation checks like rate limiting. Use shared Zod schemas and merge them for reusable input patterns.
+In tRPC v11, `.input()` calls are **stacked**: chaining another `.input()` merges the object schemas (a later call wins on duplicate keys) — it does not replace the earlier one. Only object inputs can be chained. You can also compose schemas yourself with Zod's `.merge()` / `.extend()` for reusable shapes. A middleware declared before `.input()` cannot see typed input, but it can call `getRawInput()` for pre-validation checks like rate limiting (v10 exposed this as a `rawInput` property). Use shared Zod schemas for reusable input patterns.
 
 ---
 
 ## K — Key Concepts
 
 ```typescript
-// ── .input() is terminal on the schema — calling it twice replaces ─────────
+// ── .input() stacks: chained calls are MERGED (tRPC v11) ───────────────────
 publicProcedure
   .input(z.object({ id: z.number() }))       // sets schema
-  .input(z.object({ name: z.string() }))     // REPLACES the first schema
-  // ❌ id is gone — only name exists now
-  .query(({ input }) => input.name)          // input.id would be TS error
+  .input(z.object({ name: z.string() }))     // MERGED with the first schema
+  .query(({ input }) => input.name)          // input is { id: number; name: string } ✅
+// Rules: only object inputs can be chained (z.string() can't be merged);
+// if two calls define the same key, the later one wins.
+// Typical use: a base procedure with shared input + route-level .input() for the rest.
 
-// ── Compose with Zod instead ───────────────────────────────────────────────
+// ── Or compose with Zod yourself ───────────────────────────────────────────────
 const idSchema         = z.object({ id: z.number().int().positive() })
 const paginationSchema = z.object({
   cursor: z.number().optional(),
@@ -93,10 +95,11 @@ export const listTaskSchema = paginationSchema.merge(
 
 ```typescript
 // ── rawInput in middleware — pre-validation access ────────────────────────
-// rawInput: unknown — the client payload before Zod runs
+// getRawInput(): Promise<unknown> — the client payload before Zod runs (tRPC v11; v10 had a `rawInput` property)
 // Use case: rate limiting by a known field, request logging
 
-const logInputMiddleware = t.middleware(({ rawInput, path, next }) => {
+const logInputMiddleware = t.middleware(async ({ getRawInput, path, next }) => {
+  const rawInput = await getRawInput()
   // rawInput is the raw JSON — access it safely
   if (typeof rawInput === 'object' && rawInput !== null) {
     const id = (rawInput as Record<string, unknown>).id
@@ -158,7 +161,7 @@ const projectRouter = createTRPCRouter({
 
 ## W — Why It Matters
 
-- `.input()` called twice silently replaces the first schema — no TypeScript error, no warning. This is a common mistake when trying to "add" a field. Always use `.merge()` or `.extend()` to compose schemas.
+- Chained `.input()` calls merge their object schemas, so a base procedure can declare shared input (e.g. `townName`) and each route adds its own. Remember that a later call wins on duplicate keys, and non-object inputs (`z.string()`) can't be chained — for those, or for reusable shapes, compose with Zod's `.merge()` / `.extend()`.
 - The tenant-scoped input pattern is a critical security model — tenantId comes from `ctx.user.tenantId` (the verified session), never from client input. If you accepted `tenantId` from the client, any user could query another tenant's data by changing the value.
 - Shared Zod schemas serve double duty — used in tRPC procedures for server validation AND in client forms for local validation. One definition, zero drift between what the server accepts and what the client validates.
 
@@ -168,23 +171,22 @@ const projectRouter = createTRPCRouter({
 
 ### Q: Can you call `.input()` multiple times on a tRPC procedure? How do you compose multiple input shapes?
 
-**A:** No — calling `.input()` twice on the same procedure chain replaces the first schema entirely. The second call wins. To compose multiple input shapes into one, use Zod's composition methods: `.merge(schema)` to combine two objects into one, `.extend({ field: type })` to add fields to an existing schema, or `.and(schema)` for intersection types. The recommended pattern is to define small, focused base schemas (`idSchema`, `paginationSchema`, `dateRangeSchema`) and compose them with `.merge()` at the procedure level. This gives you reusable building blocks that stay in sync across all procedures that use them.
+**A:** Yes (tRPC v11) — chained `.input()` calls are merged: the resulting `input` type combines the object properties of every call, and if two calls define the same property the later one wins. Only object types can be chained. You can also compose shapes into one schema yourself with Zod's composition methods: `.merge(schema)` to combine two objects into one, `.extend({ field: type })` to add fields to an existing schema, or `.and(schema)` for intersection types. The recommended pattern is to define small, focused base schemas (`idSchema`, `paginationSchema`, `dateRangeSchema`) and compose them with `.merge()` at the procedure level. This gives you reusable building blocks that stay in sync across all procedures that use them.
 
 ---
 
 ## C — Common Pitfalls + Fix
 
-### ❌ Calling `.input()` twice to add a field — first schema silently dropped
+### ❌ Chaining `.input()` with a non-object schema, or relying on a duplicate key
 
 ```typescript
-// ❌ Trying to add tenantId to an existing input
+// ❌ Non-object inputs can't be merged, and a duplicate key is overridden by the later call
 procedure
-  .input(z.object({ status: z.string() }))
-  .input(z.object({ tenantId: z.string() }))   // ← replaces first ❌
-  // input.status is now a TypeScript error — it doesn't exist
+  .input(z.string())
+  .input(z.object({ tenantId: z.string() }))   // ← can't merge a string with an object ❌
 ```
 
-**Fix:** Use `.merge()`:
+**Fix:** Use object schemas for stacked inputs, or build one schema with `.merge()`:
 
 ```typescript
 // ✅

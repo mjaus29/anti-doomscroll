@@ -20,7 +20,7 @@ publicProcedure          // base: no middleware
   // OR
   .mutation(handler)     // terminal: POST-like operation (write)
 
-// handler receives: { input, ctx, rawInput, path, type, signal }
+// handler receives: { input, ctx, path, type, signal }  (middleware also gets getRawInput())
 // input: validated, typed input (after Zod parsing)
 // ctx:   the context object (session, prisma, etc.)
 ```

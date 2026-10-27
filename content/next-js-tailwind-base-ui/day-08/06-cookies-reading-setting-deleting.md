@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-Next.js 16 provides `cookies()` from `'next/headers'` for Server Components, Server Actions, and Route Handlers — read, set, and delete cookies server-side. On the client, `request.cookies` in Middleware and `document.cookie` (via `js-cookie`) handle client-accessible cookies.
+Next.js 16 provides `cookies()` from `'next/headers'` for Server Components, Server Actions, and Route Handlers — read, set, and delete cookies server-side. On the client, `request.cookies` in Proxy and `document.cookie` (via `js-cookie`) handle client-accessible cookies.
 
 ---
 
@@ -151,13 +151,13 @@ export async function DELETE() {
 }
 ```
 
-### Reading Cookies in Middleware
+### Reading Cookies in Proxy
 
 ```tsx
-// src/middleware.ts
+// src/proxy.ts
 import { NextRequest, NextResponse } from "next/server";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   // Read cookies on the request (before they hit the page)
   const session = request.cookies.get("session")?.value;
 
@@ -210,7 +210,7 @@ export default async function Page() {
 }
 ```
 
-**Fix:** Set cookies in Server Actions, Route Handlers, or Middleware:
+**Fix:** Set cookies in Server Actions, Route Handlers, or Proxy:
 
 ```tsx
 // ✅ Server Action — can both read and write cookies

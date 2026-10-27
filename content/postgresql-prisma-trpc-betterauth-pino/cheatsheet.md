@@ -125,16 +125,15 @@ Lessons: [Transactions](/group/postgresql-prisma-trpc-betterauth-pino/day/04/01-
 
 ## Prisma: schema.prisma
 
-Three block kinds: `datasource` (one), `generator` (one or more), `model` / `enum`.
+Three block kinds: `datasource` (one), `generator` (one or more), `model` / `enum`. Prisma 7: the connection URL is not in the schema (it is `datasource.url` in `prisma.config.ts`), the generator is `prisma-client` with a required `output`, and `PrismaClient` needs a driver adapter.
 
 ```prisma
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_DATABASE_URL") // non-pooled, for migrate
+  provider = "postgresql"
 }
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 enum Role {
   USER
@@ -170,7 +169,7 @@ model User {
 
 **Defaults to override:** `DateTime` is `timestamp(3)` (add `@db.Timestamptz(6)`), `Decimal` is `decimal(65,30)` (add `@db.Decimal(p,s)`), `String` is `text`. Use `Decimal`, never `Float`, for money.
 
-**Client singleton (Next.js):** store one `PrismaClient` on `globalThis` in dev so hot reload does not open new pools. Run `prisma generate` after every schema change.
+**Client singleton (Next.js):** store one `PrismaClient` on `globalThis` in dev so hot reload does not open new pools. Prisma 7: `new PrismaClient({ adapter: new PrismaPg({ connectionString }) })`, imported from your generator `output` (e.g. `@/generated/prisma/client`), not `@prisma/client`. Run `prisma generate` yourself after every schema change (`migrate dev` no longer does), and `prisma db seed` yourself (no auto-seed).
 
 Lessons: [Three blocks](/group/postgresql-prisma-trpc-betterauth-pino/day/05/01-schema-prisma-file-structure-and-the-three-blocks) · [Field modifiers](/group/postgresql-prisma-trpc-betterauth-pino/day/05/06-field-modifiers-optional-list-default-id-unique-updatedat) · [Native types](/group/postgresql-prisma-trpc-betterauth-pino/day/05/08-native-type-mapping-precise-postgresql-type-control) · [@map / @@map](/group/postgresql-prisma-trpc-betterauth-pino/day/05/09-model-to-table-mapping-map-map-schema-naming-conventions)
 
@@ -198,14 +197,14 @@ model Post {
 
 | Command | Use |
 |---|---|
-| `prisma migrate dev --name add_x` | Dev: diff schema, write SQL, apply, generate |
+| `prisma migrate dev --name add_x` | Dev: diff schema, write SQL, apply (Prisma 7: does not run generate/seed) |
 | `prisma migrate dev --create-only` | Write SQL without applying: edit renames, backfills, triggers |
 | `prisma migrate deploy` | Production/CI: apply pending migrations only |
 | `prisma migrate status` | What is applied |
 | `prisma migrate resolve --applied <name>` | Mark a migration as applied (baselining) |
 | `prisma db push` | Prototyping only, no migration history |
 | `prisma db pull` | Introspect existing DB into schema.prisma (overwrites) |
-| `prisma migrate diff --from-... --to-... --script` | Print SQL between two states |
+| `prisma migrate diff --from-... --to-... --script` | Print SQL between two states (`--from-empty`, `--from-schema`, `--from-migrations`, `--from-config-datasource`; `--from-url` removed in 7) |
 | `prisma db seed` | Run seed script (use `upsert` so it can re-run) |
 
 ### Adopting an existing database (baseline)
@@ -214,7 +213,7 @@ model Post {
 npx prisma db pull                       # 1. introspect, then clean up
 mkdir -p prisma/migrations/0_init        # 2. baseline folder
 npx prisma migrate diff --from-empty \
-  --to-schema-datamodel prisma/schema.prisma \
+  --to-schema prisma/schema.prisma \
   --script > prisma/migrations/0_init/migration.sql
 npx prisma migrate resolve --applied 0_init  # 3. mark, do not run
 npx prisma generate                      # 4. then iterate with migrate dev
@@ -350,7 +349,7 @@ export const { GET, POST } = toNextJsHandler(auth.handler)
 | Route handler | `auth.api.getSession({ headers: req.headers })` |
 | OAuth | `socialProviders: { github: { clientId, clientSecret } }` + `signIn.social({ provider })` |
 | Sessions page | `listSessions()`, `revokeSession({ token })`, `revokeOtherSessions()` |
-| Schema | `npx better-auth generate` (as in lessons), then `prisma migrate dev` |
+| Schema | `npx auth@latest generate` , then `prisma migrate dev` |
 
 ### Config you must know
 
@@ -471,7 +470,7 @@ Lessons: [Why JSON logs](/group/postgresql-prisma-trpc-betterauth-pino/day/14/01
 ## Production composition
 
 ```
-request -> middleware (requestId, optimistic auth redirect)
+request -> proxy.ts (requestId, optimistic auth redirect)
         -> createTRPCContext (session, prisma, child logger)
         -> tRPC middleware (logging > auth > role)
         -> handler (Zod input, service, Prisma, ownership)
@@ -532,7 +531,7 @@ Batch takes an array of independent queries; interactive gives a `tx` client for
 A random session token in an `httpOnly` cookie points to a `session` row; each request looks it up (optionally via `cookieCache`).
 
 **Q:** How do you protect a page with BetterAuth in Next.js?
-Middleware for a fast redirect, plus `auth.api.getSession({ headers: await headers() })` in the server code that reads data.
+`proxy.ts` (Next 16; `middleware.ts` before) for a fast redirect, plus `auth.api.getSession({ headers: await headers() })` in the server code that reads data.
 
 **Q:** How does tRPC give type safety without codegen?
 The client imports `typeof appRouter` as a type; inputs and outputs are inferred from Zod schemas and handler returns.

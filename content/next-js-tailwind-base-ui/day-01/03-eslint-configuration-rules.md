@@ -12,34 +12,32 @@ Next.js 16 ships with `eslint-config-next` — a curated set of ESLint rules tha
 
 ### Two Config Formats — Old vs New
 
-Next.js 16 supports both:
+`eslint-config-next` v16 ships **flat config** natively (ESLint 9+); this is what `create-next-app` generates:
+
+```js
+// eslint.config.mjs — flat config (default in Next.js 16)
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  // Override default ignores of eslint-config-next.
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
+]);
+
+export default eslintConfig;
+```
 
 ```json
-// .eslintrc.json — legacy format (still works)
+// .eslintrc.json — legacy format; old Next.js tutorials use it (not used by Next.js 16 setups)
 {
   "extends": "next/core-web-vitals"
 }
 ```
 
-```js
-// eslint.config.mjs — flat config (ESLint 9+, default in Next.js 16)
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({ baseDirectory: __dirname });
-
-const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
-];
-
-export default eslintConfig;
-```
-
-> Next.js 16 uses **flat config** (`eslint.config.mjs`) by default when you use `create-next-app`.
+> Before Next.js 16 you needed `FlatCompat` from `@eslint/eslintrc` with `compat.extends("next/core-web-vitals", "next/typescript")` to use flat config. That is no longer needed because the presets are importable flat configs.
 
 ### What `next/core-web-vitals` Includes
 
@@ -92,35 +90,35 @@ useEffect(() => {
 ### Running ESLint
 
 ```bash
-# Check all files
+# package.json: "lint": "eslint"
 npm run lint
-# Or directly:
-npx next lint
+# Or directly (Next.js 16 removed `next lint` — use the ESLint CLI):
+npx eslint .
 
 # Fix auto-fixable issues
-npx next lint --fix
+npx eslint . --fix
 
 # Lint specific directory
-npx next lint --dir src/app
+npx eslint src/app
 
 # Output as JSON (for CI)
-npx next lint --format json
+npx eslint . --format json
 ```
+
+> Before Next.js 16 this was `next lint` (`--fix`, `--dir`). It was removed in 16, and `next build` no longer runs ESLint — run it yourself in CI.
 
 ### Customizing Rules
 
 ```js
 // eslint.config.mjs — adding custom rules
-import { FlatCompat } from "@eslint/eslintrc";
-import { dirname } from "path";
-import { fileURLToPath } from "url";
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const compat = new FlatCompat({ baseDirectory: __dirname });
-
-const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
   {
     rules: {
       // Turn off if you're intentionally using <img> for external images
@@ -140,7 +138,7 @@ const eslintConfig = [
       "prefer-const": "error",
     },
   },
-];
+]);
 
 export default eslintConfig;
 ```
@@ -166,10 +164,13 @@ npm install -D prettier eslint-config-prettier
 
 ```js
 // eslint.config.mjs — add prettier LAST to override formatting rules
-const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
-  ...compat.extends("prettier"), // ← must be last
-];
+import prettier from "eslint-config-prettier/flat";
+
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  prettier, // ← must be last
+]);
 ```
 
 ```json
@@ -190,7 +191,7 @@ const eslintConfig = [
 - The `react-hooks/exhaustive-deps` rule catches stale closure bugs before they hit production — missing `useEffect` dependencies are one of the most common React bugs.
 - `@next/next/no-img-element` enforces Next.js Image optimization — raw `<img>` tags skip LCP optimization and CLS protection that `next/image` provides.
 - The flat config format (`eslint.config.mjs`) is the future of ESLint — understanding it means you're not stuck copying `.eslintrc.json` from old tutorials that use the legacy format.
-- Running `next lint` in CI catches regressions that TypeScript misses — accessibility violations, broken hook patterns, and Next.js antipatterns.
+- Running `eslint .` in CI (Next.js 16 removed `next lint`) catches regressions that TypeScript misses — accessibility violations, broken hook patterns, and Next.js antipatterns.
 
 ---
 
@@ -202,7 +203,7 @@ const eslintConfig = [
 
 ### Q2: What's the difference between `.eslintrc.json` and `eslint.config.mjs`?
 
-**A:** `.eslintrc.json` is the legacy ESLint config format (pre-ESLint 9). `eslint.config.mjs` is the "flat config" format introduced in ESLint 9 — a single JavaScript file with explicit imports instead of string extends. Next.js 16 uses flat config by default. Flat config is more explicit, easier to debug, and is the only format supported in future ESLint versions.
+**A:** `.eslintrc.json` is the legacy ESLint config format (pre-ESLint 9). `eslint.config.mjs` is the "flat config" format introduced in ESLint 9 — a single JavaScript file with explicit imports instead of string extends. Next.js 16 uses flat config by default (and `eslint-config-next` v16 exports flat configs directly, so `FlatCompat` is no longer needed). Flat config is more explicit, easier to debug, and is the only format supported in future ESLint versions.
 
 ### Q3: The `react-hooks/exhaustive-deps` rule is annoying — should you disable it?
 
@@ -247,7 +248,7 @@ npm install -D eslint eslint-config-next
 // In ESLint 9+ with flat config mode, this file is ignored silently
 ```
 
-**Fix:** Use `eslint.config.mjs` with `FlatCompat` as shown above.
+**Fix:** Use `eslint.config.mjs` with the `eslint-config-next/core-web-vitals` flat config as shown above.
 
 ---
 
@@ -267,17 +268,16 @@ Write an `eslint.config.mjs` for a Next.js 16 project that:
 
 ```js
 // eslint.config.mjs
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+import prettier from "eslint-config-prettier/flat";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const compat = new FlatCompat({ baseDirectory: __dirname });
-
-const eslintConfig = [
+const eslintConfig = defineConfig([
   // ─── Base: Next.js recommended rules
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  ...nextVitals,
+  ...nextTs,
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
 
   // ─── Global custom rules
   {
@@ -300,8 +300,8 @@ const eslintConfig = [
   },
 
   // ─── Prettier — MUST be last to override formatting rules
-  ...compat.extends("prettier"),
-];
+  prettier,
+]);
 
 export default eslintConfig;
 ```

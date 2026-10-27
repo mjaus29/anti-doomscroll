@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-`headers()` from `'next/headers'` reads incoming request headers in Server Components, Server Actions, and Route Handlers. Response headers are set via `NextResponse`, `next.config.ts`, or Middleware. Headers are used for auth tokens, content negotiation, security policies, and custom metadata.
+`headers()` from `'next/headers'` reads incoming request headers in Server Components, Server Actions, and Route Handlers. Response headers are set via `NextResponse`, `next.config.ts`, or Proxy. Headers are used for auth tokens, content negotiation, security policies, and custom metadata.
 
 ---
 
@@ -27,9 +27,9 @@ export default async function Page() {
   const host = headerStore.get("host"); // 'example.com'
   const forwarded = headerStore.get("x-forwarded-for"); // real IP behind proxy
 
-  // ─── Custom headers (set by Middleware)
+  // ─── Custom headers (set by Proxy)
   const requestId = headerStore.get("x-request-id");
-  const userId = headerStore.get("x-user-id"); // set by Middleware after auth
+  const userId = headerStore.get("x-user-id"); // set by Proxy after auth
 
   // ─── Check if header exists
   const hasAuth = headerStore.has("authorization");
@@ -41,14 +41,14 @@ export default async function Page() {
 }
 ```
 
-### Passing Data via Custom Headers from Middleware
+### Passing Data via Custom Headers from Proxy
 
 ```tsx
-// src/middleware.ts — add user context to headers for downstream use
+// src/proxy.ts — add user context to headers for downstream use
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const token = request.cookies.get("session")?.value;
   const payload = token ? await verifyToken(token) : null;
 
@@ -70,11 +70,11 @@ export async function middleware(request: NextRequest) {
 }
 
 // Now Server Components can read x-user-id, x-user-role, x-request-id
-// WITHOUT calling verifyToken again — Middleware already did it
+// WITHOUT calling verifyToken again — Proxy already did it
 ```
 
 ```tsx
-// src/lib/auth.ts — read user from Middleware-set headers
+// src/lib/auth.ts — read user from Proxy-set headers
 import { headers } from "next/headers";
 import { cache } from "react";
 
@@ -85,7 +85,7 @@ export const getCurrentUser = cache(async () => {
 
   if (!userId) return null;
   return { userId, role };
-  // No DB call needed — Middleware already verified the session
+  // No DB call needed — Proxy already verified the session
 });
 ```
 
@@ -172,7 +172,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 
 ## W — Why It Matters
 
-- The Middleware header injection pattern (`x-user-id`, `x-user-role`) is a major performance optimization — instead of verifying the session token in every Server Component and every Server Action, Middleware verifies it once per request and forwards the result via headers. All downstream code reads the pre-verified header with `headers().get('x-user-id')`.
+- The Proxy header injection pattern (`x-user-id`, `x-user-role`) is a major performance optimization — instead of verifying the session token in every Server Component and every Server Action, Proxy verifies it once per request and forwards the result via headers. All downstream code reads the pre-verified header with `headers().get('x-user-id')`.
 - Security headers (`X-Frame-Options`, `X-Content-Type-Options`, `Strict-Transport-Security`) configured in `next.config.ts` apply globally to all routes — this is the correct place for them, not in individual handlers.
 - The `headers()` function from `'next/headers'` makes a route dynamic — the same reason as `cookies()`. Only use it when you genuinely need per-request header data.
 
@@ -182,7 +182,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 
 ### Q1: How can you avoid re-verifying the auth token in every Server Component?
 
-**A:** Use Middleware to verify the token once per request and forward the result via custom request headers. In Middleware, verify the session cookie or Authorization header, extract the user ID and role, and add them as `x-user-id` and `x-user-role` headers using `NextResponse.next({ request: { headers: requestHeaders } })`. All downstream Server Components, Server Actions, and Route Handlers can then read these pre-verified headers with `(await headers()).get('x-user-id')` — no repeated token verification or database session lookups. Combine with `React.cache()` to memoize the `getCurrentUser()` call across components in the same request.
+**A:** Use Proxy to verify the token once per request and forward the result via custom request headers. In Proxy, verify the session cookie or Authorization header, extract the user ID and role, and add them as `x-user-id` and `x-user-role` headers using `NextResponse.next({ request: { headers: requestHeaders } })`. All downstream Server Components, Server Actions, and Route Handlers can then read these pre-verified headers with `(await headers()).get('x-user-id')` — no repeated token verification or database session lookups. Combine with `React.cache()` to memoize the `getCurrentUser()` call across components in the same request.
 
 ### Q2: What is the correct place to set global security headers in Next.js?
 
@@ -195,19 +195,19 @@ export async function GET(request: NextRequest, { params }: Params) {
 ### ❌ Pitfall: Trusting `x-user-id` header from the client directly
 
 ```tsx
-// ❌ Client can set any header — reading x-user-id without Middleware verification
+// ❌ Client can set any header — reading x-user-id without Proxy verification
 export async function GET(request: NextRequest) {
-  const userId = request.headers.get("x-user-id"); // ← set by CLIENT, not Middleware
+  const userId = request.headers.get("x-user-id"); // ← set by CLIENT, not Proxy
   const data = await db.order.findMany({ where: { userId } }); // ← privilege escalation!
 }
 ```
 
-**Fix:** Only trust headers set by your own Middleware (which runs server-side). Never trust headers that could be set by the client:
+**Fix:** Only trust headers set by your own Proxy (which runs server-side). Never trust headers that could be set by the client:
 
 ```tsx
-// ✅ Read from Middleware-set headers (server-side only)
+// ✅ Read from Proxy-set headers (server-side only)
 // In Server Component:
-const userId = (await headers()).get("x-user-id"); // set by Middleware ✅
+const userId = (await headers()).get("x-user-id"); // set by Proxy ✅
 
 // ✅ OR: verify token directly in the Route Handler
 const authHeader = request.headers.get("authorization");
@@ -220,9 +220,9 @@ const userId = await verifyToken(authHeader?.split(" ")[1]); // ← verify yours
 
 ### Challenge
 
-Build an auth middleware + user context pattern:
+Build an auth proxy + user context pattern:
 
-1. `middleware.ts` — reads `session` cookie, verifies it, injects `x-user-id` and `x-user-role` into request headers for routes matching `/dashboard/(.*)`
+1. `proxy.ts` — reads `session` cookie, verifies it, injects `x-user-id` and `x-user-role` into request headers for routes matching `/dashboard/(.*)`
 2. `getCurrentUser()` in `src/lib/auth.ts` using `React.cache()` + `headers()`
 3. A `DashboardLayout` Server Component that uses `getCurrentUser()` and shows user info in nav
 4. Show that `x-user-id` is verified server-side (safe) vs client-set header (unsafe)
@@ -230,7 +230,7 @@ Build an auth middleware + user context pattern:
 ### Solution
 
 ```tsx
-// src/middleware.ts
+// src/proxy.ts
 import { NextRequest, NextResponse } from "next/server";
 
 // Mock session verification
@@ -242,10 +242,10 @@ async function verifySession(token: string) {
   return SESSIONS[token] ?? null;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  // Only apply auth middleware to dashboard routes
+  // Only apply auth proxy to dashboard routes
   if (!pathname.startsWith("/dashboard")) {
     return NextResponse.next();
   }
@@ -294,7 +294,7 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   if (!userId || !role) return null;
 
   return { userId, role };
-  // No DB call: Middleware already verified the session ✅
+  // No DB call: Proxy already verified the session ✅
 });
 ```
 
@@ -308,7 +308,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentUser(); // ← reads Middleware-set headers
+  const user = await getCurrentUser(); // ← reads Proxy-set headers
 
   if (!user) redirect("/login");
 

@@ -14,7 +14,7 @@
 
 ```tsx
 // Root → Trigger → Portal → Positioner → Popup → (Arrow, Close)
-import * as Popover from '@base-ui/react/popover'
+import { Popover } from '@base-ui/react/popover'
 
 <Popover.Root>
   <Popover.Trigger>          {/* Opens/closes popup */}
@@ -37,7 +37,7 @@ import * as Popover from '@base-ui/react/popover'
 // src/components/ui/popover.tsx
 "use client";
 
-import * as PopoverPrimitive from "@base-ui/react/popover";
+import { Popover as PopoverPrimitive } from "@base-ui/react/popover";
 import { cn } from "@/lib/cn";
 
 // ─── Root
@@ -79,7 +79,7 @@ function PopoverContent({
             "min-w-[220px] max-w-sm",
             // Transition
             "transition-all duration-200 ease-out",
-            "origin-[--transform-origin]",
+            "origin-(--transform-origin)",
             "data-[starting-style]:opacity-0 data-[starting-style]:scale-95",
             "data-[ending-style]:opacity-0   data-[ending-style]:scale-95",
             className
@@ -366,7 +366,7 @@ Build a `<ColorPickerPopover>` — a trigger button showing the current color, a
 "use client";
 
 import { useState } from "react";
-import * as PopoverPrimitive from "@base-ui/react/popover";
+import { Popover as PopoverPrimitive } from "@base-ui/react/popover";
 import { cn } from "@/lib/cn";
 
 const SWATCHES = [
@@ -429,7 +429,7 @@ export function ColorPickerPopover({
             className={cn(
               "bg-white dark:bg-gray-800 border border-gray-200",
               "dark:border-gray-700 rounded-2xl shadow-xl z-50 p-4 w-56",
-              "transition-all duration-200 origin-[--transform-origin]",
+              "transition-all duration-200 origin-(--transform-origin)",
               "data-[starting-style]:opacity-0 data-[starting-style]:scale-95",
               "data-[ending-style]:opacity-0   data-[ending-style]:scale-95"
             )}

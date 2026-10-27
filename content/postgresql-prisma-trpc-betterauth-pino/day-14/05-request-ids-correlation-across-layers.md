@@ -192,16 +192,16 @@ async function sendEmail(to: string, log: AppLogger) {
 
 ### Challenge
 
-Write a `withRequestId` Next.js middleware (in `middleware.ts`) that: (1) reads or generates `x-request-id`; (2) adds it to the request headers forwarded to the app; (3) adds it to the response headers; (4) logs the request start and end using pino.
+Write a `withRequestId` Next.js proxy (in `proxy.ts`; `middleware.ts` before Next.js 16) that: (1) reads or generates `x-request-id`; (2) adds it to the request headers forwarded to the app; (3) adds it to the response headers; (4) logs the request start and end using pino.
 
 ### Solution
 
 ```typescript
-// middleware.ts (Next.js project root)
+// proxy.ts (Next.js 16, project root; named middleware.ts before Next 16)
 import { NextResponse, type NextRequest } from 'next/server'
 import { logger } from '@/lib/logger'
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const requestId =
     req.headers.get('x-request-id') ??
     crypto.randomUUID()

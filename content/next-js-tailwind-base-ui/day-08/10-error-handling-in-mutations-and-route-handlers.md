@@ -1137,7 +1137,7 @@ NextRequest / NextResponse
   request.json()                → parsed body (read once only)
   NextResponse.json(data, {status, headers})
   NextResponse.redirect(url)
-  NextResponse.next({request:{headers}})  ← Middleware pass-through with modified headers
+  NextResponse.next({request:{headers}})  ← Proxy pass-through with modified headers
 
 COOKIES
   Read:   (await cookies()).get('name')?.value
@@ -1149,7 +1149,7 @@ COOKIES
 
 HEADERS
   Read:  (await headers()).get('name')
-  Middleware injection: set x-user-id, x-user-role in requestHeaders
+  Proxy injection: set x-user-id, x-user-role in requestHeaders
     → Server Components read them → no repeated DB session lookups
   Security headers: configure in next.config.ts headers() for ALL routes
   headers() makes route dynamic (same as cookies())
@@ -1159,7 +1159,7 @@ REDIRECTS
   permanentRedirect('/path')     ← SEO permanent move (308, throws)
   router.push('/path')           ← Client Component, adds history
   router.replace('/path')        ← Client Component, replaces history (post-login)
-  NextResponse.redirect(url)     ← Middleware / Route Handler
+  NextResponse.redirect(url)     ← Proxy / Route Handler
   next.config.ts redirects()     ← static, no business logic
   NEVER: redirect() inside try/catch (it throws internally)
   ALWAYS: validate callbackUrl starts with '/' (prevent open redirect)

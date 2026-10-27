@@ -17,7 +17,7 @@ import { z } from 'zod'
 const Schema = z.object({
   name:    z.string(),              // string (required)
   bio:     z.string().optional(),   // string | undefined
-  website: z.string().url().optional() // string | undefined
+  website: z.url().optional() // string | undefined
 })
 
 type S = z.infer<typeof Schema>
@@ -46,6 +46,11 @@ WithDefaults.parse({})
 WithDefaults.parse({ role: 'admin' })
 // { role: 'admin', active: true, createdAt: Date }
 // undefined fields are replaced by defaults ✅
+
+// Zod 4: the default must match the OUTPUT type and short-circuits parsing.
+// z.string().transform(s => s.length).default(0)      // 0, not parsed through the transform
+// Before Zod 4 the default was fed through the schema; use .prefault('tuna') to keep that behavior.
+// Also new in Zod 4: z.string().default('x').optional() applies the default for a missing key.
 ```
 
 ```ts
@@ -66,7 +71,7 @@ z.string().optional().default('anonymous')
 
 // ─── In forms: optional fields that can be empty strings
 z.object({
-  website: z.string().url().optional().or(z.literal(''))
+  website: z.url().optional().or(z.literal(''))
   // Accepts valid URL OR empty string OR undefined
 })
 ```
@@ -94,8 +99,8 @@ z.object({
 ### ❌ Using `.optional()` for an empty-string URL field — empty string fails URL validation
 
 ```ts
-// ❌ "" is not undefined — z.string().url().optional() rejects ""
-const Schema = z.object({ website: z.string().url().optional() })
+// ❌ "" is not undefined — z.url().optional() rejects ""
+const Schema = z.object({ website: z.url().optional() })
 Schema.safeParse({ website: '' })  // fails: invalid URL ❌
 ```
 
@@ -104,7 +109,7 @@ Schema.safeParse({ website: '' })  // fails: invalid URL ❌
 ```ts
 // ✅ Empty string or valid URL or undefined
 const Schema = z.object({
-  website: z.union([z.string().url(), z.literal('')]).optional()
+  website: z.union([z.url(), z.literal('')]).optional()
 })
 Schema.safeParse({ website: '' })                       // ✅
 Schema.safeParse({ website: 'https://example.com' })    // ✅
@@ -128,7 +133,7 @@ const UserProfileSchema = z.object({
   username:    z.string().min(3, 'Min 3 characters'),
   displayName: z.string().optional(),
   bio:         z.string().max(160).default(''),
-  avatarUrl:   z.string().url().nullable(),
+  avatarUrl:   z.url().nullable(),
   role:        z.enum(['admin', 'editor', 'viewer']).default('viewer'),
   active:      z.boolean().default(true)
 })

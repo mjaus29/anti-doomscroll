@@ -725,7 +725,7 @@ export default function ProductsPage() {
 
   return (
     // Page uses CSS variable bg — auto dark mode, no dark: needed here
-    <div className="min-h-screen bg-[--color-bg]">
+    <div className="min-h-screen bg-(--color-bg)">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Page header — responsive */}
         <div
@@ -735,11 +735,11 @@ export default function ProductsPage() {
           <div>
             <h1
               className="text-2xl sm:text-3xl font-extrabold
-                            text-[--color-text] tracking-tight"
+                            text-(--color-text) tracking-tight"
             >
               Products
             </h1>
-            <p className="text-sm text-[--color-text-muted] mt-1">
+            <p className="text-sm text-(--color-text-muted) mt-1">
               {MOCK_PRODUCTS.length} items
             </p>
           </div>
@@ -757,7 +757,7 @@ export default function ProductsPage() {
                                      rounded-full transition-colors duration-150 ${
                                        i === 0
                                          ? "bg-blue-600 text-white"
-                                         : "bg-[--color-surface-alt] text-[--color-text-muted] hover:text-[--color-text] border border-[--color-border]"
+                                         : "bg-(--color-surface-alt) text-(--color-text-muted) hover:text-(--color-text) border border-(--color-border)"
                                      }`}
                 >
                   {filter}
@@ -791,8 +791,8 @@ export default function ProductsPage() {
           </div>
         ) : (
           <div
-            className="bg-[--color-surface] rounded-2xl border
-                           border-[--color-border] py-4"
+            className="bg-(--color-surface) rounded-2xl border
+                           border-(--color-border) py-4"
           >
             <EmptyState
               icon="📦"
@@ -815,7 +815,7 @@ export default function ProductsPage() {
 
 - Real UI composition is never about individual utilities — it's about understanding the **anatomy of a component**: image area → content area → action area. Each area has a predictable set of utility layers. Once you know the anatomy, you can build any variant of it (small card, large card, horizontal card) by adjusting the same layers.
 - The **shared input class string** pattern (storing the base input classes in a `const` and concatenating with error/disabled variants) is the right balance between Tailwind utilities and maintainability — without creating a full CSS component or a custom plugin.
-- Composing dark mode with CSS variables at the page/section level (rather than on each component) is the architectural decision that makes large apps maintainable — components use semantic variable names (`text-[--color-text-muted]`) that are always correct in both themes, rather than parallel `text-gray-500 dark:text-gray-400` declarations.
+- Composing dark mode with CSS variables at the page/section level (rather than on each component) is the architectural decision that makes large apps maintainable — components use semantic variable names (`text-(--color-text-muted)`) that are always correct in both themes, rather than parallel `text-gray-500 dark:text-gray-400` declarations.
 
 ---
 
@@ -1122,7 +1122,7 @@ export function ProfileCard({
 export function ProfileCardDemo() {
   return (
     <div
-      className="min-h-screen bg-[--color-bg] flex items-center
+      className="min-h-screen bg-(--color-bg) flex items-center
                      justify-center p-8"
     >
       <ProfileCard
@@ -1217,7 +1217,7 @@ COLORS
   Common:          -600 for interactive, -50 for light bg, -200 for borders, -900 for dark text
   Opacity:         bg-blue-600/50 — NOT opacity-50 (opacity affects children too)
   Status:          green=success, red=error, amber=warning, blue=info
-  CSS vars:        bg-[--color-surface], text-[--color-text] — semantic + auto dark mode
+  CSS vars:        bg-(--color-surface), text-(--color-text) — semantic + auto dark mode
 
 BORDERS & EFFECTS
   Border:          border (1px), border-2, border-gray-200
@@ -1249,10 +1249,10 @@ RESPONSIVE (mobile-first)
   Container:       max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
 
 DARK MODE
-  Strategy A:      @variant dark (&:where(.dark,.dark *)) + class toggle via JS
+  Strategy A:      @custom-variant dark (&:where(.dark,.dark *)) + class toggle via JS
   Strategy B:      media query (default) — no JS, follows OS setting
   dark: classes:   dark:bg-gray-800 dark:text-white dark:border-gray-700
-  CSS vars:        Define :root and .dark vars → use bg-[--color-surface] → zero dark: needed
+  CSS vars:        Define :root and .dark vars → use bg-(--color-surface) → zero dark: needed
   FOUC:            Add inline script in <html> before React to prevent flash
   suppressHydrationWarning: always on <html> element in Next.js
 

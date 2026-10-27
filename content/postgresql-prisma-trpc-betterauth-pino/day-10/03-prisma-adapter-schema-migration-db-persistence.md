@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-The BetterAuth Prisma adapter syncs BetterAuth's required tables (`user`, `session`, `account`, `verification`) into your `schema.prisma`. Run `npx better-auth generate` to auto-generate the Prisma models, then `npx prisma migrate dev` to apply them. All auth data lives in your PostgreSQL database alongside your application tables — fully queryable with your existing Prisma client.
+The BetterAuth Prisma adapter syncs BetterAuth's required tables (`user`, `session`, `account`, `verification`) into your `schema.prisma`. Run `npx auth@latest generate` to auto-generate the Prisma models, then `npx prisma migrate dev` to apply them. All auth data lives in your PostgreSQL database alongside your application tables — fully queryable with your existing Prisma client.
 
 ---
 
@@ -12,13 +12,13 @@ The BetterAuth Prisma adapter syncs BetterAuth's required tables (`user`, `sessi
 
 ```bash
 # ── Generate BetterAuth Prisma models ─────────────────────────────────────
-npx better-auth generate
+npx auth@latest generate
 
 # This command reads your auth.ts config and outputs the required
 # Prisma model definitions. Copy them into your schema.prisma.
 
 # Or use --output to write directly:
-npx better-auth generate --output prisma/auth.prisma
+npx auth@latest generate --output prisma/auth.prisma
 ```
 
 ```prisma
@@ -165,7 +165,7 @@ const sessions = await prisma.session.findMany({
 
 ### Q: What are the four tables BetterAuth requires and what does each store?
 
-**A:** BetterAuth requires four tables. **`user`** stores the user's profile — id, email, name, email verification status, and any custom additional fields you define (like `role` or `username`). **`session`** stores active sessions — each row is one login session with a unique token, expiry timestamp, user agent, IP, and a foreign key to the user. **`account`** stores authentication methods — for email/password auth it stores the bcrypt-hashed password; for OAuth it stores the access token, refresh token, and provider ID. One user can have multiple accounts (e.g. email/password + Google OAuth). **`verification`** stores temporary tokens for email verification and password reset flows — each row has an identifier (e.g. the email), a value (the token), and an expiry time.
+**A:** BetterAuth requires four tables. **`user`** stores the user's profile — id, email, name, email verification status, and any custom additional fields you define (like `role` or `username`). **`session`** stores active sessions — each row is one login session with a unique token, expiry timestamp, user agent, IP, and a foreign key to the user. **`account`** stores authentication methods — for email/password auth it stores the scrypt-hashed password; for OAuth it stores the access token, refresh token, and provider ID. One user can have multiple accounts (e.g. email/password + Google OAuth). **`verification`** stores temporary tokens for email verification and password reset flows — each row has an identifier (e.g. the email), a value (the token), and an expiry time.
 
 ---
 

@@ -144,7 +144,7 @@ export function ResetPasswordForm() {
   3. POST /api/auth/reset-password  { token, newPassword }
      → BetterAuth: SELECT * FROM verification WHERE value=$1 AND expires_at > NOW()
      → If not found/expired: return INVALID_TOKEN error
-     → bcrypt(newPassword) → UPDATE account SET password = hash WHERE user_id = ...
+     → scrypt(newPassword) → UPDATE account SET password = hash WHERE user_id = ...
      → DELETE FROM verification WHERE id = ... (one-time use)
      → Optionally: revoke all existing sessions (security best practice)
 ```

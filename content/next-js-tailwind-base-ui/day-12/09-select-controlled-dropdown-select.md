@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-`Select` renders an accessible dropdown for choosing a value — like a native `<select>` but fully styleable. Anatomy: `Root → Trigger → Value → Portal → Positioner → Popup → (Arrow) → Option | Group | GroupLabel | Separator`.
+`Select` renders an accessible dropdown for choosing a value — like a native `<select>` but fully styleable. Anatomy: `Root → Trigger → Value → Portal → Positioner → Popup → List → Item (ItemText, ItemIndicator) | Group | GroupLabel | Separator`. (Base UI calls the options `Select.Item`; there is no `Select.Option`.)
 
 ---
 
@@ -16,7 +16,7 @@
 // src/components/ui/select.tsx
 "use client";
 
-import * as SelectPrimitive from "@base-ui/react/select";
+import { Select as SelectPrimitive } from "@base-ui/react/select";
 import { cn } from "@/lib/cn";
 
 interface SelectRootProps extends SelectPrimitive.Root.Props {}
@@ -70,32 +70,36 @@ function SelectPopup({
       <SelectPrimitive.Positioner sideOffset={6}>
         <SelectPrimitive.Popup
           className={cn(
-            "min-w-[--anchor-width] max-h-64 overflow-y-auto p-1.5",
+            "min-w-(--anchor-width) max-h-64 overflow-y-auto p-1.5",
             "bg-white dark:bg-gray-800",
             "border border-gray-200 dark:border-gray-700",
             "rounded-2xl shadow-xl z-50 outline-none",
-            "transition-all duration-150 ease-out origin-[--transform-origin]",
+            "transition-all duration-150 ease-out origin-(--transform-origin)",
             "data-[starting-style]:opacity-0 data-[starting-style]:scale-95",
             "data-[ending-style]:opacity-0   data-[ending-style]:scale-95",
             className
           )}
           {...props}
         >
-          {children}
+          <SelectPrimitive.List>{children}</SelectPrimitive.List>
         </SelectPrimitive.Popup>
       </SelectPrimitive.Positioner>
     </SelectPrimitive.Portal>
   );
 }
 
-function SelectOption({
+function SelectItem({
   className,
   children,
   icon,
+  trailing,
   ...props
-}: SelectPrimitive.Option.Props & { icon?: React.ReactNode }) {
+}: SelectPrimitive.Item.Props & {
+  icon?: React.ReactNode;
+  trailing?: React.ReactNode;
+}) {
   return (
-    <SelectPrimitive.Option
+    <SelectPrimitive.Item
       className={cn(
         "flex items-center gap-2.5 w-full px-3 py-2 rounded-xl",
         "text-sm text-gray-700 dark:text-gray-300",
@@ -111,14 +115,15 @@ function SelectOption({
       {...props}
     >
       {icon && <span className="shrink-0 text-base">{icon}</span>}
-      <span className="flex-1 min-w-0 truncate">{children}</span>
-      <span
-        className="shrink-0 text-blue-500 text-sm
-                        opacity-0 data-[selected]:opacity-100"
-      >
+      <SelectPrimitive.ItemText className="flex-1 min-w-0 truncate">
+        {children}
+      </SelectPrimitive.ItemText>
+      {trailing}
+      {/* ItemIndicator only renders while this item is selected */}
+      <SelectPrimitive.ItemIndicator className="shrink-0 text-blue-500 text-sm">
         ✓
-      </span>
-    </SelectPrimitive.Option>
+      </SelectPrimitive.ItemIndicator>
+    </SelectPrimitive.Item>
   );
 }
 
@@ -162,7 +167,7 @@ export const Select = {
   Root: SelectRoot,
   Trigger: SelectTrigger,
   Popup: SelectPopup,
-  Option: SelectOption,
+  Item: SelectItem,
   Separator: SelectSeparator,
   Group: SelectGroup,
   GroupLabel: SelectGroupLabel,
@@ -199,13 +204,13 @@ export function CountrySelect() {
         <Select.Trigger placeholder="Select a country…" />
         <Select.Popup>
           {COUNTRIES.map((country) => (
-            <Select.Option
+            <Select.Item
               key={country.value}
               value={country.value}
               icon={country.icon}
             >
               {country.label}
-            </Select.Option>
+            </Select.Item>
           ))}
         </Select.Popup>
       </Select.Root>
@@ -219,7 +224,7 @@ export function CountrySelect() {
 ## W — Why It Matters
 
 - Native `<select>` is impossible to style consistently across browsers — especially on iOS, Windows, and macOS. Base UI's Select gives you full CSS control while maintaining all the accessibility and keyboard behaviour of native select.
-- `min-w-[--anchor-width]` is the key trick for matching the popup width to the trigger — Base UI exposes `--anchor-width` as a CSS variable on the Positioner so the dropdown automatically matches its trigger's width without JavaScript measurement.
+- `min-w-(--anchor-width)` is the key trick for matching the popup width to the trigger — Base UI exposes `--anchor-width` as a CSS variable on the Positioner so the dropdown automatically matches its trigger's width without JavaScript measurement.
 - Typeahead search (type letters to jump to options) is built in — this is expected behaviour for accessibility and power users.
 
 ---
@@ -245,7 +250,7 @@ export function CountrySelect() {
 
 ```tsx
 {/* ✅ Popup is at least as wide as the trigger */}
-<SelectPrimitive.Popup className="min-w-[--anchor-width]">
+<SelectPrimitive.Popup className="min-w-(--anchor-width)">
 ```
 
 ---
@@ -304,16 +309,17 @@ export function TimeZoneSelect() {
             <Select.Group key={region}>
               <Select.GroupLabel>{region}</Select.GroupLabel>
               {zones.map((tz) => (
-                <Select.Option key={tz.value} value={tz.value}>
-                  <span className="flex-1">{tz.label}</span>
-                  <span
-                    className="shrink-0 text-xs font-mono text-gray-400
-                                    data-[highlighted]:text-blue-400
-                                    data-[selected]:text-blue-400"
-                  >
-                    {tz.offset}
-                  </span>
-                </Select.Option>
+                <Select.Item
+                  key={tz.value}
+                  value={tz.value}
+                  trailing={
+                    <span className="shrink-0 text-xs font-mono text-gray-400">
+                      {tz.offset}
+                    </span>
+                  }
+                >
+                  {tz.label}
+                </Select.Item>
               ))}
               {i < Object.keys(TIMEZONES).length - 1 && <Select.Separator />}
             </Select.Group>

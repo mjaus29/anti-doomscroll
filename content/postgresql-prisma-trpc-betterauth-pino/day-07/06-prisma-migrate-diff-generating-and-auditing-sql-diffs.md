@@ -21,14 +21,14 @@ npx prisma migrate diff \
 ```bash
 # ── From/To options ────────────────────────────────────────────────────────
 # --from-empty                         start from empty DB (no tables)
-# --from-schema-datamodel <file>       from a schema.prisma file
-# --from-schema-datasource <file>      from schema.prisma using its datasource URL
-# --from-url <connection-string>       from a live database
+# --from-schema <file>       from a schema.prisma file
+# --from-config-datasource             from the live DB in prisma.config.ts → datasource.url (Prisma 7+)
 # --from-migrations <dir>              from a migrations directory state
 # --to-empty                           target: empty DB (generates DROP statements)
-# --to-schema-datamodel <file>         target: a schema.prisma file
-# --to-schema-datasource <file>        target: schema.prisma datasource
-# --to-url <connection-string>         target: a live database
+# --to-schema <file>         target: a schema.prisma file
+# --to-config-datasource               target: the live DB in prisma.config.ts → datasource.url (Prisma 7+)
+# (Prisma 7 removed --from-url / --to-url / --*-schema-datasource / --shadow-database-url;
+#  to aim at a different DB, set DATABASE_URL for that one command or pass --config <file>)
 # --to-migrations <dir>                target: a migrations directory state
 ```
 
@@ -38,7 +38,7 @@ npx prisma migrate diff \
 # 1. What would migrate dev generate? (preview without applying)
 npx prisma migrate diff \
   --from-schema-datasource prisma/schema.prisma \
-  --to-schema-datamodel    prisma/schema.prisma \
+  --to-schema    prisma/schema.prisma \
   --script
 # FROM: current live DB state
 # TO:   current schema.prisma definition
@@ -47,16 +47,16 @@ npx prisma migrate diff \
 # 2. Generate full schema creation SQL (for baseline or documentation)
 npx prisma migrate diff \
   --from-empty \
-  --to-schema-datamodel prisma/schema.prisma \
+  --to-schema prisma/schema.prisma \
   --script
 # FROM: empty database
 # TO:   current schema.prisma
 # OUTPUT: all CREATE TABLE, CREATE INDEX, etc. — the full schema SQL
 
 # 3. Detect drift: compare live DB to schema.prisma
-npx prisma migrate diff \
-  --from-url $PRODUCTION_DATABASE_URL \
-  --to-schema-datamodel prisma/schema.prisma \
+DATABASE_URL=$PRODUCTION_DATABASE_URL npx prisma migrate diff \
+  --from-config-datasource \
+  --to-schema prisma/schema.prisma \
   --script
 # FROM: live production database
 # TO:   your schema.prisma
@@ -65,16 +65,19 @@ npx prisma migrate diff \
 # If output has SQL → drift detected (production has extra/missing things) ⚠️
 
 # 4. Compare two databases
+# Prisma 7 can read only ONE live DB per diff (--to-url is gone), so introspect each into a schema file:
+DATABASE_URL=$STAGING_DATABASE_URL    npx prisma db pull --print > staging.prisma
+DATABASE_URL=$PRODUCTION_DATABASE_URL npx prisma db pull --print > production.prisma
 npx prisma migrate diff \
-  --from-url $STAGING_DATABASE_URL \
-  --to-url   $PRODUCTION_DATABASE_URL \
+  --from-schema staging.prisma \
+  --to-schema   production.prisma \
   --script
 # Shows what SQL would make staging match production (or vice versa)
 
 # 5. What will the next migration contain? (before running migrate dev)
 npx prisma migrate diff \
   --from-migrations prisma/migrations \
-  --to-schema-datamodel prisma/schema.prisma \
+  --to-schema prisma/schema.prisma \
   --script
 # FROM: state after all existing migrations are applied
 # TO:   current schema.prisma
@@ -93,7 +96,7 @@ npx prisma migrate diff \
 # ── Piping diff output to a file ─────────────────────────────────────────
 npx prisma migrate diff \
   --from-empty \
-  --to-schema-datamodel prisma/schema.prisma \
+  --to-schema prisma/schema.prisma \
   --script \
   > docs/schema_snapshot_$(date +%Y%m%d).sql
 # Creates a dated SQL snapshot file for documentation or audit purposes
@@ -104,9 +107,9 @@ npx prisma migrate diff \
 # migrate diff exits with code 1 if there are differences, 0 if schemas match
 # Use this in CI to fail the build if production has drifted from schema.prisma:
 
-npx prisma migrate diff \
-  --from-url $PRODUCTION_DATABASE_URL \
-  --to-schema-datamodel prisma/schema.prisma \
+DATABASE_URL=$PRODUCTION_DATABASE_URL npx prisma migrate diff \
+  --from-config-datasource \
+  --to-schema prisma/schema.prisma \
   --script
 
 if [ $? -ne 0 ]; then
@@ -119,9 +122,9 @@ fi
 
 ## W — Why It Matters
 
-- `migrate diff --from-migrations --to-schema-datamodel` is the safe preview tool — before running `migrate dev`, you can see exactly what SQL it will generate without touching the database. This is critical for complex schema changes where you want to review before applying.
+- `migrate diff --from-migrations --to-schema` is the safe preview tool — before running `migrate dev`, you can see exactly what SQL it will generate without touching the database. This is critical for complex schema changes where you want to review before applying.
 - Drift detection in CI is a production reliability practice — schema drift (database doesn't match `schema.prisma`) is often caused by emergency hotfixes applied directly to production. A CI check that compares the live DB to `schema.prisma` on every merge to main catches drift early, before it compounds.
-- The `--from-url $PROD_URL --to-schema-datamodel` direction is "what do I need to run on production?" — running this before `migrate deploy` on a new environment is a safety check that shows exactly what SQL will run, so there are no surprises.
+- The `--from-config-datasource` (pointed at prod) `--to-schema` direction is "what do I need to run on production?" — running this before `migrate deploy` on a new environment is a safety check that shows exactly what SQL will run, so there are no surprises.
 
 ---
 
@@ -129,7 +132,7 @@ fi
 
 ### Q: How would you use `prisma migrate diff` in a CI/CD pipeline?
 
-**A:** Two uses: (1) **Pre-deploy SQL preview** — before deploying to production, run `migrate diff --from-url $PROD_URL --to-schema-datamodel prisma/schema.prisma --script` to see exactly what SQL will run on production. If the output is unexpected (e.g., a DROP TABLE), the deploy is stopped for review. (2) **Drift detection** — run `migrate diff --from-url $PROD_URL --to-schema-datamodel prisma/schema.prisma` in CI after every merge to main. If the exit code is non-zero (schemas differ), the CI pipeline fails with a warning that production has drifted from the codebase. This catches emergency hotfixes applied directly to production and forces the team to document them as proper migrations before the next deploy.
+**A:** Two uses: (1) **Pre-deploy SQL preview** — before deploying to production, run `migrate diff --from-config-datasource (with DATABASE_URL set to prod) --to-schema prisma/schema.prisma --script` to see exactly what SQL will run on production. If the output is unexpected (e.g., a DROP TABLE), the deploy is stopped for review. (2) **Drift detection** — run `migrate diff --from-config-datasource (with DATABASE_URL set to prod) --to-schema prisma/schema.prisma` in CI after every merge to main. If the exit code is non-zero (schemas differ), the CI pipeline fails with a warning that production has drifted from the codebase. This catches emergency hotfixes applied directly to production and forces the team to document them as proper migrations before the next deploy.
 
 ---
 
@@ -140,9 +143,9 @@ fi
 ```bash
 # ❌ Wrong direction: "what do I need to do to make schema.prisma match the DB?"
 # (instead of "what do I need to do to make the DB match schema.prisma?")
-npx prisma migrate diff \
-  --from-schema-datamodel prisma/schema.prisma \  # FROM: schema
-  --to-url $PRODUCTION_DATABASE_URL \             # TO: production DB
+DATABASE_URL=$PRODUCTION_DATABASE_URL npx prisma migrate diff \
+  --from-schema prisma/schema.prisma \  # FROM: schema
+  --to-config-datasource \              # TO: production DB (datasource.url)
   --script
 # Output: DROP TABLE "new_feature_table"; ← because the DB doesn't have it yet
 # This is backwards — generates destructive SQL ❌
@@ -152,9 +155,9 @@ npx prisma migrate diff \
 
 ```bash
 # ✅ Correct direction: DB is current state, schema.prisma is desired state
-npx prisma migrate diff \
-  --from-url $PRODUCTION_DATABASE_URL \           # FROM: current DB state
-  --to-schema-datamodel prisma/schema.prisma \    # TO: desired schema state
+DATABASE_URL=$PRODUCTION_DATABASE_URL npx prisma migrate diff \
+  --from-config-datasource \           # FROM: current DB state
+  --to-schema prisma/schema.prisma \    # TO: desired schema state
   --script
 # Output: CREATE TABLE "new_feature_table"; ← what we need to apply to prod ✅
 ```
@@ -183,9 +186,9 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 echo "Step 1: Checking for production schema drift..."
 
-DRIFT_SQL=$(npx prisma migrate diff \
-  --from-url "$PRODUCTION_DATABASE_URL" \
-  --to-schema-datamodel prisma/schema.prisma \
+DRIFT_SQL=$(DATABASE_URL="$PRODUCTION_DATABASE_URL" npx prisma migrate diff \
+  --from-config-datasource \
+  --to-schema prisma/schema.prisma \
   --script 2>&1)
 
 DRIFT_EXIT=$?
@@ -216,7 +219,7 @@ echo "Step 2: Previewing next migration content..."
 
 NEXT_MIGRATION_SQL=$(npx prisma migrate diff \
   --from-migrations prisma/migrations \
-  --to-schema-datamodel prisma/schema.prisma \
+  --to-schema prisma/schema.prisma \
   --script 2>&1)
 
 NEXT_EXIT=$?

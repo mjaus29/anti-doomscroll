@@ -141,7 +141,7 @@ const accounts = await prisma.account.findMany({
 
 ## W — Why It Matters
 
-- OAuth eliminates password management for users who use it — no password to forget, no password reset flow, no bcrypt overhead. For apps targeting consumers, offering Google/GitHub sign-in significantly increases conversion.
+- OAuth eliminates password management for users who use it — no password to forget, no password reset flow, no password-hashing overhead. For apps targeting consumers, offering Google/GitHub sign-in significantly increases conversion.
 - The callback URL must be registered exactly in the provider's console — a trailing slash, `http` vs `https`, or wrong port will cause an `invalid_redirect_uri` error from the provider. Add both dev and production callback URLs during setup.
 - Account linking by email is a security consideration — if your app allows email/password sign-in AND Google OAuth, and an attacker registers a Google account with the victim's email before the victim does, they could gain access. Mitigate by only linking accounts when the existing user's email is verified.
 

@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-`prisma migrate dev` is the primary development migration command. On first run, it reads the schema, generates SQL DDL, creates the `prisma/migrations/` directory, and applies the migration to the development database. The migration is recorded in a `_prisma_migrations` table. This command creates a named migration file, applies it, and regenerates the Prisma Client — all in one step.
+`prisma migrate dev` is the primary development migration command. On first run, it reads the schema, generates SQL DDL, creates the `prisma/migrations/` directory, and applies the migration to the development database. The migration is recorded in a `_prisma_migrations` table. This command creates a named migration file and applies it. (Before Prisma 7 it also regenerated the Prisma Client automatically; in Prisma 7 you run `npx prisma generate` yourself.)
 
 ---
 
@@ -39,7 +39,8 @@ npx prisma migrate dev --name init
 # 4. Generates: prisma/migrations/20250615143022_init/migration.sql
 # 5. Applies the migration SQL to the development database
 # 6. Records the migration in the _prisma_migrations table
-# 7. Runs npx prisma generate (regenerates the Prisma Client)
+# 7. (Prisma 7: does NOT run prisma generate any more — run `npx prisma generate` yourself;
+#     before Prisma 7 it regenerated the Prisma Client here)
 
 # Output:
 # ✔ Created and applied migration `20250615143022_init`
@@ -96,7 +97,7 @@ ALTER TABLE "posts" ADD CONSTRAINT "fk_posts_author_id"
 npx prisma migrate dev --name init          # named migration
 npx prisma migrate dev                      # Prisma prompts for name interactively
 npx prisma migrate dev --create-only        # generate SQL but DON'T apply it yet
-npx prisma migrate dev --skip-generate      # apply migration but skip prisma generate
+# (--skip-generate and --skip-seed were removed in Prisma 7: migrate dev no longer generates or seeds)
 npx prisma migrate dev --reset              # ⚠️ DROP ALL TABLES, reapply all migrations
 ```
 
@@ -196,12 +197,12 @@ Starting from scratch, set up a complete initial migration for a simple blog: (1
 // prisma/schema.prisma
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum UserRole {
@@ -253,7 +254,7 @@ model Tag {
 # ── CLI commands ─────────────────────────────────────────────────────────────
 
 # 1. Install Prisma (if not already installed)
-npm install prisma @prisma/client
+npm install @prisma/client @prisma/adapter-pg dotenv
 npm install -D prisma
 
 # 2. Initialize Prisma (creates prisma/ directory with schema.prisma)

@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-`revalidateTag` purges all cached data tagged with a specific string — in one call, you can refresh multiple pages and multiple fetch responses that share the same tag. `unstable_cache` (now `cacheTag` / `cacheLife` APIs in Next.js 15+) applies Next.js cache semantics to **any async function** — not just `fetch()` — enabling direct DB calls to participate in the cache system.
+`revalidateTag` purges all cached data tagged with a specific string — in one call, you can refresh multiple pages and multiple fetch responses that share the same tag. `unstable_cache` (superseded by `'use cache'` with `cacheTag` / `cacheLife` in Next.js 16) applies Next.js cache semantics to **any async function** — not just `fetch()` — enabling direct DB calls to participate in the cache system.
 
 ---
 
@@ -22,17 +22,19 @@ import { revalidateTag } from "next/cache";
 export async function updateProduct(id: string, data: Partial<Product>) {
   await db.product.update({ where: { id }, data });
 
-  revalidateTag("products"); // ← clears ALL fetches tagged 'products'
-  revalidateTag(`product-${id}`); // ← clears fetches tagged with this specific ID
+  revalidateTag("products", "max"); // ← clears ALL fetches tagged 'products'
+  revalidateTag(`product-${id}`, "max"); // ← clears fetches tagged with this specific ID
 }
 
 // When user data changes → revalidate their specific data
 export async function updateUserProfile(userId: string, data: ProfileData) {
   await db.user.update({ where: { id: userId }, data });
 
-  revalidateTag(`user-${userId}`); // ← only this user's cached data
+  revalidateTag(`user-${userId}`, "max"); // ← only this user's cached data
 }
 ```
+
+> **Next.js 16:** `revalidateTag` now takes a second argument, a cache-life profile — `revalidateTag(tag, "max")` marks the data stale and serves it stale-while-revalidate. Use `revalidateTag(tag, { expire: 0 })` for immediate expiry from Route Handlers/webhooks, and `updateTag(tag)` inside Server Actions when the user must see their own write immediately. Before Next.js 16 it was `revalidateTag(tag)`; the one-argument form still runs but is deprecated.
 
 ### Tagging `fetch()` Calls
 
@@ -138,18 +140,18 @@ export async function POST(request: NextRequest) {
   switch (body.event) {
     case "product.created":
       // New product: revalidate list only (detail page doesn't exist yet)
-      revalidateTag("products");
+      revalidateTag("products", "max");
       break;
 
     case "product.updated":
       // Updated: revalidate both list AND the specific product page
-      revalidateTag("products");
-      revalidateTag(`product-${body.productId}`);
+      revalidateTag("products", "max");
+      revalidateTag(`product-${body.productId}`, "max");
       break;
 
     case "product.deleted":
       // Deleted: revalidate list (product detail will 404 naturally)
-      revalidateTag("products");
+      revalidateTag("products", "max");
       break;
   }
 
@@ -210,7 +212,7 @@ const products = await fetch(`${API_URL}/products`, {
 }).then((r) => r.json());
 
 // Server Action:
-revalidateTag("products"); // ← has no effect — nothing is tagged 'products'
+revalidateTag("products", "max"); // ← has no effect — nothing is tagged 'products'
 ```
 
 **Fix:** Always add tags to fetches you want to revalidate on-demand:
@@ -277,19 +279,19 @@ const product = await getCachedProduct("prod-2"); // key: ['product', 'prod-2']
 
 ```tsx
 // ❌ Tags with spaces, slashes, or special chars can cause issues
-revalidateTag("user data"); // ← space in tag name
-revalidateTag("products/shoes"); // ← slash in tag name
-revalidateTag("category:footwear"); // ← colon in tag name
+revalidateTag("user data", "max"); // ← space in tag name
+revalidateTag("products/shoes", "max"); // ← slash in tag name
+revalidateTag("category:footwear", "max"); // ← colon in tag name
 ```
 
 **Fix:** Use simple, consistent tag naming conventions — kebab-case or hyphen-separated:
 
 ```tsx
 // ✅ Consistent tag naming
-revalidateTag("user-data");
-revalidateTag("products-shoes");
-revalidateTag("category-footwear");
-revalidateTag(`product-${id}`); // ← dynamic but safe format
+revalidateTag("user-data", "max");
+revalidateTag("products-shoes", "max");
+revalidateTag("category-footwear", "max");
+revalidateTag(`product-${id}`, "max"); // ← dynamic but safe format
 
 // Convention: [resource]-[optional-modifier]-[optional-id]
 // 'products'
@@ -436,8 +438,8 @@ export async function updateProduct(
     await new Promise((r) => setTimeout(r, 200)); // simulate DB
     console.log(`Updated product ${id}:`, data);
 
-    revalidateTag(`product-${id}`); // ← surgical: only this product's detail page
-    revalidateTag("products"); // ← list pages (name/price shown in listings)
+    revalidateTag(`product-${id}`, "max"); // ← surgical: only this product's detail page
+    revalidateTag("products", "max"); // ← list pages (name/price shown in listings)
 
     return { success: true, message: `Product ${id} updated` };
   } catch {
@@ -455,8 +457,8 @@ export async function featureProduct(
     await new Promise((r) => setTimeout(r, 150));
     console.log(`${featured ? "Featured" : "Unfeatured"} product ${id}`);
 
-    revalidateTag("featured"); // ← featured list changed ✅
-    revalidateTag(`product-${id}`); // ← this product's detail page ✅
+    revalidateTag("featured", "max"); // ← featured list changed ✅
+    revalidateTag(`product-${id}`, "max"); // ← this product's detail page ✅
     // NOT revalidateTag('products') — non-featured list unchanged
 
     return {
@@ -482,7 +484,7 @@ export async function syncAllProducts(): Promise<{
     // getCachedProducts    (tagged 'products') ← cleared ✅
     // getCachedProduct(id) (tagged 'products') ← ALL cleared ✅
     // getCachedFeatured    (tagged 'products') ← cleared ✅
-    revalidateTag("products");
+    revalidateTag("products", "max");
 
     return { success: true, message: "All product caches cleared" };
   } catch {
@@ -515,37 +517,37 @@ export async function POST(request: NextRequest) {
   switch (body.event) {
     case "product.created":
       // New product: only list changes
-      revalidateTag("products");
+      revalidateTag("products", "max");
       revalidated.push("products");
       break;
 
     case "product.updated":
       // Check if featured status changed — if so, also clear featured
       if ("fields" in body && body.fields.includes("featured")) {
-        revalidateTag("featured");
+        revalidateTag("featured", "max");
         revalidated.push("featured");
       }
-      revalidateTag(`product-${body.productId}`);
-      revalidateTag("products");
+      revalidateTag(`product-${body.productId}`, "max");
+      revalidateTag("products", "max");
       revalidated.push(`product-${body.productId}`, "products");
       break;
 
     case "product.deleted":
       // Removed: clear list (detail page 404s naturally)
-      revalidateTag("products");
+      revalidateTag("products", "max");
       revalidated.push("products");
       break;
 
     case "product.featured":
       // Only featured status changed — surgical
-      revalidateTag("featured");
-      revalidateTag(`product-${body.productId}`);
+      revalidateTag("featured", "max");
+      revalidateTag(`product-${body.productId}`, "max");
       revalidated.push("featured", `product-${body.productId}`);
       break;
 
     case "products.synced":
       // Full sync: one tag clears all three caches
-      revalidateTag("products"); // ← clears getCachedProducts ✅
+      revalidateTag("products", "max"); // ← clears getCachedProducts ✅
       //   clears getCachedProduct(ANY id) ✅
       //   clears getCachedFeatured ✅
       revalidated.push("products (clears products + per-product + featured)");

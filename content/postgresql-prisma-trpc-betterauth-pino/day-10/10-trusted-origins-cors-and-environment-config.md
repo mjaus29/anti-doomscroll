@@ -344,7 +344,7 @@ BETTERAUTH ARCHITECTURE
 
 PRISMA ADAPTER
   prismaAdapter(prisma, { provider: 'postgresql' })
-  npx better-auth generate  → outputs required Prisma models
+  npx auth@latest generate  → outputs required Prisma models
   npx prisma migrate dev    → creates tables in PostgreSQL
   Four tables: user, session, account, verification
   Cascade delete: session/account deleted when user is deleted
@@ -361,14 +361,14 @@ SESSION MODEL
 SIGN UP FLOW
   authClient.signUp.email({ name, email, password, ...customFields })
   → POST /api/auth/sign-up/email
-  → validate → check uniqueness → bcrypt(password) → INSERT user → INSERT account → INSERT session → set cookie
+  → validate → check uniqueness → scrypt(password) → INSERT user → INSERT account → INSERT session → set cookie
   → USER_ALREADY_EXISTS if email taken
   → router.refresh() required after sign-up in Next.js App Router
 
 SIGN IN FLOW
   authClient.signIn.email({ email, password, rememberMe? })
   → POST /api/auth/sign-in/email
-  → find user → find account → bcrypt.compare → INSERT session → set cookie
+  → find user → find account → scrypt verify → INSERT session → set cookie
   → INVALID_EMAIL_OR_PASSWORD (same code for both "not found" and "wrong password")
   → Never reveal which field failed (prevents email enumeration)
   → router.refresh() required after sign-in
@@ -388,8 +388,8 @@ CLIENT USAGE (React)
 
 SERVER USAGE (Next.js)
   auth.api.getSession({ headers: req.headers })  → Session | null
-  Works in: Server Components, Route Handlers, Server Actions, Middleware
-  middleware.ts: protect routes at the edge before rendering
+  Works in: Server Components, Route Handlers, Server Actions, proxy.ts
+  proxy.ts (middleware.ts before Next 16): protect routes before rendering (Node runtime in 16)
   requireSession() helper: redirect('/sign-in') if no session — eliminates boilerplate
   ALWAYS check session server-side — client checks are UX only, not security
 
@@ -408,7 +408,7 @@ SECURITY RULES
   ✅ trustedOrigins → CSRF protection
   ✅ Generic error messages → no email enumeration
   ✅ Server-side session checks → real security boundary
-  ✅ bcrypt for passwords → secure storage
+  ✅ scrypt (default) for passwords → secure storage
   ❌ Never: return password hash in API response
   ❌ Never: add * to trustedOrigins
   ❌ Never: commit BETTER_AUTH_SECRET to git

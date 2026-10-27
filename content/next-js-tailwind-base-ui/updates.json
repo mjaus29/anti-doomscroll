@@ -1,0 +1,650 @@
+{
+  "updates": [
+    {
+      "lesson": "day-01/01-create-next-app-scaffolding-the-project",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "create-next-app with Tailwind v4 generates no tailwind.config.ts, and ESLint uses a flat config.",
+      "changes": [
+        "Key Concepts — project tree: removed `tailwind.config.ts` (Tailwind v4 is configured in globals.css) and replaced `.eslintrc.json` with `eslint.config.mjs`."
+      ]
+    },
+    {
+      "lesson": "day-01/03-eslint-configuration-rules",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Next.js 16 removed `next lint` and ships flat-config presets, so FlatCompat is no longer needed.",
+      "changes": [
+        "Key Concepts — config: `FlatCompat` + `compat.extends(...)` → `defineConfig([...nextVitals, ...nextTs, globalIgnores([...])])` imported from `eslint-config-next/core-web-vitals` and `/typescript`; `.eslintrc.json` shown only as the old format.",
+        "Key Concepts — Running ESLint: `npx next lint [--fix|--dir|--format]` → `npx eslint .` (and `next build` no longer lints).",
+        "Key Concepts — Prettier: `compat.extends(\"prettier\")` → `import prettier from \"eslint-config-prettier/flat\"`.",
+        "Interview Q&A / Common Pitfalls — Q2 and the legacy-config pitfall now point at the flat presets instead of FlatCompat.",
+        "Coding Challenge — solution rewritten with `defineConfig`, `nextVitals`, `nextTs`, `prettier`."
+      ]
+    },
+    {
+      "lesson": "day-01/04-tailwind-css-integration",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Tailwind v4 projects have no tailwind.config.ts; sources are auto-detected.",
+      "changes": [
+        "TL;DR — 'most setup in globals.css instead of tailwind.config.ts' → no tailwind.config.ts is generated.",
+        "Key Concepts — removed the 'minimal tailwind.config.ts with content array' snippet; added a note on automatic detection and `@source`.",
+        "Key Concepts — the v3-style config is now labelled legacy and loaded from CSS with `@config`."
+      ]
+    },
+    {
+      "lesson": "day-01/05-app-router-mental-model",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy).",
+      "changes": [
+        "Key Concepts — project structure diagram: `middleware.ts` → `proxy.ts` (Next 16 name; old name deprecated)."
+      ]
+    },
+    {
+      "lesson": "day-01/06-the-app-directory-structure-conventions",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy).",
+      "changes": [
+        "Key Concepts — special files list: `middleware.ts` → `proxy.ts` (Next 16 name; old name deprecated)."
+      ]
+    },
+    {
+      "lesson": "day-01/07-the-src-directory-why-and-when",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "tailwind.config.ts no longer exists in v4 and middleware.ts is now proxy.ts.",
+      "changes": [
+        "Key Concepts — file trees and root-level file list: removed `tailwind.config.ts`; `middleware.ts` → `proxy.ts`; `.eslintrc.json` → `eslint.config.mjs`.",
+        "Common Pitfalls — 'update tailwind.config.ts content paths' replaced by a v4 pitfall about `@source`; 'middleware.ts in the wrong location' → `proxy.ts`.",
+        "Coding Challenge — step to update the Tailwind `content` array replaced by 'no Tailwind change needed in v4'; removed the tailwind.config.ts solution."
+      ]
+    },
+    {
+      "lesson": "day-01/09-top-level-config-files",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "There is no tailwind.config.ts in a Next 16 + Tailwind v4 project, and `next lint` is gone.",
+      "changes": [
+        "TL;DR — `tailwind.config.ts` controls styling → postcss.config.mjs plus `@theme` in globals.css.",
+        "Key Concepts — config file map: removed the `tailwind.config.ts` line.",
+        "Key Concepts — package.json scripts: `next lint` / `next lint --fix` → `eslint` / `eslint --fix`."
+      ]
+    },
+    {
+      "lesson": "day-01/10-local-development-flow",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "`next lint` was removed in Next.js 16.",
+      "changes": [
+        "Coding Challenge — package.json scripts: `\"next lint\"` / `\"next lint --fix\"` → `\"eslint\"` / `\"eslint --fix\"`."
+      ]
+    },
+    {
+      "lesson": "day-01/11-project-structure-overview-putting-it-all-together",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "middleware.ts is now proxy.ts and tailwind.config.ts no longer exists.",
+      "changes": [
+        "Key Concepts — 'The middleware.ts position' section, example (`export function middleware` → `export function proxy`) and structure cheat lists: `middleware.ts` / 'Edge middleware' → `proxy.ts` / 'Proxy'.",
+        "Key Concepts — config file list and full tree: removed `tailwind.config.ts`, noted postcss.config.mjs loads Tailwind v4.",
+        "Coding Challenge — before/after trees no longer list `tailwind.config.ts`."
+      ]
+    },
+    {
+      "lesson": "day-02/02-layout-tsx-persistent-wrappers",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy).",
+      "changes": [
+        "Interview Q&A — wording 'middleware' / `middleware.ts` → 'proxy' / `proxy.ts` (Next 16 rename; old name deprecated)."
+      ]
+    },
+    {
+      "lesson": "day-02/03-template-tsx-remounting-layouts",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy).",
+      "changes": [
+        "Common Pitfalls — wording 'middleware' / `middleware.ts` → 'proxy' / `proxy.ts` (Next 16 rename; old name deprecated)."
+      ]
+    },
+    {
+      "lesson": "day-02/09-nested-layouts-segment-based-layout-inheritance",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy).",
+      "changes": [
+        "Why It Matters — wording 'middleware' / `middleware.ts` → 'proxy' / `proxy.ts` (Next 16 rename; old name deprecated)."
+      ]
+    },
+    {
+      "lesson": "day-02/10-segment-based-organization-route-groups-dynamic-segments-catch-all-routes",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy).",
+      "changes": [
+        "Coding Challenge — wording 'middleware' / `middleware.ts` → 'proxy' / `proxy.ts` (Next 16 rename; old name deprecated)."
+      ]
+    },
+    {
+      "lesson": "day-03/02-prefetching-how-next-js-preloads-routes",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy).",
+      "changes": [
+        "Key Concepts — wording 'middleware' / `middleware.ts` → 'proxy' / `proxy.ts` (Next 16 rename; old name deprecated)."
+      ]
+    },
+    {
+      "lesson": "day-03/04-usepathname-reading-the-current-path",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy).",
+      "changes": [
+        "Key Concepts / Interview Q&A — wording 'middleware' / `middleware.ts` → 'proxy' / `proxy.ts` (Next 16 rename; old name deprecated)."
+      ]
+    },
+    {
+      "lesson": "day-04/08-designing-dashboard-routes-multi-level-navigation",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy).",
+      "changes": [
+        "Interview Q&A — wording 'middleware' / `middleware.ts` → 'proxy' / `proxy.ts` (Next 16 rename; old name deprecated)."
+      ]
+    },
+    {
+      "lesson": "day-04/09-multi-section-app-structures-combining-all-patterns",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy).",
+      "changes": [
+        "Interview Q&A — wording 'middleware' / `middleware.ts` → 'proxy' / `proxy.ts` (Next 16 rename; old name deprecated)."
+      ]
+    },
+    {
+      "lesson": "day-05/05-forbidden-tsx-403-authorization-errors",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "forbidden() and forbidden.tsx only work after enabling experimental.authInterrupts.",
+      "changes": [
+        "Key Concepts — added an 'Enable It First' section with `experimental: { authInterrupts: true }` in next.config.ts."
+      ]
+    },
+    {
+      "lesson": "day-05/06-unauthorized-tsx-401-authentication-errors",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "unauthorized() and unauthorized.tsx only work after enabling experimental.authInterrupts.",
+      "changes": [
+        "Key Concepts — added an 'Enable It First' section with `experimental: { authInterrupts: true }` in next.config.ts."
+      ]
+    },
+    {
+      "lesson": "day-06/03-use-server-server-actions",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "revalidateTag now needs a second argument (cache-life profile) in Next 16.",
+      "changes": [
+        "Key Concepts — Server Action example: `revalidateTag(\"products\")` → `revalidateTag(\"products\", \"max\")`."
+      ]
+    },
+    {
+      "lesson": "day-06/08-data-fetching-patterns-where-data-lives",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "revalidateTag now needs a second argument (cache-life profile) in Next 16.",
+      "changes": [
+        "Key Concepts / Coding Challenge — Server Action examples: `revalidateTag(x)` → `revalidateTag(x, \"max\")`."
+      ]
+    },
+    {
+      "lesson": "day-06/09-rendering-strategies-static-dynamic-streaming",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy).",
+      "changes": [
+        "Common Pitfalls — comment 'Use middleware to set a cookie…' → 'Use proxy…'."
+      ]
+    },
+    {
+      "lesson": "day-06/10-performance-patterns-bundle-size-hydration-and-optimization",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "fetch() is no longer cached by default (Next 15) and next/image `priority` became `preload` (Next 16).",
+      "changes": [
+        "Key Concepts — fetch cache levels: bare `fetch(url)` is no longer 'cached (default)'; use `cache: 'force-cache'`.",
+        "Key Concepts / Interview Q&A / Common Pitfalls — next/image `priority` → `preload` (old name deprecated).",
+        "Coding Challenge — image examples use `preload`; the custom `priority` prop is renamed `preload`."
+      ]
+    },
+    {
+      "lesson": "day-07/01-fetch-in-server-components-basics-and-cache-options",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Since Next 15, fetch is NOT cached by default; you opt in with cache: 'force-cache', revalidate or tags.",
+      "changes": [
+        "TL;DR — fetch is cached across requests only when you opt in.",
+        "Key Concepts — 'Cache Option 1 — Default' → 'Cache Option 1 — `cache: 'force-cache'` (opt-in)'; the tagged example no longer says revalidate:false is the default.",
+        "Interview Q&A — Q1 now says fetch is uncached by default (`auto no cache`).",
+        "Coding Challenge — the store-config fetch now uses `cache: 'force-cache'`."
+      ]
+    },
+    {
+      "lesson": "day-07/03-static-vs-dynamic-rendering-how-fetching-drives-it",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Bare fetch calls are no longer 'default cached' (Next 15), so static examples need force-cache.",
+      "changes": [
+        "Key Concepts — homepage example: added `cache: \"force-cache\"` next to the tagged fetch.",
+        "Common Pitfalls — locale/theme advice: middleware → proxy.",
+        "Coding Challenge — the 'default cache' RelatedProducts fetch now uses `cache: \"force-cache\"`."
+      ]
+    },
+    {
+      "lesson": "day-07/04-the-next-js-cache-layers-full-mental-model",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "The Data Cache is opt-in since Next 15.",
+      "changes": [
+        "Key Concepts — Layer 2 (Data Cache): added a note that a bare fetch(url) isn't stored; use force-cache / revalidate / tags."
+      ]
+    },
+    {
+      "lesson": "day-07/07-revalidatetag-and-unstable-cache-tag-based-invalidation",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "In Next 16 revalidateTag takes a second argument (cache-life profile such as \"max\").",
+      "changes": [
+        "TL;DR — `cacheTag`/`cacheLife` attributed to Next 15+ → `'use cache'` in Next 16.",
+        "Key Concepts — all `revalidateTag(tag)` calls → `revalidateTag(tag, \"max\")`; added a Next.js 16 note covering `{ expire: 0 }` and `updateTag`.",
+        "Common Pitfalls / Coding Challenge — same two-argument form in every example."
+      ]
+    },
+    {
+      "lesson": "day-07/10-generatestaticparams-static-path-generation",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Bare fetch(url) is not cached by default since Next 15.",
+      "changes": [
+        "Coding Challenge — cheat list: 'fetch(url) → default: cached indefinitely' → 'not cached (Next 15+)'."
+      ]
+    },
+    {
+      "lesson": "day-08/01-server-actions-fundamentals-and-the-execution-model",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "revalidateTag now needs a second argument in Next 16.",
+      "changes": [
+        "Coding Challenge — `revalidateTag(\"notes\")` and template-tag calls → `revalidateTag(x, \"max\")`."
+      ]
+    },
+    {
+      "lesson": "day-08/03-updating-data-mutations-optimistic-updates-error-handling",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "revalidateTag now needs a second argument in Next 16.",
+      "changes": [
+        "Key Concepts / Coding Challenge — `revalidateTag(\"todos\")` → `revalidateTag(\"todos\", \"max\")`."
+      ]
+    },
+    {
+      "lesson": "day-08/05-nextrequest-and-nextresponse-the-request-response-api",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "NextRequest no longer has geo or ip (removed in Next.js 15).",
+      "changes": [
+        "TL;DR — property list no longer includes `geo`, `ip`.",
+        "Key Concepts — 'IP and Geo' snippet: `request.ip` / `request.geo` → `x-forwarded-for` / `x-vercel-ip-*` headers (or @vercel/functions).",
+        "Interview Q&A — answer notes the removal."
+      ]
+    },
+    {
+      "lesson": "day-08/06-cookies-reading-setting-deleting",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy).",
+      "changes": [
+        "TL;DR / Key Concepts — 'Reading Cookies in Middleware' and the `src/middleware.ts` example → `src/proxy.ts` with `export function proxy`.",
+        "Common Pitfalls — 'Set cookies in … Middleware' → 'Proxy'."
+      ]
+    },
+    {
+      "lesson": "day-08/07-headers-request-headers-response-headers-custom-headers",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy).",
+      "changes": [
+        "TL;DR / Key Concepts — 'Middleware injects x-user-id' example → `src/proxy.ts` with `export async function proxy`.",
+        "Why It Matters / Interview Q&A / Common Pitfalls — 'Middleware-set headers' → 'Proxy-set headers'.",
+        "Coding Challenge — auth middleware challenge and solution renamed to proxy.ts / `proxy`."
+      ]
+    },
+    {
+      "lesson": "day-08/08-redirects-server-side-client-side-middleware",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Middleware is now proxy.ts, and it runs on Node.js (not at the CDN edge).",
+      "changes": [
+        "TL;DR — added the Next 16 rename note (old name deprecated).",
+        "Key Concepts — `src/middleware.ts` / `export function middleware` → `src/proxy.ts` / `export function proxy`.",
+        "Why It Matters / Interview Q&A — 'runs at the CDN edge' → runs before routing on the Node.js runtime (Edge is not supported in proxy.ts).",
+        "Coding Challenge — middleware.ts requirement and solution → proxy.ts."
+      ]
+    },
+    {
+      "lesson": "day-08/09-proxy-and-backend-for-frontend-bff-patterns",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy).",
+      "changes": [
+        "Key Concepts — comment 'injected by Middleware' → 'Proxy'."
+      ]
+    },
+    {
+      "lesson": "day-08/10-error-handling-in-mutations-and-route-handlers",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy).",
+      "changes": [
+        "Coding Challenge — summary cheat sheet: 'Middleware' → 'Proxy' wording."
+      ]
+    },
+    {
+      "lesson": "day-09/01-global-css-entry-points-globals-css-css-modules-tailwind-v4",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 registers custom utilities with @utility, not @layer utilities.",
+      "changes": [
+        "Key Concepts / Coding Challenge — `@layer utilities { .text-balance {...} }` → `@utility text-balance {...}` (with a v3 note)."
+      ]
+    },
+    {
+      "lesson": "day-09/03-next-image-image-optimization-sizes-priority-fill",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Next.js 16 deprecated next/image `priority` in favour of `preload`.",
+      "changes": [
+        "TL;DR / Key Concepts — `priority` → `preload`; section renamed 'preload — Above-the-Fold Images' with a note on the old name and `loading=\"eager\"` / `fetchPriority=\"high\"`.",
+        "Interview Q&A / Common Pitfalls — all `priority` prop mentions → `preload`.",
+        "Coding Challenge — hero and thumbnail examples use `preload`."
+      ]
+    },
+    {
+      "lesson": "day-09/10-environment-variables-env-files-next-public-validation",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy).",
+      "changes": [
+        "Key Concepts / Interview Q&A — availability lists: 'Middleware' → 'Proxy'."
+      ]
+    },
+    {
+      "lesson": "day-09/11-deployment-ready-setup-next-config-ts-health-checks-output-modes",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "`next lint` was removed in Next.js 16.",
+      "changes": [
+        "Key Concepts / Coding Challenge — package.json scripts: `\"lint\": \"next lint\"` → `\"lint\": \"eslint\"`."
+      ]
+    },
+    {
+      "lesson": "day-10/01-utility-first-workflow-mental-model-setup-apply",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 uses @utility for custom utilities and @reference for @apply in CSS Modules.",
+      "changes": [
+        "Key Concepts — v3 vs v4 table: `plugins` → `@utility` / `@plugin`; custom utilities `@layer utilities { .x {} }` → `@utility x {}`.",
+        "Common Pitfalls — CSS Module fix now uses `@reference \"../../app/globals.css\"` before `@apply`.",
+        "Coding Challenge — step 3 and the solution use `@utility`."
+      ]
+    },
+    {
+      "lesson": "day-10/06-colors-text-background-border-opacity-css-variables",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 CSS-variable shorthand is bg-(--var), not bg-[--var].",
+      "changes": [
+        "Key Concepts — `bg-[--color-surface]` etc. → `bg-(--color-surface)`."
+      ]
+    },
+    {
+      "lesson": "day-10/07-borders-shadows-and-visual-effects",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "ring-* utilities are implemented with box-shadow, not outline.",
+      "changes": [
+        "TL;DR / Key Concepts — 'ring uses outline' → 'ring uses box-shadow (no layout shift)'.",
+        "Why It Matters / Interview Q&A — the shadow-* vs ring-* answer is corrected."
+      ]
+    },
+    {
+      "lesson": "day-10/10-dark-mode-dark-variant-css-variable-strategy",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 defines the dark variant with @custom-variant (not @variant) and uses bg-(--var).",
+      "changes": [
+        "TL;DR / Key Concepts — `@variant dark (...)` → `@custom-variant dark (...)` for class and data-attribute strategies.",
+        "Key Concepts / Coding Challenge — `bg-[--color-bg]` → `bg-(--color-bg)` throughout."
+      ]
+    },
+    {
+      "lesson": "day-10/11-composing-interfaces-building-real-ui-from-utility-primitives",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4: @custom-variant, @utility and bg-(--var) syntax.",
+      "changes": [
+        "Key Concepts — cheat list: `@variant dark` → `@custom-variant dark`; custom utils `@layer utilities` → `@utility`.",
+        "Key Concepts / Coding Challenge — `bg-[--color-*]` → `bg-(--color-*)` in examples."
+      ]
+    },
+    {
+      "lesson": "day-11/01-arbitrary-values-value-syntax-css-variables-calc",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 references CSS variables with parentheses: bg-(--brand).",
+      "changes": [
+        "Key Concepts — `bg-[--color-brand]`, `h-[--card-height]` etc. → `bg-(--color-brand)`, `h-(--card-height)`; added a 'before v4' note.",
+        "Why It Matters / Interview Q&A — same syntax."
+      ]
+    },
+    {
+      "lesson": "day-11/02-arbitrary-properties-property-value-for-any-css",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 CSS-variable shorthand is w-(--progress), not w-[--progress].",
+      "changes": [
+        "Key Concepts / Interview Q&A / Coding Challenge — `w-[--progress]`, `grid-cols-[--card-cols]` → parenthesis syntax."
+      ]
+    },
+    {
+      "lesson": "day-11/05-data-attribute-styling-data-variants",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Base UI does not emit data-state; it uses data-open / data-closed (Radix uses data-state).",
+      "changes": [
+        "Key Concepts — 'Integration with Headless UI Libraries' comment now separates Radix (`data-state`) from Base UI (`data-open`/`data-closed`).",
+        "Why It Matters / Interview Q&A — same distinction."
+      ]
+    },
+    {
+      "lesson": "day-11/06-theme-extension-mindset-when-to-extend-vs-override-vs-use-arbitrary",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 CSS-variable shorthand is bg-(--var).",
+      "changes": [
+        "Key Concepts / Coding Challenge — `w-[--progress]`, `h-[--spacing-nav-height]`, `bg-[--color-surface]` → `(--var)` syntax."
+      ]
+    },
+    {
+      "lesson": "day-11/10-important-forced-overrides-and-when-they-are-justified",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 puts the important modifier at the end: p-4!, not !p-4.",
+      "changes": [
+        "TL;DR / Key Concepts — `!p-4`, `hover:!bg-red-500` … → `p-4!`, `hover:bg-red-500!`; added a 'before v4' note (prefix form deprecated).",
+        "Key Concepts — `@apply !p-0 ...` → `@apply p-0! ...`.",
+        "Interview Q&A / Coding Challenge — all `!`-prefixed classes (including `[&_.ql-editor]:p-4!`) converted."
+      ]
+    },
+    {
+      "lesson": "day-11/11-prefixing-namespace-isolation-for-third-party-and-embedded-tailwind",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 prefixes are written like a variant at the start (tw:flex, not tw-flex), and tailwind-merge needs the prefix configured.",
+      "changes": [
+        "TL;DR / Key Concepts — `tw-flex`, `sm:tw-flex`, `tw-hover:tw-bg-...` → `tw:flex`, `tw:sm:flex`, `tw:hover:bg-...`; `@apply` examples likewise.",
+        "Interview Q&A — Q1/Q2 rewritten for the `tw:` form; `cn()` now needs `extendTailwindMerge({ prefix })`.",
+        "Common Pitfalls — @apply and mixed-prefix examples use `tw:`.",
+        "Coding Challenge — widget classes `widget-...` → `widget:...`; `widgetCn` uses `extendTailwindMerge({ prefix: \"widget\" })`; cheat-sheet lines updated (`utility!`)."
+      ]
+    },
+    {
+      "lesson": "day-12/01-installing-base-ui-react-setup-peer-deps-css-strategy",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Base UI is imported with named imports (import { Popover }) and styled with data-open/data-closed, not data-state.",
+      "changes": [
+        "Key Concepts — `import * as Popover from \"@base-ui/react/popover\"` → `import { Popover } from \"@base-ui/react/popover\"`; removed the incorrect part-by-part named import.",
+        "Key Concepts / Why It Matters — 'data-state attributes' → boolean `data-open`/`data-closed`/`data-checked`.",
+        "Key Concepts — `bg-[--color-bg]` → `bg-(--color-bg)`."
+      ]
+    },
+    {
+      "lesson": "day-12/02-headless-component-philosophy-what-it-means-and-why-it-matters",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Base UI exposes data-open/data-closed, not data-state.",
+      "changes": [
+        "Why It Matters — `data-state` / `data-[state=open]:` → `data-open` / `data-[open]:`.",
+        "Coding Challenge — Switch import changed to `import { Switch } from \"@base-ui/react/switch\"`."
+      ]
+    },
+    {
+      "lesson": "day-12/03-accessibility-first-composition-aria-focus-keyboard-nav",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Select options are Select.Item, not Select.Option.",
+      "changes": [
+        "Key Concepts — comment 'Select.Option gets role=option' → 'Select.Item'.",
+        "Coding Challenge — Popover import → named import."
+      ]
+    },
+    {
+      "lesson": "day-12/04-anatomy-based-assembly-root-trigger-portal-positioner-popup",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Base UI marks popups with data-open/data-closed, not data-state.",
+      "changes": [
+        "Key Concepts — Popup comments `data-state=\"open\"/\"closed\"` → `data-open` / `data-closed`; `origin-(--transform-origin)`.",
+        "Coding Challenge — named import."
+      ]
+    },
+    {
+      "lesson": "day-12/05-tailwind-styling-for-primitives-data-state-cn-base-ui",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Base UI has no data-state attribute; use data-open/data-closed, and Select.Item instead of Select.Option.",
+      "changes": [
+        "TL;DR / Key Concepts — attribute reference rewritten: `data-[state=open]:` → `data-[open]:`, `data-[state=closed]:` → `data-[closed]:`; `<Select.Option>` → `<Select.Item>`; `origin-(--transform-origin)`.",
+        "Interview Q&A / Common Pitfalls — answers and the exit-animation pitfall use `data-open` / `data-closed`.",
+        "Coding Challenge — `Select.Option` → `Select.Item` with `Select.ItemText`."
+      ]
+    },
+    {
+      "lesson": "day-12/06-popover-full-implementation-with-tailwind",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Named import and Tailwind v4 variable syntax.",
+      "changes": [
+        "Key Concepts / Coding Challenge — `import * as PopoverPrimitive` → `import { Popover as PopoverPrimitive }`; `origin-[--transform-origin]` → `origin-(--transform-origin)`."
+      ]
+    },
+    {
+      "lesson": "day-12/07-dialog-modal-with-overlay-focus-trap-accessible-anatomy",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Base UI is imported with named imports.",
+      "changes": [
+        "Key Concepts — `import * as DialogPrimitive` → `import { Dialog as DialogPrimitive }`."
+      ]
+    },
+    {
+      "lesson": "day-12/08-menu-dropdown-with-items-groups-separator",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Menu.Item uses onClick; Base UI has no onSelect.",
+      "changes": [
+        "Key Concepts — all `onSelect={...}` → `onClick={...}`; import → `import { Menu as MenuPrimitive }`.",
+        "Why It Matters / Interview Q&A — 'use onSelect, not onClick' reversed: `onClick` (with `closeOnClick`) is the handler.",
+        "Common Pitfalls — pitfall flipped: using the Radix-style `onSelect` is the bug.",
+        "Coding Challenge — handlers use `onClick`."
+      ]
+    },
+    {
+      "lesson": "day-12/09-select-controlled-dropdown-select",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Select options are Select.Item with ItemText/ItemIndicator, not Select.Option.",
+      "changes": [
+        "TL;DR — anatomy: Popup → List → Item (ItemText, ItemIndicator).",
+        "Key Concepts — wrapper `SelectOption` → `SelectItem` (with `ItemText`, `ItemIndicator`, `Select.List`); export `Option` → `Item`; usage updated; `min-w-(--anchor-width)`.",
+        "Common Pitfalls — `min-w-(--anchor-width)` example.",
+        "Coding Challenge — `<Select.Option>` → `<Select.Item trailing={...}>`."
+      ]
+    },
+    {
+      "lesson": "day-12/10-tabs-tab-list-panels-keyboard-navigation",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "The active Base UI tab is styled with data-active, not data-selected.",
+      "changes": [
+        "Key Concepts / Why It Matters — `data-[selected]:` on `Tabs.Tab` → `data-[active]:` (Panel keeps `data-[hidden]:hidden`)."
+      ]
+    },
+    {
+      "lesson": "day-12/11-tooltip-hover-focus-tooltip-with-delay-and-positioning",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Named imports and Tailwind v4 variable syntax.",
+      "changes": [
+        "Key Concepts / Coding Challenge — `import * as TooltipPrimitive` → `import { Tooltip as TooltipPrimitive }`; `origin-[--transform-origin]` → `origin-(--transform-origin)`."
+      ]
+    },
+    {
+      "lesson": "day-12/12-toast-notifications-toast-pattern-with-base-ui-primitives",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "Base UI's toast hook is Toast.useToastManager(); useToast is this lesson's wrapper.",
+      "changes": [
+        "TL;DR — 'a `useToast` hook' → `Toast.useToastManager()` (wrapped as `useToast`).",
+        "Key Concepts — named imports for Toast."
+      ]
+    },
+    {
+      "lesson": "day-12/13-transitions-css-open-close-animations-with-data-state",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 variable syntax and named imports in the transition examples.",
+      "changes": [
+        "Key Concepts / Why It Matters / Common Pitfalls — `origin-[--transform-origin]` → `origin-(--transform-origin)`.",
+        "Coding Challenge — named Base UI imports."
+      ]
+    },
+    {
+      "lesson": "day-12/14-final-audit-group-4-complete-optional-extensions-overview",
+      "date": "2026-10-27",
+      "kind": "correction",
+      "summary": "The final-audit cheat sheet repeated the outdated Base UI/Tailwind/Next 16 facts.",
+      "changes": [
+        "Key Concepts — checklist and cheat sheet: `data-[state=open/closed]` → `data-[open]`/`data-[closed]`, `data-[active]` for Tabs.Tab; `@variant dark` → `@custom-variant dark`.",
+        "Key Concepts — Menu 'onSelect not onClick' → onClick; Select options → `Select.Item`; Proxy line notes `proxy.ts` (was `middleware.ts`) and that the Edge runtime isn't supported in it.",
+        "Interview Q&A — the 'data-[state=]:' answer → `data-[open]:` etc.",
+        "Coding Challenge — `SelectP.Option` → `SelectP.Item` (+ ItemText/ItemIndicator), Tabs `data-[active]`."
+      ]
+    }
+  ]
+}

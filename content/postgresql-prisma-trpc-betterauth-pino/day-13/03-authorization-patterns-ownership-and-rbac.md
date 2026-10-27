@@ -112,10 +112,11 @@ update: protectedProcedure
 ```typescript
 // ── Pattern 4: Workspace/tenant scoping ───────────────────────────────────
 // User must be a member of the workspace they're operating in
-const requireWorkspaceMember = t.middleware(async ({ ctx, rawInput, next }) => {
+const requireWorkspaceMember = t.middleware(async ({ ctx, getRawInput, next }) => {
   if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' })
 
-  // Read workspaceId from rawInput (pre-validation — handle carefully)
+  // Read workspaceId from the raw input (pre-validation — handle carefully; v10 used `rawInput`)
+  const rawInput = await getRawInput()
   const workspaceId =
     typeof rawInput === 'object' && rawInput !== null
       ? (rawInput as { workspaceId?: unknown }).workspaceId

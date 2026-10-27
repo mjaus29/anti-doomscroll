@@ -81,7 +81,7 @@ await prisma.tag.createMany({
 // ── Query logging — count your queries ────────────────────────────────────
 // Enable query logging to see every SQL statement Prisma sends
 
-const prisma = new PrismaClient({
+const prisma = new PrismaClient({ adapter,
   log: [
     { emit: 'event', level: 'query' },
     { emit: 'stdout', level: 'error' },

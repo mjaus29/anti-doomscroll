@@ -63,6 +63,7 @@ export default async function BlogPost({ params }) {
 // ─── Homepage — no dynamic APIs
 export default async function HomePage() {
   const featured = await fetch(`${API_URL}/featured`, {
+    cache: "force-cache", // tags need a cached fetch to have anything to invalidate
     next: { tags: ["featured"] },
   }).then((r) => r.json());
   return <HeroSection featured={featured} />;
@@ -205,10 +206,10 @@ export default async function RootLayout({ children }) {
 }
 ```
 
-**Fix:** Handle locale/theme in middleware or a Client Component:
+**Fix:** Handle locale/theme in proxy or a Client Component:
 
 ```tsx
-// src/middleware.ts — read cookie, set html lang attribute via response headers
+// src/proxy.ts — read cookie, set html lang attribute via response headers
 // OR: use a Client Component that reads document.cookie on mount
 // Layout stays static — no cookies() in layout
 ```
@@ -245,7 +246,7 @@ Build a `/products/[id]` product detail page where:
 
 1. Product info is **ISR** (`revalidate = 3600`)
 2. A `LiveStockBadge` component is **dynamic** (`cache: 'no-store'`) but isolated in Suspense
-3. A `RelatedProducts` component is **static** (default cache)
+3. A `RelatedProducts` component is **static** (`cache: 'force-cache'`)
 4. Verify your strategy works by adding comments showing expected build output symbols
 
 ### Solution
@@ -303,12 +304,13 @@ export async function LiveStockBadge({ productId }: { productId: string }) {
 
 ```tsx
 // src/app/products/[id]/_components/related-products.tsx
-// Static section — default cache (cached indefinitely until revalidated)
+// Static section — force-cache (cached indefinitely until revalidated)
 
 async function getRelated(productId: string) {
-  // Default fetch — static (no revalidate, no no-store)
+  // force-cache — static (a bare fetch is uncached since Next 15)
   const res = await fetch(
-    `https://api.example.com/products/${productId}/related`
+    `https://api.example.com/products/${productId}/related`,
+    { cache: "force-cache" }
   ).catch(() => null);
 
   if (!res?.ok) return [];
@@ -451,7 +453,7 @@ export default async function ProductDetailPage({
         </div>
       </div>
 
-      {/* Related products — static (default cache) */}
+      {/* Related products — static (force-cache) */}
       <div className="mt-12">
         <Suspense
           fallback={

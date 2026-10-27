@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-Null and empty string values in query params cause silent API bugs — sending `?q=&status=` to a backend often returns zero results. `query-string` gives you precise control over what gets included, skipped, or treated as null.
+Null and empty string values in query params cause silent API bugs — sending `?q=&status=` to a backend often returns zero results. `query-string` gives you precise control over what gets included, skipped, or treated as null. By default `undefined` is dropped, `null` becomes a bare key (`?page`), and `''` becomes `?q=`.
 
 ---
 
@@ -25,13 +25,13 @@ When a user clears a filter, the state value becomes `null`, `undefined`, or `''
 ### Default Behavior — What Gets Included
 
 ```js
-// Default: null → omitted, undefined → omitted, '' → included
+// Default: undefined → omitted, null → bare key (no '='), '' → key with empty value
 queryString.stringify({ q: '', page: null, limit: undefined, sort: 'price' })
-// 'q=&sort=price'
-// null and undefined are dropped, empty string '' is kept
+// 'page&q=&sort=price'
+// undefined is dropped; null becomes 'page' (no value); empty string '' becomes 'q='
 ```
 
-### `skipNull` — Skip Null AND Undefined
+### `skipNull` — Skip Null (Undefined Is Always Skipped)
 
 ```js
 queryString.stringify(
@@ -39,7 +39,7 @@ queryString.stringify(
   { skipNull: true }
 )
 // 'q=shoes&sort=price'
-// null and undefined are both skipped ✅
+// null is skipped by the option; undefined is skipped by default ✅
 ```
 
 ### `skipEmptyString` — Skip Empty Strings
@@ -129,7 +129,7 @@ queryString.stringify(clean)
 - Sending `?q=` to a search endpoint often returns zero results or triggers a validation error — the backend treats it as an explicit empty-string search, not "no search".
 - URLs with `?category=&brand=&sort=` are not shareable — they look like errors and may confuse users.
 - `skipNull: true` + `skipEmptyString: true` is the production-grade pattern for filter forms — always apply it when building URLs from form state.
-- Understanding the asymmetry (`null` is dropped by default but `''` is not) prevents the most common "why is my empty filter in the URL?" bug.
+- Understanding the defaults (`undefined` is dropped, but `null` becomes a bare `?page` and `''` becomes `?q=`) prevents the most common "why is my empty filter in the URL?" bug.
 
 ---
 
@@ -137,7 +137,7 @@ queryString.stringify(clean)
 
 ### Q1: What does `skipNull: true` do in `queryString.stringify()`?
 
-**A:** It omits keys whose values are `null` or `undefined` from the output. Without it, `null` values are also omitted by default but this behavior is documented — `skipNull: true` makes the intent explicit and also ensures `undefined` is skipped. Best practice is to always include it when building URLs from form or filter state.
+**A:** It omits keys whose values are `null` from the output. Without it, a `null` value is serialized as a bare key with no `=` (`{ page: null }` → `'page'`), while `undefined` is always dropped. Best practice is to always include it when building URLs from form or filter state.
 
 ### Q2: Why is an empty string `""` NOT skipped by default in `query-string`?
 
@@ -145,7 +145,7 @@ queryString.stringify(clean)
 
 ### Q3: What's the difference between a key with a `null` value and a key that's absent from the query string?
 
-**A:** Semantically they mean the same thing in REST — the param has no value. In query-string, both map to `undefined` on parse. The distinction only matters when you need to explicitly signal "this was cleared" vs "was never set" — in practice, treat both as "not active" and use `skipNull` to omit both from URLs.
+**A:** Semantically they mean the same thing in REST — the param has no value. In query-string, a bare key (`?cleared`) parses to `null`, and an absent key is simply missing (`undefined` when accessed); `?cleared=` parses to `''`. The distinction only matters when you need to explicitly signal "this was cleared" vs "was never set" — in practice, treat both as "not active" and use `skipNull` to omit both from URLs.
 
 ---
 
@@ -158,8 +158,8 @@ queryString.stringify(clean)
 const filters = { q: '', category: null, brand: undefined, sort: 'price', page: 1 }
 
 queryString.stringify(filters)
-// 'q=&page=1&sort=price'
-// ← q='' is included, may break API
+// 'category&page=1&q=&sort=price'
+// ← q='' and bare 'category' (from null) are included, may break API
 ```
 
 **Fix:**

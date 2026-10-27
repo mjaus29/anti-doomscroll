@@ -4,13 +4,19 @@
 
 ## T — TL;DR
 
-`Map` and `Set` are not JSON-serializable — using them in Zustand with `persist` requires custom serialization. For in-memory (non-persisted) stores, they work fine with Immer. For persisted stores, convert to arrays on write and back on read.
+`Map` and `Set` are not JSON-serializable — using them in Zustand with `persist` requires custom serialization. For in-memory (non-persisted) stores, they work with Immer once you call `enableMapSet()` a single time at app startup. For persisted stores, convert to arrays on write and back on read.
 
 ---
 
 ## K — Key Concepts
 
 ```tsx
+// ── One-time setup: Immer ships Map/Set support as an opt-in plugin ──────
+import { enableMapSet } from 'immer'
+enableMapSet()   // call once at app entry (e.g. main.tsx / store setup)
+// Without it, mutating a Set/Map draft throws:
+// "[Immer] The plugin for 'MapSet' has not been loaded into Immer…"
+
 // ── Set: selected IDs, active features, visited items ────────────────────
 interface SelectionStore {
   selectedIds: Set<number>
@@ -19,7 +25,7 @@ interface SelectionStore {
   isSelected: (id: number) => boolean
 }
 
-// In-memory only (no persist) → Immer handles Set natively
+// In-memory only (no persist) → Immer handles Set once enableMapSet() has run
 const useSelectionStore = create<SelectionStore>()(
   immer(set => ({
     selectedIds: new Set<number>(),
@@ -113,7 +119,7 @@ const useSimpleSelection = create<SimpleSelectionStore>()(
 ## W — Why It Matters
 
 - `Set` and `Map` are semantically correct for selection and lookup use cases — they express intent better than arrays with `.includes()` and `.find()`.
-- The Immer middleware handles `Set`/`Map` mutations on drafts natively — `.add()`, `.delete()`, `.set()`, `.get()` all work as expected.
+- The Immer middleware handles `Set`/`Map` mutations on drafts — `.add()`, `.delete()`, `.set()`, `.get()` all work as expected — but only after you call `enableMapSet()` once; Zustand's `immer` middleware does not enable it for you.
 - JSON serialization silently converts `Set` → `{}` (empty object) and `Map` → `{}` — always use custom `replacer`/`reviver` or prefer plain arrays/objects when persistence is needed.
 
 ---
@@ -122,7 +128,7 @@ const useSimpleSelection = create<SimpleSelectionStore>()(
 
 ### Q: Can you use `Map` and `Set` in Zustand stores?
 
-**A:** Yes, with caveats. In-memory stores (no `persist`) work fine, especially with Immer middleware — Immer knows how to produce immutable `Map` and `Set` updates from draft mutations. For persisted stores, `JSON.stringify` converts `Set` to `{}` and `Map` to `{}` — the data is silently lost. Fix: use the `replacer`/`reviver` options in `createJSONStorage` to serialize to `{ __type: 'Set', data: [...] }` and back. Alternatively, use plain arrays for selection (`.includes()`) and plain objects for maps — they serialize naturally and avoid the complexity. For large lookup tables where `O(1)` access matters, keep the `Map` in memory and convert to an object for persistence.
+**A:** Yes, with caveats. In-memory stores (no `persist`) work fine, especially with Immer middleware — Immer knows how to produce immutable `Map` and `Set` updates from draft mutations, provided you call `enableMapSet()` once at startup (the plugin is opt-in, otherwise Immer throws). For persisted stores, `JSON.stringify` converts `Set` to `{}` and `Map` to `{}` — the data is silently lost. Fix: use the `replacer`/`reviver` options in `createJSONStorage` to serialize to `{ __type: 'Set', data: [...] }` and back. Alternatively, use plain arrays for selection (`.includes()`) and plain objects for maps — they serialize naturally and avoid the complexity. For large lookup tables where `O(1)` access matters, keep the `Map` in memory and convert to an object for persistence.
 
 ---
 
@@ -172,6 +178,9 @@ Build `useMultiSelectStore` with `Set<string>` for selected item keys — in-mem
 ### Solution
 
 ```tsx
+import { enableMapSet } from 'immer'
+enableMapSet()   // required once, or Immer throws when drafting a Set
+
 interface MultiSelectStore {
   selected:     Set<string>
   toggleSelect: (key: string) => void

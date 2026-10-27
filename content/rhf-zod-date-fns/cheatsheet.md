@@ -1,6 +1,6 @@
 # RHF / Zod / date-fns Cheat Sheet
 
-The React Hook Form + Zod (v3 API) + date-fns (v4) facts worth memorizing, on one page: quick review after a lesson or a refresh before an interview.
+The React Hook Form + Zod 4 + @hookform/resolvers 5+ + date-fns (v4) facts worth memorizing, on one page: quick review after a lesson or a refresh before an interview.
 
 ## useForm, register, handleSubmit
 
@@ -85,15 +85,15 @@ Define the shape once: runtime validation and the TypeScript type both come from
 | Concept | Syntax | Note |
 |---|---|---|
 | Primitives | `z.string()`, `z.number()`, `z.boolean()`, `z.date()` | Chain rules: `.min()`, `.max()`, `.int()`, `.positive()` |
-| String formats | `z.string().email()`, `.url()`, `.uuid()`, `.regex(re)` | Second arg / `{ message }` = custom text |
-| Required message | `z.string({ required_error: 'Required' })` | `.min(1)` only catches `''`, not missing |
+| String formats | `z.email()`, `z.url()`, `z.uuid()`, `z.string().regex(re)` | Zod 3 was `z.string().email()`. Second arg / `{ error }` = custom text (v3: `{ message }`) |
+| Required message | `z.string({ error: iss => iss.input === undefined ? 'Required' : undefined })` | Zod 3: `required_error`. `.min(1)` only catches `''`, not missing |
 | Object | `z.object({ ... })` | Strips unknown keys by default |
-| Unknown keys | `.strict()` rejects, `.passthrough()` keeps, `.catchall(s)` | |
-| Array | `z.array(item).min(1).max(10)`, `.nonempty()` | `.element` = item schema |
-| Enum | `z.enum(['admin', 'user'])` | `.options` lists values; `z.nativeEnum(TsEnum)` |
+| Unknown keys | `z.strictObject({...})` rejects, `z.looseObject({...})` keeps, `.catchall(s)` | Zod 3: `.strict()` / `.passthrough()` |
+| Array | `z.array(item).min(1).max(10)`, `.nonempty()` | `.element` = item schema. `.nonempty()` = `.min(1)` (type stays `T[]`; use `z.tuple([T], T)` for `[T, ...T[]]`) |
+| Enum | `z.enum(['admin', 'user'])` | `.options` lists values; `z.enum(TsEnum)` for a TS enum (Zod 3: `z.nativeEnum`) |
 | Literal | `z.literal('business')` | One exact value |
 | Optional / null | `.optional()`, `.nullable()`, `.nullish()` | Changes the inferred type |
-| Default | `.default(value)` | Used when input is `undefined` |
+| Default | `.default(value)` | Used when input is `undefined`; must match the OUTPUT type (use `.prefault()` to parse the default) |
 | Type | `type User = z.infer<typeof UserSchema>` | Output type |
 | Input type | `z.input<typeof S>` | Before transforms/defaults |
 
@@ -104,7 +104,7 @@ const user = UserSchema.parse(data)        // throws ZodError
 
 const result = UserSchema.safeParse(data)  // never throws
 if (!result.success) {
-  return { errors: result.error.flatten().fieldErrors }
+  return { errors: z.flattenError(result.error).fieldErrors }   // Zod 3: error.flatten()
 }
 result.data   // typed
 // async refinements need parseAsync / safeParseAsync
@@ -114,12 +114,12 @@ result.data   // typed
 
 | Method | Effect |
 |---|---|
-| `Base.extend({ age: z.number() })` | Add / override fields |
-| `A.merge(B)` | Combine two object schemas |
+| `Base.extend({ age: z.number() })` | Add fields (overwriting keys on a refined schema needs `.safeExtend()`) |
+| `A.extend(B.shape)` | Combine two object schemas (Zod 3: `A.merge(B)`, now deprecated) |
 | `S.pick({ email: true })` / `S.omit({ id: true })` | Subset of keys |
 | `S.partial()` / `S.required()` | All optional / all required |
 
-Rule: compose **before** `.refine()`. A refined object is no longer a plain `ZodObject`, so `.extend()`/`.pick()` are not available on it.
+Rule: compose **before** `.refine()`. In Zod 4 `.pick()`, `.omit()`, `.partial()` and key-overwriting `.extend()` throw on a refined object (in Zod 3 they were missing entirely). A refined object is still fine as a discriminated-union member in Zod 4.
 
 Lessons: [Primitives](/group/rhf-zod-date-fns/day/03/02-primitive-schemas-string-number-boolean-date) · [Objects](/group/rhf-zod-date-fns/day/03/03-objects-z-object-shape-strict-passthrough) · [parse vs safeParse](/group/rhf-zod-date-fns/day/03/07-parse-vs-safeparse) · [Composition](/group/rhf-zod-date-fns/day/03/08-schema-composition-extend-merge-pick-omit-partial)
 
@@ -129,12 +129,13 @@ Lessons: [Primitives](/group/rhf-zod-date-fns/day/03/02-primitive-schemas-string
 import { zodResolver } from '@hookform/resolvers/zod'
 
 const Schema = z.object({
-  email: z.string().email('Invalid email'),
+  email: z.email('Invalid email'),
   age: z.coerce.number().int().min(18, 'Must be 18+'),
 })
-type FormValues = z.infer<typeof Schema>
+type FormInput  = z.input<typeof Schema>    // age: unknown (coerce input)
+type FormOutput = z.output<typeof Schema>   // age: number — same as z.infer
 
-const form = useForm<FormValues>({
+const form = useForm<FormInput, unknown, FormOutput>({
   resolver: zodResolver(Schema),
   defaultValues: { email: '', age: 18 },
 })
@@ -146,7 +147,7 @@ const form = useForm<FormValues>({
 | Coercion | HTML inputs give strings: `z.coerce.number()`, `z.coerce.date()` |
 | Transform | `.transform(fn)` runs **after** validation (trim, normalize) |
 | Preprocess | `z.preprocess(fn, schema)` runs **before** validation (`'' -> undefined`) |
-| Transforms + types | Input type differs from output: use `z.input` for form values |
+| Transforms + types | With coerce/default/transform, input ≠ output: `useForm<z.input<S>, unknown, z.output<S>>` (or omit the generic) |
 | Error paths | Issue `path: ['address', 'city']` maps to `errors.address.city` |
 | Array item paths | `path: ['items', 0, 'name']` maps to `errors.items[0].name` |
 | Array-level rule | `.min(1)` on the array maps to `errors.items.root` |
@@ -158,8 +159,8 @@ const Signup = z.object({
   password: z.string().min(8),
   confirm: z.string(),
 }).refine((d) => d.password === d.confirm, {
-  message: 'Passwords do not match',
-  path: ['confirm'],   // without path, error is not on any field
+  error: 'Passwords do not match',
+  path: ['confirm'],   // without path, the error lands under errors[''] (not errors.root, not a field)
 })
 ```
 
@@ -167,7 +168,7 @@ const Signup = z.object({
 .superRefine((d, ctx) => {
   if (!isBefore(d.start, d.end)) {
     ctx.addIssue({
-      code: z.ZodIssueCode.custom,
+      code: 'custom',
       message: 'End must be after start',
       path: ['end'],
     })
@@ -177,9 +178,9 @@ const Signup = z.object({
 
 | Use | Pick |
 |---|---|
-| One rule, one message | `.refine(fn, { message, path })` |
+| One rule, one message | `.refine(fn, { error, path })` |
 | Several issues, several paths, conditional logic | `.superRefine((val, ctx) => ...)` |
-| Stop after a critical issue (inside superRefine) | `return` right after `ctx.addIssue` (lessons use `return z.NEVER`) |
+| Stop after a critical issue (inside superRefine) | `return` ends your callback; `ctx.addIssue({ ..., fatal: true })` also stops later chained checks (`z.NEVER` alone does not abort) |
 
 **Single source of truth:** the same schema validates the form (`zodResolver`), the API body (`safeParse`), and types the submit handler.
 
@@ -269,7 +270,7 @@ Pure functions, never mutate the input `Date`, import only what you use: `import
 | Add / subtract | `addDays`, `addMonths`, `subWeeks`, `add(d, { months: 1, days: 3 })` | `addMonths(Jan 31, 1)` = Feb 28 |
 | Compare | `isBefore`, `isAfter`, `isEqual`, `isPast`, `isFuture`, `isToday` | Never `===` on Dates |
 | Difference | `differenceInDays(end, start)` | |
-| Interval | `{ start, end }` + `eachDayOfInterval`, `intervalToDuration` | Guard `start <= end` first |
+| Interval | `{ start, end }` + `eachDayOfInterval`, `intervalToDuration` | `start > end` returns days in reverse order (no throw); `intervalToDuration` omits zero units |
 | Relative | `formatDistance(d, base, { addSuffix: true })` | `3 days ago` |
 | Contextual | `formatRelative(d, base)` | `yesterday at 2:30 PM` |
 
@@ -297,7 +298,7 @@ Lessons: [Fundamentals](/group/rhf-zod-date-fns/day/07/01-date-fns-fundamentals-
 | Create vs edit | Derive the edit schema from create (`.partial()`, `.extend({ id })`) |
 | Edit hydration | `reset(apiToForm(data))` when data loads, not many `setValue` calls |
 | Re-render control | Read only needed `formState` keys; `useWatch` in leaf components |
-| Discriminated union + refine | Do not refine union members; refine/superRefine the union itself |
+| Discriminated union + refine | Zod 4: refined members are fine (Zod 3: not allowed); `superRefine` on the union keeps cross-branch rules in one place |
 | UTC midnight bug | `new Date('2025-06-15')` is UTC midnight; use `parseISO` for local |
 
 ### Accessibility checklist
@@ -335,8 +336,8 @@ Lessons: [Advanced refine](/group/rhf-zod-date-fns/day/08/01-advanced-refine-and
 | `watch()` (all fields) at the top of a large form | `useWatch({ name })` in the child that needs it |
 | `z.number()` on an HTML input (always a string) | `z.coerce.number()` or `valueAsNumber` |
 | `z.coerce.boolean()` on string `'false'` (becomes `true`) | Checkbox via `register` already gives a boolean: use `z.boolean()` |
-| `.refine()` without `path` on a cross-field rule | Add `path: ['confirm']` so the error shows on the field |
-| `.extend()` after `.refine()` | Compose first, refine last |
+| `.refine()` without `path` on a cross-field rule | Add `path: ['confirm']` so the error shows on the field (a pathless error is stored under `errors['']`; use `path: ['root']` for a form-level message) |
+| `.pick()` / `.omit()` / `.partial()` / key-overwriting `.extend()` after `.refine()` | Compose first, refine last (or `.safeExtend()`) |
 | Rules on `register` and a `zodResolver` | Keep all rules in the schema |
 | `setValue` without `shouldDirty: true` | Pass options or `isDirty` stays false |
 | `trigger()` not awaited | `if (await trigger('step1')) next()` |

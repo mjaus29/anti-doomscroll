@@ -162,14 +162,14 @@ import { parseISO, format, formatISO,
 // ─── Schema: dates coerced from yyyy-MM-dd strings
 const BookingSchema = z.object({
   guestName: z.string().min(2, 'Required'),
-  checkIn:   z.coerce.date({ required_error: 'Check-in required' }),
-  checkOut:  z.coerce.date({ required_error: 'Check-out required' })
+  checkIn:   z.coerce.date({ error: 'Check-in required' }),
+  checkOut:  z.coerce.date({ error: 'Check-out required' })
 })
 .refine(d => isFuture(d.checkIn), {
-  message: 'Check-in must be in the future', path: ['checkIn']
+  error: 'Check-in must be in the future', path: ['checkIn']
 })
 .refine(d => isAfter(d.checkOut, d.checkIn), {
-  message: 'Check-out must be after check-in', path: ['checkOut']
+  error: 'Check-out must be after check-in', path: ['checkOut']
 })
 
 type BookingForm = z.infer<typeof BookingSchema>
@@ -202,7 +202,7 @@ function dataToPayload(data: BookingForm) {
 
 export function EditBookingForm() {
   const { register, handleSubmit, reset, watch,
-          formState: { errors, isDirty, isSubmitting } } = useForm<BookingForm>({
+          formState: { errors, isDirty, isSubmitting } } = useForm<z.input<typeof BookingSchema>, unknown, z.output<typeof BookingSchema>>({
     resolver:      zodResolver(BookingSchema),
     defaultValues: { guestName: '', checkIn: undefined, checkOut: undefined }
   })
@@ -361,7 +361,7 @@ COMMON BUGS
   format(d, 'YYYY') → Week year, not calendar year (use yyyy)
   new Date('2025-06-15') → UTC midnight bug (use parseISO)
   Raw ISO datetime as input defaultValue → blank field (format first)
-  eachDayOfInterval end < start → RangeError (guard order)
+  eachDayOfInterval end < start → days returned in reverse order, no error (normalise with min/max)
   compareDate === → always false on Date objects (use isEqual)
   formatDistanceToNow in SSR → hydration mismatch (use 'use client')
 ```

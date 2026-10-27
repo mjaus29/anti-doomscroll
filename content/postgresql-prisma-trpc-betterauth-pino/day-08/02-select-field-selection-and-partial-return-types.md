@@ -80,7 +80,7 @@ const safeUser = await prisma.user.findUnique({
 });
 
 // ── Prisma.validator — reusable select shape ───────────────────────────────
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 
 // Define a reusable select object
 const userPublicSelect = {
@@ -199,7 +199,7 @@ Using a `Product` model with fields `id`, `sku`, `name`, `price`, `costPrice`, `
 
 ```typescript
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 
 // ── (1) ProductCard — minimal for listing page ────────────────────────────
 const productCardSelect = {

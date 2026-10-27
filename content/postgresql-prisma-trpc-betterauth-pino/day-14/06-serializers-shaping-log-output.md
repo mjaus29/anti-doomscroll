@@ -97,7 +97,7 @@ logger.info({ user }, 'User authenticated')
 ```typescript
 // ── Serializer for Prisma Decimal ──────────────────────────────────────────
 // Prisma.Decimal is not JSON-serializable by default
-import { Prisma } from '@prisma/client'
+import { Prisma } from '@/generated/prisma/client'
 
 const logger = pino({
   serializers: {

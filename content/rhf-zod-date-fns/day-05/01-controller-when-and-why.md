@@ -147,7 +147,7 @@ function StarRating({ value, onChange, error }: {
 
 const ReviewSchema = z.object({
   comment: z.string().min(10, 'Min 10 characters'),
-  rating:  z.number({ required_error: 'Please rate' }).min(1, 'Please rate')
+  rating:  z.number({ error: 'Please rate' }).min(1, 'Please rate')
 })
 type ReviewForm = z.infer<typeof ReviewSchema>
 

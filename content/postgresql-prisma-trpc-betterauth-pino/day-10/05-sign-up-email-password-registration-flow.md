@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-Sign-up with BetterAuth creates a `user` row and an `account` row (with bcrypt-hashed password) in one operation. On the client, call `authClient.signUp.email({ name, email, password })`. On success, BetterAuth automatically signs the user in and sets the session cookie. The server validates email uniqueness, hashes the password (bcrypt, cost 10 by default), and returns the user object.
+Sign-up with BetterAuth creates a `user` row and an `account` row (with scrypt-hashed password) in one operation. On the client, call `authClient.signUp.email({ name, email, password })`. On success, BetterAuth automatically signs the user in and sets the session cookie. The server validates email uniqueness, hashes the password (bcrypt, cost 10 by default), and returns the user object.
 
 ---
 
@@ -100,13 +100,13 @@ export function SignUpForm() {
   1. Validate input (email format, password length from config)
   2. Check user uniqueness: SELECT * FROM user WHERE email = $1
      → If exists: return 422 { code: 'USER_ALREADY_EXISTS' }
-  3. Hash password: bcrypt(password, costFactor=10)
+  3. Hash password: scrypt(password, salt)  (Better Auth's default hasher)
   4. Create user row:
      INSERT INTO user (id, name, email, email_verified, role, username, ...) VALUES (...)
   5. Create account row (email/password provider):
      INSERT INTO account (id, account_id, provider_id, user_id, password) VALUES (...)
      account.providerId = 'credential'
-     account.password   = bcrypt hash
+     account.password   = scrypt hash (salt:key)
   6. Create session:
      INSERT INTO session (id, token, user_id, expires_at, ...) VALUES (...)
   7. Set session cookie in response
@@ -147,7 +147,7 @@ const signUpSchema = z.object({
 
 ### Q: What happens server-side when a user submits a sign-up form to BetterAuth?
 
-**A:** BetterAuth receives a `POST /api/auth/sign-up/email` with `{ name, email, password }`. It first validates the input against the configured constraints (min/max password length, email format). Then it queries the database for an existing user with that email — returning a `USER_ALREADY_EXISTS` error if found. On success: it hashes the password using bcrypt with the configured cost factor (default 10), creates a `user` row, and creates an `account` row with `providerId: 'credential'` and the bcrypt hash stored in the `password` column. It then creates a `session` row with a new random token and sets the session cookie in the HTTP response. The response body contains the user object (without password hash). All database writes happen within the same operation — if any step fails, no partial data is committed.
+**A:** BetterAuth receives a `POST /api/auth/sign-up/email` with `{ name, email, password }`. It first validates the input against the configured constraints (min/max password length, email format). Then it queries the database for an existing user with that email — returning a `USER_ALREADY_EXISTS` error if found. On success: it hashes the password using scrypt (Better Auth's default; configurable via `emailAndPassword.password.hash`), creates a `user` row, and creates an `account` row with `providerId: 'credential'` and the scrypt hash stored in the `password` column. It then creates a `session` row with a new random token and sets the session cookie in the HTTP response. The response body contains the user object (without password hash). All database writes happen within the same operation — if any step fails, no partial data is committed.
 
 ---
 

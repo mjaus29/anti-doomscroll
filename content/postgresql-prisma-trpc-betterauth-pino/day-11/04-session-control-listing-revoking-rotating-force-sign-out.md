@@ -61,13 +61,13 @@ async function adminRevokeSession(sessionId: string, userId: string): Promise<vo
 // change the token itself on every request (that would break multi-tab)
 
 // For maximum security (e.g. banking app), rotate token on each request:
-// This is NOT built into BetterAuth by default — implement via middleware:
+// This is NOT built into BetterAuth by default — implement via proxy.ts (middleware.ts before Next.js 16):
 import { NextRequest, NextResponse } from 'next/server'
 import { auth }                      from '@/lib/auth'
 import { prisma }                    from '@/lib/prisma'
 import { randomBytes }               from 'crypto'
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const session = await auth.api.getSession({ headers: req.headers })
 
   if (!session) return NextResponse.next()

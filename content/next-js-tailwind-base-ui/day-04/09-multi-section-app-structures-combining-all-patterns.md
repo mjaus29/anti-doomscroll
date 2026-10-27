@@ -361,7 +361,7 @@ Route: /admin/users
 
 ### Q2: How do you prevent someone from accessing `/app/other-company/projects`?
 
-**A:** At the workspace layout level (`[workspaceId]/layout.tsx`), after confirming the user is authenticated, fetch the workspace AND verify the user has access to it. If `getWorkspace(user.id, workspaceId)` returns null (no access), call `notFound()`. This is a server-side check that runs before any page content renders. Middleware can add a first layer of auth, but the workspace-level authorization must happen in the layout where you know both the user and the workspace.
+**A:** At the workspace layout level (`[workspaceId]/layout.tsx`), after confirming the user is authenticated, fetch the workspace AND verify the user has access to it. If `getWorkspace(user.id, workspaceId)` returns null (no access), call `notFound()`. This is a server-side check that runs before any page content renders. Proxy can add a first layer of auth, but the workspace-level authorization must happen in the layout where you know both the user and the workspace.
 
 ### Q3: How do you share the user object across all authenticated sections without re-fetching?
 
