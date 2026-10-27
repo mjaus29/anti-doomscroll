@@ -913,7 +913,7 @@ export function ChallengeAssistant({
 
         <div className="mt-6 rounded-xl border border-[var(--border)] bg-black/20 p-4">
           <div className="markdown-body">
-            <MarkdownRenderer content={challenge.challengeMarkdown} />
+            <MarkdownRenderer content={challenge.challengeMarkdown} allowHtml />
           </div>
         </div>
 
@@ -1048,6 +1048,7 @@ export function ChallengeAssistant({
                   <div className="markdown-body [&_pre]:mb-0 [&_hr]:hidden">
                     <MarkdownRenderer
                       content={extractedSolutionCode.leadingMarkdown}
+                      allowHtml
                     />
                   </div>
                 ) : null}
@@ -1065,13 +1066,14 @@ export function ChallengeAssistant({
                   <div className="markdown-body [&_pre]:mb-0 [&_hr]:hidden">
                     <MarkdownRenderer
                       content={extractedSolutionCode.trailingMarkdown}
+                      allowHtml
                     />
                   </div>
                 ) : null}
               </div>
             ) : (
               <div className="markdown-body mt-3 max-h-72 overflow-auto p-0 [&_pre]:mb-0 [&_hr]:hidden">
-                <MarkdownRenderer content={challenge.solutionMarkdown} />
+                <MarkdownRenderer content={challenge.solutionMarkdown} allowHtml />
               </div>
             )}
           </details>

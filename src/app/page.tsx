@@ -28,6 +28,12 @@ export default function Home() {
           >
             Open Challenge Lab
           </Link>
+          <Link
+            href="/cheatsheets"
+            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text)] transition-colors hover:border-[var(--accent-dim)] hover:text-white"
+          >
+            Cheat Sheets
+          </Link>
         </div>
       </header>
 

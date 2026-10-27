@@ -430,6 +430,34 @@ export function getGroup(groupId: string): TechGroup | undefined {
 	return getAllGroups().find((group) => group.id === groupId);
 }
 
+export interface GroupCheatsheet {
+	title: string;
+	content: string;
+}
+
+const cheatsheetCache = new Map<string, GroupCheatsheet | null>();
+
+// Each group may ship a single `cheatsheet.md` next to its `index.md`.
+export function getCheatsheet(groupId: string): GroupCheatsheet | null {
+	// Only known group folders, so a route param can never escape CONTENT_ROOT.
+	if (!getGroup(groupId)) return null;
+
+	if (process.env.NODE_ENV === 'production' && cheatsheetCache.has(groupId)) {
+		return cheatsheetCache.get(groupId) ?? null;
+	}
+
+	const filePath = path.join(CONTENT_ROOT, groupId, 'cheatsheet.md');
+	const cheatsheet = fs.existsSync(filePath)
+		? (() => {
+				const content = fs.readFileSync(filePath, 'utf-8');
+				return { title: extractTitle(content), content };
+			})()
+		: null;
+
+	cheatsheetCache.set(groupId, cheatsheet);
+	return cheatsheet;
+}
+
 export function getAllDays(groupId?: string): Day[] {
 	if (groupId) return getGroup(groupId)?.days ?? [];
 	return getAllGroups()[0]?.days ?? [];

@@ -1,5 +1,6 @@
 import { SwipeNavigator } from "@/components/SwipeNavigator";
-import { getAllGroups, getGroup } from "@/lib/content";
+import { CHALLENGE_LAB_GROUP_IDS } from "@/lib/challenge-bank";
+import { getAllGroups, getCheatsheet, getGroup } from "@/lib/content";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -28,6 +29,7 @@ export default async function GroupPage({ params }: Readonly<PageProps>) {
 
   if (!group) notFound();
 
+  const hasCheatsheet = Boolean(getCheatsheet(group.id));
   const groups = getAllGroups();
   const groupIndex = groups.findIndex((g) => g.id === group.id);
   const prevGroup = groupIndex > 0 ? groups[groupIndex - 1] : null;
@@ -56,13 +58,23 @@ export default async function GroupPage({ params }: Readonly<PageProps>) {
           <p className="mt-3 max-w-3xl text-sm sm:text-base text-(--text-muted)">
             {group.description}
           </p>
-          <div className="mt-4">
-            <Link
-              href={`/challenges?groups=${group.id}`}
-              className="inline-flex items-center gap-2 rounded-lg border border-(--border) px-4 py-2 text-sm font-medium text-(--text) transition-colors hover:border-(--accent-dim) hover:text-white"
-            >
-              Practice This Group In Challenge Lab
-            </Link>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            {CHALLENGE_LAB_GROUP_IDS.includes(group.id) ? (
+              <Link
+                href={`/challenges?groups=${group.id}`}
+                className="inline-flex items-center gap-2 rounded-lg border border-(--border) px-4 py-2 text-sm font-medium text-(--text) transition-colors hover:border-(--accent-dim) hover:text-white"
+              >
+                Practice This Group In Challenge Lab
+              </Link>
+            ) : null}
+            {hasCheatsheet ? (
+              <Link
+                href={`/cheatsheets/${group.id}`}
+                className="inline-flex items-center gap-2 rounded-lg border border-(--border) px-4 py-2 text-sm font-medium text-(--text) transition-colors hover:border-(--accent-dim) hover:text-white"
+              >
+                Cheat Sheet
+              </Link>
+            ) : null}
           </div>
         </header>
 

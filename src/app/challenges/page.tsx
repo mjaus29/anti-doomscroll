@@ -1,11 +1,12 @@
 import { ChallengeLab } from "@/components/ChallengeLab";
+import { CHALLENGE_LAB_GROUP_IDS } from "@/lib/challenge-bank";
 import { getAllGroups } from "@/lib/content";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Challenge Lab | Anti-Doom Scroll",
   description:
-    "Generate group-scoped frontend interview challenges and review your solutions in-browser.",
+    "Practise the most common frontend interview questions with runnable tests, step-by-step hints and AI review.",
 };
 
 interface PageProps {
@@ -29,7 +30,8 @@ export default async function ChallengesPage({
   searchParams,
 }: Readonly<PageProps>) {
   const params = await searchParams;
-  const groups = getAllGroups();
+  const labGroupIds = new Set(CHALLENGE_LAB_GROUP_IDS);
+  const groups = getAllGroups().filter((group) => labGroupIds.has(group.id));
   const allowedGroupIds = new Set(groups.map((group) => group.id));
   const initialSelectedGroupIds = normalizeGroupParam(params.groups).filter(
     (groupId) => allowedGroupIds.has(groupId)

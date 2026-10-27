@@ -7,6 +7,18 @@ export type ChallengeProgression = "foundation" | "core" | "stretch";
 export type ChallengeTrack = "javascript" | "algorithmic" | "ui";
 export type ChallengeStarterMode = "scaffolded" | "shell" | "scratch";
 export type ChallengeUiScope = "single-component" | "multi-component";
+export type ChallengeDifficulty = "easy" | "medium" | "hard";
+
+/**
+ * One runnable check for a logic challenge. `code` is a JavaScript function
+ * body run in the browser test sandbox with `solution` (the learner's module
+ * exports) and the helpers `expectEqual`, `expectTrue`, `sleep` and `spy` in
+ * scope. It may use `await`.
+ */
+export interface ChallengeTestCase {
+  name: string;
+  code: string;
+}
 
 export interface ChallengeGenerationPlan {
   track: ChallengeTrack;
@@ -60,6 +72,16 @@ export interface GeneratedChallenge {
   estimatedMinutes: number;
   selectedSubtopics: ChallengeSubtopic[];
   generatedAt: string;
+  // Question-bank fields. Optional so challenges saved before the bank existed
+  // still load.
+  questionId?: string;
+  difficulty?: ChallengeDifficulty;
+  pattern?: string;
+  lessonHref?: string | null;
+  hints?: string[];
+  approach?: string;
+  complexity?: string;
+  testCases?: ChallengeTestCase[];
 }
 
 export interface ChallengeReviewResult {
@@ -77,6 +99,10 @@ export interface ChallengeGenerationRequest {
   topicKeys?: string[];
   createdChallengeRefs?: string[];
   passedChallengeCount?: number;
+  difficulty?: ChallengeDifficulty;
+  questionId?: string;
+  seenQuestionIds?: string[];
+  passedQuestionIds?: string[];
 }
 
 export interface ChallengeReviewRequest {
@@ -222,8 +248,73 @@ export function isGeneratedChallenge(
     typeof candidate.estimatedMinutes === "number" &&
     Array.isArray(candidate.selectedSubtopics) &&
     candidate.selectedSubtopics.every(isChallengeSubtopic) &&
-    typeof candidate.generatedAt === "string"
+    typeof candidate.generatedAt === "string" &&
+    (candidate.questionId === undefined ||
+      typeof candidate.questionId === "string") &&
+    (candidate.difficulty === undefined ||
+      isValidChallengeDifficulty(candidate.difficulty)) &&
+    (candidate.hints === undefined || isStringArray(candidate.hints)) &&
+    (candidate.testCases === undefined ||
+      (Array.isArray(candidate.testCases) &&
+        candidate.testCases.every(isChallengeTestCase)))
   );
+}
+
+export function isValidChallengeDifficulty(
+  value: string | undefined
+): value is ChallengeDifficulty {
+  return value === "easy" || value === "medium" || value === "hard";
+}
+
+export function isChallengeTestCase(value: unknown): value is ChallengeTestCase {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Partial<ChallengeTestCase>;
+  return typeof candidate.name === "string" && typeof candidate.code === "string";
+}
+
+export function getDifficultyForProgression(
+  progressionLabel: ChallengeProgression
+): ChallengeDifficulty {
+  if (progressionLabel === "foundation") return "easy";
+  if (progressionLabel === "core") return "medium";
+  return "hard";
+}
+
+export function getLearnerLevelForDifficulty(
+  difficulty: ChallengeDifficulty
+): LearnerLevel {
+  if (difficulty === "easy") return "beginner";
+  if (difficulty === "medium") return "intermediate";
+  return "advanced";
+}
+
+/**
+ * Starter shape for a bank question. Logic challenges always get a function
+ * signature so tests can call it; only easy UI challenges get a scaffold.
+ */
+export function createPlanForQuestion({
+  track,
+  difficulty,
+}: {
+  track: ChallengeTrack;
+  difficulty: ChallengeDifficulty;
+}): ChallengeGenerationPlan {
+  if (track === "ui") {
+    return {
+      track,
+      starterMode: difficulty === "easy" ? "scaffolded" : "shell",
+      uiScope: difficulty === "hard" ? "multi-component" : "single-component",
+    };
+  }
+
+  return {
+    track,
+    starterMode: difficulty === "easy" ? "scaffolded" : "shell",
+    uiScope: null,
+  };
 }
 
 export function isChallengeReviewResult(
@@ -277,43 +368,6 @@ export function getProgressionForChallengeCount(count: number): {
   };
 }
 
-export function createChallengeGenerationPlan({
-  createdChallengeCount,
-  progressionLabel,
-  uiTrackEnabled,
-}: {
-  createdChallengeCount: number;
-  progressionLabel: ChallengeProgression;
-  uiTrackEnabled: boolean;
-}): ChallengeGenerationPlan {
-  const trackSequence: ChallengeTrack[] = uiTrackEnabled
-    ? ["javascript", "ui", "algorithmic"]
-    : ["javascript", "algorithmic"];
-  const track = trackSequence[createdChallengeCount % trackSequence.length];
-
-  if (progressionLabel === "foundation") {
-    return {
-      track,
-      starterMode: "scaffolded",
-      uiScope: track === "ui" ? "single-component" : null,
-    };
-  }
-
-  if (progressionLabel === "core") {
-    return {
-      track,
-      starterMode: track === "algorithmic" ? "scratch" : "shell",
-      uiScope: track === "ui" ? "multi-component" : null,
-    };
-  }
-
-  return {
-    track,
-    starterMode: "scratch",
-    uiScope: track === "ui" ? "multi-component" : null,
-  };
-}
-
 export function getChallengeTrackLabel(
   track: ChallengeTrack | undefined,
   challengeKind?: ChallengeKind
@@ -331,38 +385,6 @@ export function getChallengeTrackLabel(
   }
 
   return challengeKind === "ui-react-tailwind" ? "UI Build" : "Logic";
-}
-
-export function getChallengeStarterModeLabel(
-  starterMode: ChallengeStarterMode | undefined
-): string | null {
-  if (starterMode === "scaffolded") {
-    return "Scaffolded start";
-  }
-
-  if (starterMode === "shell") {
-    return "Minimal shell";
-  }
-
-  if (starterMode === "scratch") {
-    return "Start from scratch";
-  }
-
-  return null;
-}
-
-export function getChallengeUiScopeLabel(
-  uiScope: ChallengeUiScope | null | undefined
-): string | null {
-  if (uiScope === "single-component") {
-    return "Single component";
-  }
-
-  if (uiScope === "multi-component") {
-    return "Multi-component";
-  }
-
-  return null;
 }
 
 export function createChallengeReference({

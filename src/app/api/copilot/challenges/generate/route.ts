@@ -1,12 +1,22 @@
 import {
+  findBankQuestion,
+  getLessonHref,
+  pickNextQuestion,
+  type BankQuestion,
+} from "@/lib/challenge-bank";
+import {
   clampEstimatedMinutes,
-  createChallengeGenerationPlan,
+  createPlanForQuestion,
+  getDifficultyForProgression,
+  getLearnerLevelForDifficulty,
   getProgressionForChallengeCount,
+  isChallengeTestCase,
+  isValidChallengeDifficulty,
   isValidChallengeLanguage,
-  isValidLearnerLevel,
+  type ChallengeDifficulty,
   type ChallengeGenerationPlan,
   type ChallengeGenerationRequest,
-  type ChallengeSubtopic,
+  type ChallengeTestCase,
   type ChallengeTrack,
   type GeneratedChallenge,
 } from "@/lib/challenge-lab";
@@ -21,7 +31,8 @@ import { randomUUID } from "node:crypto";
 
 export const runtime = "nodejs";
 
-const MAX_PREVIOUS_CHALLENGES = 12;
+const MAX_ID_LIST = 200;
+const MAX_TEST_CASES = 10;
 const GENERATION_TIMEOUT_MS = 90000;
 
 function extractJsonPayload(value: string): unknown {
@@ -48,33 +59,6 @@ function toGenerateErrorMessage(message: string): string {
   );
 }
 
-function isUiCapableGroup(value: string): boolean {
-  return /(react|tailwind|next\.js|next js|base ui|component|tsx|jsx|ui)/i.test(
-    value
-  );
-}
-function buildGroupContext({
-  groupLabel,
-  groupTitle,
-  groupDescription,
-  dayCount,
-  topicCount,
-}: {
-  groupLabel: string;
-  groupTitle: string;
-  groupDescription: string;
-  dayCount: number;
-  topicCount: number;
-}): string {
-  return [
-    `Group: ${groupLabel} — ${groupTitle}`,
-    `Description: ${groupDescription}`,
-    `Curriculum size: ${dayCount} days, ${topicCount} topics.`,
-    "Treat this as a broad tech-group brief, not a list of lesson subtopics.",
-    "Generate from the most common interview questions and coding challenges associated with this tech group in general.",
-    "Do not anchor the challenge to specific day titles, lesson excerpts, or embedded curriculum exercises.",
-  ].join("\n\n");
-}
 
 function buildStarterCode(plan: ChallengeGenerationPlan): string {
   if (plan.starterMode === "scratch") {
@@ -195,176 +179,127 @@ function defaultEstimatedMinutes(
   return 40;
 }
 
-function buildTrackInstructions({
-  plan,
-  progressionLabel,
-}: {
-  plan: ChallengeGenerationPlan;
-  progressionLabel: ReturnType<
-    typeof getProgressionForChallengeCount
-  >["progressionLabel"];
-}): string {
-  if (plan.track === "javascript") {
-    const difficulty =
-      progressionLabel === "foundation"
-        ? "Focus on simple JavaScript or TypeScript logic common in frontend interviews: syntax fluency, closures, arrays, strings, objects, parsing, validation, or small utility helpers."
-        : progressionLabel === "core"
-          ? "Use a broader JavaScript or TypeScript logic problem common in frontend interviews: async control flow, caching, event helpers, state transforms, or data normalization."
-          : "Use an advanced JavaScript or TypeScript logic problem common in frontend interviews with sharper edge cases, cleaner abstractions, or more careful async or state handling.";
+
+function getTestCases(candidate: Record<string, unknown>): ChallengeTestCase[] {
+  const value = candidate.testCases;
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter(isChallengeTestCase)
+    .map((test) => ({ name: test.name.trim(), code: test.code.trim() }))
+    .filter((test) => test.name && test.code)
+    .slice(0, MAX_TEST_CASES);
+}
+
+function toIdSet(value: unknown): Set<string> {
+  if (!Array.isArray(value)) {
+    return new Set();
+  }
+
+  return new Set(
+    value
+      .filter((item): item is string => typeof item === "string")
+      .slice(0, MAX_ID_LIST)
+  );
+}
+
+function buildTrackInstructions(
+  plan: ChallengeGenerationPlan,
+  question: BankQuestion
+): string {
+  if (plan.track === "ui") {
+    const scope =
+      plan.uiScope === "single-component"
+        ? "Keep it to one component with a small set of states and interactions."
+        : "Combine a few coordinated UI pieces with shared state.";
 
     return [
-      "Required track: JavaScript coding.",
-      'Set "challengeKind" to "logic" and set "previewCode" to null.',
-      difficulty,
-      "Do not turn this into a LeetCode-style algorithm puzzle or a UI build.",
+      "Track: UI build (React + Tailwind, single file).",
+      'Set "challengeKind" to "ui-react-tailwind" and "language" to "tsx".',
+      scope,
+      "Both starterCode and referenceSolution are one file with `export default function ChallengeSolution()` and only `react` imports.",
+      "Fake any data or API with in-file arrays and setTimeout promises. No external libraries, icons or images.",
+      "Use dark-theme Tailwind classes (dark surfaces, light text, accessible contrast).",
+      'Set "previewCode" to a working TSX component that renders the finished UI.',
+      'Set "testCases" to an empty array; UI is checked by preview and review.',
+      'Set "complexity" to an empty string.',
     ].join("\n");
   }
 
-  if (plan.track === "algorithmic") {
-    const difficulty =
-      progressionLabel === "foundation"
-        ? "Make this a LeetCode-style easy problem using arrays, strings, maps, sets, counters, or simple iteration."
-        : progressionLabel === "core"
-          ? "Make this a LeetCode-style medium problem using patterns such as two-pointers, stacks, queues, intervals, hash maps, or binary search."
-          : "Make this a harder interview algorithm problem that is still realistic for one file, with careful invariants and edge-case handling.";
-
-    return [
-      "Required track: Algorithmic coding.",
-      'Set "challengeKind" to "logic" and set "previewCode" to null.',
-      difficulty,
-      "Use clear inputs, outputs, and edge cases. Keep it implementation-focused.",
-    ].join("\n");
-  }
-
-  const uiScopeInstruction =
-    plan.uiScope === "single-component"
-      ? "The UI scope must stay centered on one component with a small set of states and interactions."
-      : "The UI scope must combine multiple coordinated UI pieces or sections with shared state or interactions.";
+  const kind =
+    plan.track === "algorithmic"
+      ? "Track: algorithm problem (LeetCode-style)."
+      : "Track: JavaScript/TypeScript utility (frontend interview style).";
 
   return [
-    "Required track: UI coding.",
-    'Set "challengeKind" to "ui-react-tailwind" and set "language" to "tsx".',
-    uiScopeInstruction,
-    "Generate dark theme Tailwind classes directly in the returned code.",
-    "The UI itself must already be dark-themed with dark surfaces, light text, muted borders, and accessible contrast for controls.",
-    'Set "previewCode" to a working TSX component that renders the expected finished UI.',
+    kind,
+    'Set "challengeKind" to "logic", "language" to "ts", and "previewCode" to null.',
+    "Decide one exported function or class name and signature. State it in a '## Function signature' section of the instructions.",
+    "starterCode and referenceSolution must both export exactly that name (`export function ...` or `export class ...`). No imports, no DOM, no global fetch.",
+    question.track === "javascript"
+      ? "If the task involves HTTP, accept the transport as a parameter (e.g. `fetcher: (url: string) => Promise<Response-like>`) so tests can pass a fake."
+      : "Use plain TypeScript inputs and outputs (arrays, strings, numbers, objects). For linked lists or trees, export a small node class and build inputs from arrays inside the tests.",
+    "testCases: 5 to 8 checks, covering the examples plus edge cases (empty input, one item, duplicates, large values, async timing where relevant).",
+    "Each test is { \"name\": string, \"code\": string } where code is a JavaScript function body (not TypeScript) that may use await. In scope: `solution` (the module exports, e.g. `solution.twoSum`), `expectEqual(actual, expected)` (deep equality), `expectTrue(value, message)`, `sleep(ms)`, and `spy()` (returns a function with `.calls` array).",
+    "Keep timers under 300ms total per test. Every test must pass against your referenceSolution.",
+    'Set "complexity" to "Time O(...) · Space O(...)" for the reference solution.',
   ].join("\n");
 }
 
-function buildStarterModeInstructions(plan: ChallengeGenerationPlan): string {
-  if (plan.starterMode === "scratch") {
-    return 'Set "starterCode" to an empty string so the learner starts from scratch.';
+function buildStarterInstructions(plan: ChallengeGenerationPlan): string {
+  if (plan.starterMode === "scaffolded") {
+    return "starterCode: the exported signature plus short TODO comments for each step. No implementation.";
   }
 
-  if (plan.starterMode === "shell") {
-    return [
-      "Use a minimal starter shell.",
-      "For logic challenges, keep only the exported function signature or the smallest valid shell.",
-      "For UI challenges, keep only the smallest valid exported component shell with almost no implementation.",
-    ].join("\n");
-  }
-
-  return [
-    "Use a scaffolded starter.",
-    "Include a helpful starter structure, TODOs, or placeholders, but do not include the finished implementation.",
-  ].join("\n");
+  return "starterCode: only the exported signature (for UI, the smallest valid exported component). No implementation.";
 }
 
 function buildPrompt({
-  learnerLevel,
-  groupContext,
-  groupLabel,
+  question,
   groupTitle,
-  createdChallengeRefs,
-  progressionLabel,
   plan,
 }: {
-  learnerLevel: NonNullable<ChallengeGenerationRequest["learnerLevel"]>;
-  groupContext: string;
-  groupLabel: string;
+  question: BankQuestion;
   groupTitle: string;
-  createdChallengeRefs: string[];
-  progressionLabel: ReturnType<
-    typeof getProgressionForChallengeCount
-  >["progressionLabel"];
   plan: ChallengeGenerationPlan;
-}) {
-  const progressionInstructions: Record<
-    NonNullable<ChallengeGenerationRequest["learnerLevel"]>,
-    string
-  > = {
-    beginner:
-      "Start with a basic version of a common frontend interview problem. Keep the surface area small and the required behavior focused.",
-    intermediate:
-      "Move to a more complete interview challenge with a few meaningful behaviors, clearer state transitions, and at least one realistic edge case.",
-    advanced:
-      "Use a tougher interview variant that still fits in one file, but expect broader behavior, stronger edge-case handling, or cleaner abstractions.",
-  };
-
+}): string {
   return [
-    "Create one fresh frontend interview challenge for a study app.",
-    "Return JSON only with no prose before or after the object.",
-    `Scope the challenge to this study group: ${groupLabel} — ${groupTitle}.`,
-    "The challenge should feel like a common frontend interview prompt rather than a niche course drill.",
-    "Use the group context below only as a broad domain anchor.",
-    "Prefer the most common interview questions and coding challenges for this tech group in general.",
-    "Do not target specific lesson subtopics, day-level drills, or embedded curriculum exercises.",
-    progressionInstructions[learnerLevel],
-    buildTrackInstructions({
-      plan,
-      progressionLabel,
-    }),
-    buildStarterModeInstructions(plan),
-    createdChallengeRefs.length > 0
-      ? [
-          "Do not repeat or lightly rename any of these previously generated challenges:",
-          ...createdChallengeRefs.map((challengeRef) => `- ${challengeRef}`),
-        ].join("\n")
-      : "No previous challenges have been generated for this group yet.",
-    "Do not ask for package installation, APIs, databases, images, file uploads, or multi-file setups.",
-    plan.track === "ui"
-      ? [
-          'For "ui-react-tailwind", set "language" to "tsx" and make both "starterCode" and "referenceSolution" a single-file React component with `export default function ChallengeSolution()`.',
-          "For UI solutions, use Tailwind utility classes only and avoid external component libraries or icon packages.",
-        ].join("\n")
-      : [
-          'Set "challengeKind" to "logic".',
-          'For logic challenges, set "previewCode" to null and keep the task solvable in one file.',
-        ].join("\n"),
-    "Keep the instructions concrete and testable.",
-    "Provide a correct reference solution.",
-    "Make the starter code incomplete but runnable after basic edits.",
-    "Use `passCriteria` as the challenge specs section: concise, verifiable implementation requirements.",
+    "Write up one coding interview question for a study app used by new developers.",
+    "Return JSON only, with no prose before or after the object.",
+    `Question: ${question.title}`,
+    `Spec: ${question.brief}`,
+    `Pattern it teaches: ${question.pattern}`,
+    `Difficulty: ${question.difficulty}`,
+    `Tech group: ${groupTitle}`,
+    "Write the question exactly as specified. Do not swap it for a different problem.",
+    "Audience: developers who know basic JavaScript but are new to interviews. Use plain words and short sentences, and define any jargon.",
+    "instructionsMarkdown sections, in order: '## Problem' (2-4 sentences), '## Examples' (2-3 input → output examples in code blocks, each with a one-line why), '## Constraints' (bullets, including edge cases to handle), then '## Function signature' for logic tracks.",
+    buildTrackInstructions(plan, question),
+    buildStarterInstructions(plan),
+    "hints: exactly 3 strings, from gentle to strong. Hint 1 names the idea or pattern. Hint 2 describes the approach in words. Hint 3 gives step-by-step pseudocode. No real code in hints 1-2.",
+    "approach: markdown that a beginner can follow: '**Brute force:**' one or two sentences with its complexity, '**Key insight:**' one sentence, then numbered steps of the optimal solution and why it is correct.",
+    "passCriteria: 3-6 short, checkable requirements.",
+    "referenceSolution: correct, idiomatic, strict TypeScript with brief comments on the key lines only.",
     "Use this JSON schema exactly:",
-    '{"title":"string","summary":"string","challengeKind":"logic|ui-react-tailwind","language":"js|jsx|ts|tsx","instructionsMarkdown":"string","starterCode":"string","referenceSolution":"string","previewCode":"string|null","passCriteria":["string"],"reviewFocus":["string"],"estimatedMinutes":25}',
-    `Automatic progression stage: ${progressionLabel}`,
-    `Learner level: ${learnerLevel}`,
-    "Group context:",
-    groupContext,
+    '{"title":"string","summary":"string","challengeKind":"logic|ui-react-tailwind","language":"ts|tsx","instructionsMarkdown":"string","starterCode":"string","referenceSolution":"string","previewCode":"string|null","testCases":[{"name":"string","code":"string"}],"hints":["string","string","string"],"approach":"string","complexity":"string","passCriteria":["string"],"reviewFocus":["string"],"estimatedMinutes":20}',
   ].join("\n\n");
 }
 
 function normalizeGeneratedChallenge({
   value,
-  learnerLevel,
-  selectedSubtopics,
+  question,
+  difficulty,
   group,
   progressionStep,
-  progressionLabel,
   plan,
 }: {
   value: unknown;
-  learnerLevel: NonNullable<ChallengeGenerationRequest["learnerLevel"]>;
-  selectedSubtopics: ChallengeSubtopic[];
-  group: {
-    id: string;
-    label: string;
-    title: string;
-  };
+  question: BankQuestion;
+  difficulty: ChallengeDifficulty;
+  group: { id: string; label: string; title: string };
   progressionStep: number;
-  progressionLabel: ReturnType<
-    typeof getProgressionForChallengeCount
-  >["progressionLabel"];
   plan: ChallengeGenerationPlan;
 }): GeneratedChallenge {
   if (!value || typeof value !== "object") {
@@ -372,61 +307,41 @@ function normalizeGeneratedChallenge({
   }
 
   const candidate = value as Record<string, unknown>;
-  const candidateKind = resolveChallengeKind(plan.track);
-  const candidateLanguage = resolveChallengeLanguage(
-    candidate,
-    candidateKind,
-    plan.track
-  );
+  const learnerLevel = getLearnerLevelForDifficulty(difficulty);
+  const challengeKind = resolveChallengeKind(plan.track);
+  const language = resolveChallengeLanguage(candidate, challengeKind, plan.track);
   const referenceSolution = getStringValue(candidate, "referenceSolution");
 
   if (!referenceSolution) {
     throw new Error("Copilot did not return a reference solution.");
   }
 
-  const starterCode =
-    plan.starterMode === "scratch"
-      ? ""
-      : getStringValue(candidate, "starterCode") || buildStarterCode(plan);
-  const previewCode = resolvePreviewCode({
-    candidate,
-    challengeKind: candidateKind,
-    referenceSolution,
-  });
   const passCriteria = getStringArrayValue(candidate, "passCriteria");
   const reviewFocus = getStringArrayValue(candidate, "reviewFocus");
   const estimatedMinutesValue = candidate.estimatedMinutes;
-  const estimatedMinutes =
-    typeof estimatedMinutesValue === "number"
-      ? estimatedMinutesValue
-      : defaultEstimatedMinutes(learnerLevel);
-  const title = getStringValue(candidate, "title") || "Generated challenge";
-  const summary =
-    getStringValue(candidate, "summary") ||
-    "A fresh challenge generated from your selected group.";
-  const instructionsMarkdown =
-    getStringValue(candidate, "instructionsMarkdown") ||
-    "## Goal\nComplete the requested task for the selected study group.";
 
   return {
     id: randomUUID(),
-    title,
-    summary,
+    title: getStringValue(candidate, "title") || question.title,
+    summary: getStringValue(candidate, "summary") || question.brief,
     learnerLevel,
     groupId: group.id,
     groupLabel: group.label,
     groupTitle: group.title,
     progressionStep,
-    progressionLabel,
+    progressionLabel:
+      difficulty === "easy" ? "foundation" : difficulty === "medium" ? "core" : "stretch",
     challengeTrack: plan.track,
     starterMode: plan.starterMode,
     uiScope: plan.uiScope,
-    challengeKind: candidateKind,
-    language: candidateLanguage,
-    instructionsMarkdown,
-    starterCode,
+    challengeKind,
+    language,
+    instructionsMarkdown:
+      getStringValue(candidate, "instructionsMarkdown") ||
+      `## Problem\n${question.brief}`,
+    starterCode: getStringValue(candidate, "starterCode") || buildStarterCode(plan),
     referenceSolution,
-    previewCode,
+    previewCode: resolvePreviewCode({ candidate, challengeKind, referenceSolution }),
     passCriteria:
       passCriteria.length > 0
         ? passCriteria
@@ -435,13 +350,23 @@ function normalizeGeneratedChallenge({
       reviewFocus.length > 0
         ? reviewFocus
         : plan.track === "ui"
-          ? ["Correctness", "Interactions", "State handling"]
-          : plan.track === "algorithmic"
-            ? ["Correctness", "Edge cases", "Complexity"]
-            : ["Correctness", "Edge cases", "Clarity"],
-    estimatedMinutes: clampEstimatedMinutes(estimatedMinutes),
-    selectedSubtopics,
+          ? ["Correctness", "Interactions", "Accessibility"]
+          : ["Correctness", "Edge cases", "Complexity"],
+    estimatedMinutes: clampEstimatedMinutes(
+      typeof estimatedMinutesValue === "number"
+        ? estimatedMinutesValue
+        : defaultEstimatedMinutes(learnerLevel)
+    ),
+    selectedSubtopics: [],
     generatedAt: new Date().toISOString(),
+    questionId: question.id,
+    difficulty,
+    pattern: question.pattern,
+    lessonHref: getLessonHref(group.id, question.lesson),
+    hints: getStringArrayValue(candidate, "hints").slice(0, 3),
+    approach: getStringValue(candidate, "approach"),
+    complexity: getStringValue(candidate, "complexity"),
+    testCases: plan.track === "ui" ? [] : getTestCases(candidate),
   };
 }
 
@@ -459,83 +384,51 @@ export async function POST(request: NextRequest) {
     }
 
     const body = (await request.json()) as ChallengeGenerationRequest;
-    const learnerLevel = body.learnerLevel;
     const groupId = typeof body.groupId === "string" ? body.groupId.trim() : "";
     const passedChallengeCount =
       typeof body.passedChallengeCount === "number" &&
       Number.isFinite(body.passedChallengeCount)
         ? Math.max(0, Math.floor(body.passedChallengeCount))
         : 0;
-    const createdChallengeRefs = Array.isArray(body.createdChallengeRefs)
-      ? body.createdChallengeRefs
-          .filter((item): item is string => typeof item === "string")
-          .map((item) => item.trim())
-          .filter(Boolean)
-          .slice(0, MAX_PREVIOUS_CHALLENGES)
-      : [];
+    const seenIds = toIdSet(body.seenQuestionIds);
+    const passedIds = toIdSet(body.passedQuestionIds);
 
-    if (!isValidLearnerLevel(learnerLevel)) {
-      return NextResponse.json(
-        { error: "Invalid challenge level." },
-        { status: 400 }
-      );
-    }
-
-    if (!groupId) {
-      return NextResponse.json(
-        {
-          error: "Choose one group before generating a challenge.",
-        },
-        { status: 400 }
-      );
-    }
-
-    const group = getGroup(groupId);
+    const group = groupId ? getGroup(groupId) : undefined;
     if (!group) {
       return NextResponse.json(
-        { error: "The selected group could not be resolved." },
+        { error: "Choose a tech group before generating a challenge." },
         { status: 400 }
       );
     }
 
-    const progression = getProgressionForChallengeCount(passedChallengeCount);
-    const topicCount = group.days.reduce(
-      (total, day) => total + day.topics.length,
-      0
-    );
+    const requestedQuestion =
+      typeof body.questionId === "string"
+        ? findBankQuestion(group.id, body.questionId)
+        : null;
+    const difficulty: ChallengeDifficulty =
+      requestedQuestion?.difficulty ??
+      (isValidChallengeDifficulty(body.difficulty)
+        ? body.difficulty
+        : getDifficultyForProgression(
+            getProgressionForChallengeCount(passedChallengeCount).progressionLabel
+          ));
+    const question =
+      requestedQuestion ??
+      pickNextQuestion({ groupId: group.id, difficulty, seenIds, passedIds });
 
-    if (topicCount === 0) {
+    if (!question) {
       return NextResponse.json(
         {
-          error: "The selected group does not have any challenge context yet.",
+          error:
+            "The Challenge Lab covers frontend tracks for now. Pick a frontend group or another difficulty.",
         },
         { status: 400 }
       );
     }
 
-    const uiTrackEnabled = isUiCapableGroup(
-      `${group.title} ${group.description}`
-    );
-    const plan = createChallengeGenerationPlan({
-      createdChallengeCount: createdChallengeRefs.length,
-      progressionLabel: progression.progressionLabel,
-      uiTrackEnabled,
-    });
-    const prompt = buildPrompt({
-      learnerLevel,
-      groupContext: buildGroupContext({
-        groupLabel: group.label,
-        groupTitle: group.title,
-        groupDescription: group.description,
-        dayCount: group.days.length,
-        topicCount,
-      }),
-      groupLabel: group.label,
-      groupTitle: group.title,
-      createdChallengeRefs,
-      progressionLabel: progression.progressionLabel,
-      plan,
-    });
+    const plan = createPlanForQuestion({ track: question.track, difficulty });
+    const prompt = buildPrompt({ question, groupTitle: group.title, plan });
+    const progressionStep = seenIds.size + 1;
     const encoder = new TextEncoder();
 
     const stream = new ReadableStream<Uint8Array>({
@@ -546,7 +439,7 @@ export async function POST(request: NextRequest) {
 
         sendEvent({
           type: "status",
-          message: `Scoping challenge #${createdChallengeRefs.length + 1} for ${group.title}...`,
+          message: `Writing up "${question.title}" (${difficulty})...`,
         });
 
         try {
@@ -555,28 +448,22 @@ export async function POST(request: NextRequest) {
             prompt,
             timeoutMs: GENERATION_TIMEOUT_MS,
             systemMessage: [
-              "You design coding challenges for a focused learning app.",
+              "You write coding interview challenges for a learning app aimed at new developers.",
               "Return strict JSON only.",
-              "Prefer common frontend interview prompts over niche exercises.",
+              "Write the exact question you are given; never substitute another.",
               "Never ask the learner to install packages or create additional files.",
-              "Follow the required track and starter mode exactly.",
-              "If the challenge is a UI build, the returned code must already be dark themed with its own Tailwind classes.",
-              "Reference solutions must be correct and concise.",
+              "Reference solutions must be correct, and every test case must pass against them.",
             ].join("\n"),
             onDelta(delta) {
-              sendEvent({
-                type: "delta",
-                delta,
-              });
+              sendEvent({ type: "delta", delta });
             },
           });
           const challenge = normalizeGeneratedChallenge({
             value: extractJsonPayload(copilotResult.message),
-            learnerLevel,
-            selectedSubtopics: [] satisfies ChallengeSubtopic[],
+            question,
+            difficulty,
             group,
-            progressionStep: createdChallengeRefs.length + 1,
-            progressionLabel: progression.progressionLabel,
+            progressionStep,
             plan,
           });
 
@@ -588,20 +475,9 @@ export async function POST(request: NextRequest) {
           });
         } catch (error) {
           const message =
-            error instanceof Error
-              ? error.message
-              : "Copilot challenge generation failed.";
-          const stack = error instanceof Error ? error.stack : undefined;
-
+            error instanceof Error ? error.message : "Copilot challenge generation failed.";
           console.error("[Copilot Challenge Generate] Error caught:", message);
-          if (stack) {
-            console.error("[Copilot Challenge Generate] Stack trace:", stack);
-          }
-
-          sendEvent({
-            type: "error",
-            error: toGenerateErrorMessage(message),
-          });
+          sendEvent({ type: "error", error: toGenerateErrorMessage(message) });
         } finally {
           controller.close();
         }
@@ -616,20 +492,11 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     const message =
-      error instanceof Error
-        ? error.message
-        : "Copilot challenge generation failed.";
-    const stack = error instanceof Error ? error.stack : undefined;
-
+      error instanceof Error ? error.message : "Copilot challenge generation failed.";
     console.error("[Copilot Challenge Generate] Error caught:", message);
-    if (stack) {
-      console.error("[Copilot Challenge Generate] Stack trace:", stack);
-    }
 
     return NextResponse.json(
-      {
-        error: toGenerateErrorMessage(message),
-      },
+      { error: toGenerateErrorMessage(message) },
       { status: 500 }
     );
   }

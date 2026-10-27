@@ -7,16 +7,17 @@ import {
   readAppState,
   writeAppState,
 } from "@/lib/app-state-client";
+import { getQuestionBank, type BankQuestion } from "@/lib/challenge-bank";
 import {
   createChallengeReference,
-  getChallengeStarterModeLabel,
   getChallengeTrackLabel,
-  getChallengeUiScopeLabel,
+  getDifficultyForProgression,
   getProgressionForChallengeCount,
   isChallengeAiUsage,
   isChallengeReviewResult,
   isGeneratedChallenge,
   type ChallengeAiUsage,
+  type ChallengeDifficulty,
   type ChallengeProgression,
   type ChallengeReviewResult,
   type GeneratedChallenge,
@@ -26,6 +27,10 @@ import {
   readGeneratedChallengeStream,
   readReviewStream,
 } from "@/lib/challenge-lab-stream";
+import {
+  runChallengeTests,
+  type TestRunResult,
+} from "@/lib/challenge-test-runner";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChallengePreview } from "./ChallengePreview";
@@ -57,6 +62,9 @@ type ChallengeLabProps = Readonly<{
 type GroupChallengeHistory = {
   createdChallenges: string[];
   passedChallenges: string[];
+  // Question-bank ids; optional so history saved before the bank still loads.
+  seenQuestionIds?: string[];
+  passedQuestionIds?: string[];
   lastGeneratedAt?: string;
   lastPassedAt?: string;
 };
@@ -77,6 +85,14 @@ type SavedChallengeSession = PersistedSession & {
 };
 
 type ChallengeArchive = Record<string, SavedChallengeSession[]>;
+
+type DifficultyChoice = "auto" | ChallengeDifficulty;
+
+const DIFFICULTY_TONE: Record<ChallengeDifficulty, string> = {
+  easy: "text-emerald-400",
+  medium: "text-amber-400",
+  hard: "text-rose-400",
+};
 
 function formatCount(value: number | undefined): string | null {
   return typeof value === "number" ? value.toLocaleString() : null;
@@ -234,6 +250,10 @@ function updateGeneratedHistory({
       ...currentEntry.createdChallenges,
       createChallengeReference(challenge),
     ]),
+    seenQuestionIds: dedupeStrings([
+      ...(currentEntry.seenQuestionIds ?? []),
+      challenge.questionId ?? "",
+    ]),
     lastGeneratedAt: challenge.generatedAt,
   };
 
@@ -258,6 +278,10 @@ function updatePassedHistory({
     passedChallenges: dedupeStrings([
       ...currentEntry.passedChallenges,
       createChallengeReference(challenge),
+    ]),
+    passedQuestionIds: dedupeStrings([
+      ...(currentEntry.passedQuestionIds ?? []),
+      challenge.questionId ?? "",
     ]),
     lastPassedAt: reviewedAt,
   };
@@ -417,70 +441,166 @@ function truncateCardText(value: string, maxLength: number): string {
 type ScopeSidebarProps = Readonly<{
   groups: GroupSummary[];
   selectedGroupId: string | null;
-  progressionLabel: ChallengeProgression;
+  difficulty: DifficultyChoice;
+  autoDifficulty: ChallengeDifficulty;
+  questions: readonly BankQuestion[];
+  seenQuestionIds: ReadonlySet<string>;
+  passedQuestionIds: ReadonlySet<string>;
+  activeQuestionId: string | null;
   savedSessions: SavedChallengeSession[];
   activeChallengeId: string | null;
   isGenerating: boolean;
   onSelectGroup: (groupId: string) => void;
+  onDifficultyChange: (difficulty: DifficultyChoice) => void;
   onGenerateChallenge: () => void;
+  onPickQuestion: (questionId: string) => void;
   onRestoreSession: (session: SavedChallengeSession) => void;
 }>;
+
+const DIFFICULTY_CHOICES: { value: DifficultyChoice; label: string }[] = [
+  { value: "auto", label: "Auto" },
+  { value: "easy", label: "Easy" },
+  { value: "medium", label: "Medium" },
+  { value: "hard", label: "Hard" },
+];
 
 function ScopeSidebar({
   groups,
   selectedGroupId,
-  progressionLabel,
+  difficulty,
+  autoDifficulty,
+  questions,
+  seenQuestionIds,
+  passedQuestionIds,
+  activeQuestionId,
   savedSessions,
   activeChallengeId,
   isGenerating,
   onSelectGroup,
+  onDifficultyChange,
   onGenerateChallenge,
+  onPickQuestion,
   onRestoreSession,
 }: ScopeSidebarProps) {
   const activeGroup =
     groups.find((group) => group.id === selectedGroupId) ?? null;
-  const progression = progressionCopy[progressionLabel];
+  const passedCount = questions.filter((question) =>
+    passedQuestionIds.has(question.id)
+  ).length;
 
   return (
     <aside className="space-y-6">
       <section className="rounded-2xl border border-(--border) bg-(--bg-card) p-5">
         <div>
           <p className="text-xs font-mono uppercase tracking-[0.18em] text-(--accent)">
-            Challenge Scope
+            Practice
           </p>
           <h2 className="mt-2 text-xl font-semibold text-white">
-            Interview sequence
+            Common interview questions
           </h2>
           <p className="mt-2 text-sm leading-6 text-(--text-muted)">
-            Generate the next challenge for the active tech group and keep
-            iterating until review passes.
+            Questions come from a curated list of what frontend interviews
+            actually ask, most common first. Pick a level, or choose a question
+            below.
           </p>
         </div>
 
-        <div className="mt-5 rounded-2xl border border-(--border) bg-black/20 p-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-(--border) px-3 py-1 text-[11px] uppercase tracking-[0.14em] text-(--accent)">
-              {progression.label}
-            </span>
-            {activeGroup ? (
-              <span className="rounded-full border border-(--border) px-3 py-1 text-[11px] uppercase tracking-[0.14em] text-(--text-muted)">
-                {activeGroup.title}
-              </span>
-            ) : null}
+        <div className="mt-5">
+          <p className="text-xs font-mono uppercase tracking-[0.18em] text-(--accent)">
+            Difficulty
+          </p>
+          <div className="mt-2 grid grid-cols-4 gap-1 rounded-xl border border-(--border) bg-black/20 p-1">
+            {DIFFICULTY_CHOICES.map((choice) => (
+              <button
+                key={choice.value}
+                type="button"
+                onClick={() => onDifficultyChange(choice.value)}
+                aria-pressed={difficulty === choice.value}
+                className={`rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
+                  difficulty === choice.value
+                    ? "bg-(--accent-dim) text-white"
+                    : "text-(--text-muted) hover:text-white"
+                }`}
+              >
+                {choice.label}
+              </button>
+            ))}
           </div>
-          <div className="mt-3 text-sm leading-6 text-(--text-muted)">
-            {activeGroup
-              ? `${progression.description}`
-              : "Pick one group to scope the next challenge."}
-          </div>
+          {difficulty === "auto" ? (
+            <p className="mt-2 text-xs leading-5 text-(--text-muted)">
+              Auto picks <span className="text-white">{autoDifficulty}</span>{" "}
+              and moves up as you pass questions.
+            </p>
+          ) : null}
         </div>
+
+        <button
+          type="button"
+          onClick={onGenerateChallenge}
+          disabled={isGenerating || !activeGroup}
+          className="mt-4 w-full rounded-xl bg-(--accent-dim) px-4 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isGenerating ? "Preparing question..." : "Next question"}
+        </button>
+
+        {questions.length > 0 ? (
+          <details className="mt-5 border-t border-(--border) pt-5" open>
+            <summary className="cursor-pointer select-none text-xs font-mono uppercase tracking-[0.18em] text-(--accent)">
+              Question list · {passedCount}/{questions.length} passed
+            </summary>
+            <ul className="mt-3 max-h-80 space-y-1 overflow-y-auto pr-1">
+              {questions.map((question) => {
+                const isPassed = passedQuestionIds.has(question.id);
+                const isSeen = seenQuestionIds.has(question.id);
+                const isActive = question.id === activeQuestionId;
+                let statusLabel = "Not started";
+                if (isPassed) statusLabel = "Passed";
+                else if (isSeen) statusLabel = "Started";
+
+                return (
+                  <li key={question.id}>
+                    <button
+                      type="button"
+                      onClick={() => onPickQuestion(question.id)}
+                      disabled={isGenerating}
+                      title={`${question.brief} (${statusLabel})`}
+                      className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors disabled:cursor-not-allowed ${
+                        isActive
+                          ? "bg-(--accent-dim)/15 text-white"
+                          : "text-(--text-muted) hover:bg-white/5 hover:text-white"
+                      }`}
+                    >
+                      <span
+                        aria-label={statusLabel}
+                        className={`w-4 shrink-0 text-center ${
+                          isPassed ? "text-emerald-400" : "text-(--text-muted)"
+                        }`}
+                      >
+                        {isPassed ? "✓" : isSeen ? "•" : ""}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate">
+                        {question.title}
+                      </span>
+                      <span
+                        className={`shrink-0 text-[10px] uppercase tracking-[0.12em] ${DIFFICULTY_TONE[question.difficulty]}`}
+                      >
+                        {question.difficulty}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </details>
+        ) : null}
 
         <div className="mt-5 border-t border-(--border) pt-5">
           <p className="text-xs font-mono uppercase tracking-[0.18em] text-(--accent)">
             Tech Groups
           </p>
           <p className="mt-2 text-sm leading-6 text-(--text-muted)">
-            Select one track to define the challenge sequence.
+            Frontend tracks for now. Backend and DevOps practice is coming
+            later.
           </p>
 
           <div className="mt-4 grid gap-2">
@@ -517,15 +637,6 @@ function ScopeSidebar({
             })}
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={onGenerateChallenge}
-          disabled={isGenerating || !activeGroup}
-          className="mt-5 w-full rounded-xl bg-(--accent-dim) px-4 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isGenerating ? "Generating challenge..." : "Generate challenge"}
-        </button>
       </section>
 
       <section className="rounded-2xl border border-(--border) bg-(--bg-card) p-5">
@@ -614,26 +725,24 @@ function ChallengeSummaryCard({
     challenge.challengeTrack,
     challenge.challengeKind
   );
-  const groupLabel =
-    challenge.groupLabel || challenge.selectedSubtopics[0]?.groupLabel;
   const groupTitle =
     challenge.groupTitle || challenge.selectedSubtopics[0]?.groupTitle;
-  const progressionTitle = challenge.progressionLabel
-    ? progressionCopy[challenge.progressionLabel].label
-    : null;
-  const starterModeLabel = getChallengeStarterModeLabel(challenge.starterMode);
-  const uiScopeLabel = getChallengeUiScopeLabel(challenge.uiScope);
+  const progressionTitle =
+    !challenge.difficulty && challenge.progressionLabel
+      ? progressionCopy[challenge.progressionLabel].label
+      : null;
   const totalTokens = formatCount(generationUsage?.totalTokens);
-  const inputTokens = formatCount(generationUsage?.inputTokens);
-  const outputTokens = formatCount(generationUsage?.outputTokens);
+  const chipClass =
+    "rounded-full border border-(--border) bg-black/20 px-3 py-1.5 text-xs text-(--text-muted)";
 
   return (
     <>
       <section className="rounded-2xl border border-(--border) bg-(--bg-card) p-6 sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-mono uppercase tracking-[0.18em] text-(--accent)">
-              Active Challenge
+              {groupTitle ? `${groupTitle} · ` : ""}
+              {challengeKindLabel}
             </p>
             <h2 className="mt-2 text-2xl font-semibold text-white sm:text-3xl">
               {challenge.title}
@@ -642,50 +751,49 @@ function ChallengeSummaryCard({
               {challenge.summary}
             </p>
           </div>
-
-          <div className="rounded-2xl border border-(--border) bg-black/20 px-4 py-3 text-right text-sm text-(--text-muted)">
-            <div>{challenge.estimatedMinutes} min target</div>
-            {totalTokens ? (
-              <div className="mt-1">{totalTokens} tokens</div>
-            ) : null}
-            {inputTokens || outputTokens ? (
-              <div className="mt-1 text-xs text-(--text-muted)">
-                {inputTokens || "0"} in / {outputTokens || "0"} out
-              </div>
-            ) : null}
-            <div className="mt-1 text-xs uppercase tracking-[0.16em] text-(--accent)">
-              {challengeKindLabel}
-            </div>
-          </div>
+          {challenge.lessonHref ? (
+            <Link
+              href={challenge.lessonHref}
+              target="_blank"
+              className="shrink-0 rounded-xl border border-(--border) px-4 py-2 text-sm text-(--text) transition-colors hover:border-(--accent-dim) hover:text-white"
+            >
+              Learn it first →
+            </Link>
+          ) : null}
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-3">
-          {groupLabel ? (
-            <span className="rounded-full border border-(--border) bg-black/20 px-4 py-2 text-xs text-(--text-muted)">
-              {groupLabel} • {groupTitle || "Selected group"}
+        <div className="mt-5 flex flex-wrap items-center gap-2">
+          {challenge.difficulty ? (
+            <span
+              className={`${chipClass} uppercase tracking-[0.12em] ${DIFFICULTY_TONE[challenge.difficulty]}`}
+            >
+              {challenge.difficulty}
             </span>
+          ) : null}
+          {challenge.pattern ? (
+            <span className={chipClass}>Pattern: {challenge.pattern}</span>
           ) : null}
           {progressionTitle ? (
-            <span className="rounded-full border border-(--border) bg-black/20 px-4 py-2 text-xs text-(--text-muted)">
-              {progressionTitle}
-            </span>
+            <span className={chipClass}>{progressionTitle}</span>
           ) : null}
-          {starterModeLabel ? (
-            <span className="rounded-full border border-(--border) bg-black/20 px-4 py-2 text-xs text-(--text-muted)">
-              {starterModeLabel}
-            </span>
-          ) : null}
-          {uiScopeLabel ? (
-            <span className="rounded-full border border-(--border) bg-black/20 px-4 py-2 text-xs text-(--text-muted)">
-              {uiScopeLabel}
-            </span>
+          <span className={chipClass}>~{challenge.estimatedMinutes} min</span>
+          {totalTokens ? (
+            <details className="text-xs text-(--text-muted)">
+              <summary className="cursor-pointer select-none px-2">
+                Generation details
+              </summary>
+              <span className="px-2">
+                {totalTokens} tokens ({formatCount(generationUsage?.inputTokens) || "0"} in /{" "}
+                {formatCount(generationUsage?.outputTokens) || "0"} out)
+              </span>
+            </details>
           ) : null}
         </div>
 
         <div className="mt-6 grid gap-6 min-[1600px]:grid-cols-2">
           <section className="rounded-2xl border border-(--border) bg-black/20 p-5">
             <p className="text-xs font-mono uppercase tracking-[0.18em] text-(--accent)">
-              Challenge brief
+              The question
             </p>
             <div className="markdown-body mt-4 text-sm leading-7 text-(--text-muted)">
               <MarkdownRenderer content={challenge.instructionsMarkdown} />
@@ -694,7 +802,7 @@ function ChallengeSummaryCard({
 
           <section className="rounded-2xl border border-(--border) bg-black/20 p-5">
             <p className="text-xs font-mono uppercase tracking-[0.18em] text-(--accent)">
-              Challenge specs
+              Your solution must
             </p>
             <ul className="mt-4 space-y-3 text-sm leading-6 text-(--text-muted)">
               {challenge.passCriteria.map((criterion) => (
@@ -737,7 +845,10 @@ type ChallengeEditorCardProps = Readonly<{
   reviewStatusLabel: string;
   isGenerating: boolean;
   isReviewing: boolean;
+  isTesting: boolean;
+  testRun: TestRunResult | null;
   onUserCodeChange: (value: string) => void;
+  onRunTests: () => void;
   onReview: () => void;
   onGenerateAnother: () => void;
 }>;
@@ -749,10 +860,14 @@ function ChallengeEditorCard({
   reviewStatusLabel,
   isGenerating,
   isReviewing,
+  isTesting,
+  testRun,
   onUserCodeChange,
+  onRunTests,
   onReview,
   onGenerateAnother,
 }: ChallengeEditorCardProps) {
+  const hasTests = (challenge.testCases?.length ?? 0) > 0;
   const [isReferenceCopied, setIsReferenceCopied] = useState(false);
   const copyFeedbackTimeoutRef = useRef<ReturnType<
     typeof globalThis.setTimeout
@@ -795,7 +910,9 @@ function ChallengeEditorCard({
             Write your answer
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-7 text-(--text-muted)">
-            Solve the prompt, run review, and iterate until it passes.
+            {hasTests
+              ? "Write your solution, run the tests, and fix one failing case at a time. Ask Copilot for a review when you want feedback on style or speed."
+              : "Build it, compare with the reference preview, then ask Copilot to review it."}
           </p>
         </div>
 
@@ -818,13 +935,27 @@ function ChallengeEditorCard({
       />
 
       <div className="mt-4 flex flex-wrap gap-3">
+        {hasTests ? (
+          <button
+            type="button"
+            onClick={onRunTests}
+            disabled={isTesting || isGenerating}
+            className="rounded-xl bg-(--accent-dim) px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isTesting ? "Running tests..." : `Run ${challenge.testCases?.length} tests`}
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={onReview}
           disabled={isReviewing || isGenerating}
-          className="rounded-xl bg-(--accent-dim) px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          className={
+            hasTests
+              ? "rounded-xl border border-(--border) px-5 py-3 text-sm font-semibold text-(--text) transition-colors hover:border-(--accent-dim) hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+              : "rounded-xl bg-(--accent-dim) px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          }
         >
-          {isReviewing ? "Reviewing..." : "Check my solution"}
+          {isReviewing ? "Reviewing..." : "Ask Copilot to review"}
         </button>
         <button
           type="button"
@@ -832,13 +963,17 @@ function ChallengeEditorCard({
           disabled={isGenerating}
           className="rounded-xl border border-(--border) px-5 py-3 text-sm font-semibold text-(--text) transition-colors hover:border-(--accent-dim) hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isGenerating ? "Generating..." : "Generate another challenge"}
+          {isGenerating ? "Preparing..." : "Next question"}
         </button>
       </div>
 
-      <details className="mt-5 rounded-2xl border border-(--border) bg-black/20 p-4">
+      {testRun ? <TestResultsPanel testRun={testRun} /> : null}
+
+      <HelpLadder challenge={challenge} />
+
+      <details className="mt-3 rounded-2xl border border-(--border) bg-black/20 p-4">
         <summary className="cursor-pointer select-none flex items-center justify-between gap-3 text-sm font-medium text-(--text-muted)">
-          <span>Reveal reference solution</span>
+          <span>Reference solution (last resort)</span>
           <span className="flex items-center gap-3">
             <button
               type="button"
@@ -877,6 +1012,132 @@ function ChallengeEditorCard({
           value={challenge.referenceSolution}
         />
       </details>
+    </section>
+  );
+}
+
+function TestResultsPanel({ testRun }: Readonly<{ testRun: TestRunResult }>) {
+  const passed = testRun.results.filter((result) => result.passed).length;
+  const total = testRun.results.length;
+  let headline = `${passed} of ${total} tests passed`;
+  let tone = "border-amber-500/30 bg-amber-500/10";
+  if (testRun.status === "passed") {
+    headline = `All ${total} tests passed`;
+    tone = "border-emerald-500/30 bg-emerald-500/10";
+  } else if (testRun.status === "error") {
+    headline = "Tests could not run";
+    tone = "border-red-500/30 bg-red-500/10";
+  }
+
+  return (
+    <section className={`mt-5 rounded-2xl border p-4 ${tone}`} aria-live="polite">
+      <h3 className="text-sm font-semibold text-white">{headline}</h3>
+      {testRun.error ? (
+        <p className="mt-2 text-sm text-red-100">{testRun.error}</p>
+      ) : null}
+      {testRun.status === "passed" ? (
+        <p className="mt-1 text-sm text-emerald-100">
+          Nice. Ask Copilot for a review to compare your approach with the
+          optimal one, or move to the next question.
+        </p>
+      ) : null}
+      {total > 0 ? (
+        <ul className="mt-3 space-y-1.5">
+          {testRun.results.map((result) => (
+            <li key={result.name} className="text-sm">
+              <span className={result.passed ? "text-emerald-400" : "text-rose-400"}>
+                {result.passed ? "✓" : "✗"}
+              </span>{" "}
+              <span className="text-white">{result.name}</span>
+              {result.error ? (
+                <div className="ml-5 mt-0.5 font-mono text-xs text-(--text-muted)">
+                  {result.error}
+                </div>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {testRun.logs.length > 0 ? (
+        <details className="mt-3">
+          <summary className="cursor-pointer select-none text-xs text-(--text-muted)">
+            Console output ({testRun.logs.length})
+          </summary>
+          <pre className="mt-2 max-h-48 overflow-auto rounded-lg bg-black/40 p-3 text-xs text-(--text-muted)">
+            {testRun.logs.join("\n")}
+          </pre>
+        </details>
+      ) : null}
+    </section>
+  );
+}
+
+/**
+ * Stepwise help: each click reveals one more level, from a nudge to the full
+ * walkthrough, so learners take only as much help as they need.
+ */
+function HelpLadder({ challenge }: Readonly<{ challenge: GeneratedChallenge }>) {
+  const steps = useMemo(() => {
+    const hintSteps = (challenge.hints ?? []).map((hint, index) => ({
+      label: `Hint ${index + 1}`,
+      content: hint,
+    }));
+    const approach = [
+      challenge.approach,
+      challenge.complexity ? `**Complexity:** ${challenge.complexity}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+    return approach
+      ? [...hintSteps, { label: "Approach and complexity", content: approach }]
+      : hintSteps;
+  }, [challenge.approach, challenge.complexity, challenge.hints]);
+  const [revealed, setRevealed] = useState(0);
+
+  useEffect(() => {
+    setRevealed(0);
+  }, [challenge.id]);
+
+  if (steps.length === 0) {
+    return null;
+  }
+
+  const nextStep = steps[revealed];
+
+  return (
+    <section className="mt-5 rounded-2xl border border-(--border) bg-black/20 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-sm font-medium text-white">Stuck? Take one step of help</h3>
+        {nextStep ? (
+          <button
+            type="button"
+            onClick={() => setRevealed((count) => count + 1)}
+            className="rounded-lg border border-(--border) px-3 py-1.5 text-xs font-medium text-(--text) transition-colors hover:border-(--accent-dim) hover:text-white"
+          >
+            Show {nextStep.label.toLowerCase()}
+          </button>
+        ) : null}
+      </div>
+      {revealed > 0 ? (
+        <ol className="mt-3 space-y-3">
+          {steps.slice(0, revealed).map((step) => (
+            <li key={step.label} className="rounded-xl border border-(--border) p-3">
+              <div className="text-xs font-mono uppercase tracking-[0.14em] text-(--accent)">
+                {step.label}
+              </div>
+              <div className="markdown-body mt-2 text-sm text-(--text-muted)">
+                <MarkdownRenderer content={step.content} />
+              </div>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="mt-2 text-xs text-(--text-muted)">
+          {steps.length} steps: hints first, then the full approach. Try each
+          hint for a few minutes before taking the next.
+        </p>
+      )}
     </section>
   );
 }
@@ -991,11 +1252,12 @@ function EmptyChallengeState({
         No active challenge
       </p>
       <h2 className="mt-3 text-3xl font-semibold text-white">
-        Generate the next interview challenge
+        Start with a common interview question
       </h2>
       <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-(--text-muted) sm:text-base">
-        Choose one group to generate the next challenge. Passed reviews move the
-        sequence forward.
+        Pick a tech group and a difficulty, or choose a question from the list.
+        Each question comes with tests you can run, hints you can open one at a
+        time, and a link to the lesson that teaches it.
       </p>
 
       {statusMessage ? (
@@ -1055,6 +1317,10 @@ export function ChallengeLab({
   const [error, setError] = useState<string | null>(null);
   const [authUrl, setAuthUrl] = useState<string | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [difficultyChoice, setDifficultyChoice] =
+    useState<DifficultyChoice>("auto");
+  const [testRun, setTestRun] = useState<TestRunResult | null>(null);
+  const [isTesting, setIsTesting] = useState(false);
 
   useEffect(() => {
     let isCancelled = false;
@@ -1322,6 +1588,21 @@ export function ChallengeLab({
       ),
     [currentHistoryEntry.passedChallenges.length]
   );
+  const autoDifficulty = getDifficultyForProgression(
+    progression.progressionLabel
+  );
+  const questions = useMemo(
+    () => (selectedGroupId ? getQuestionBank(selectedGroupId) : []),
+    [selectedGroupId]
+  );
+  const seenQuestionIds = useMemo(
+    () => new Set(currentHistoryEntry.seenQuestionIds ?? []),
+    [currentHistoryEntry.seenQuestionIds]
+  );
+  const passedQuestionIds = useMemo(
+    () => new Set(currentHistoryEntry.passedQuestionIds ?? []),
+    [currentHistoryEntry.passedQuestionIds]
+  );
   let reviewStatusLabel = "Awaiting review";
   if (review) {
     reviewStatusLabel = review.passed ? "Passed" : "Retry open";
@@ -1365,9 +1646,51 @@ export function ChallengeLab({
     setAttemptCount(session.attemptCount);
     setCopilotModel(session.copilotModel ?? null);
     setGenerationUsage(session.generationUsage ?? null);
+    setTestRun(null);
   };
 
-  const generateChallenge = async () => {
+  const markPassed = (challenge: GeneratedChallenge, passedAt: string) => {
+    const historyGroupId = challenge.groupId || selectedGroupId;
+    if (!historyGroupId) {
+      return;
+    }
+
+    setHistory((currentHistory) =>
+      updatePassedHistory({
+        history: currentHistory,
+        groupId: historyGroupId,
+        challenge,
+        reviewedAt: passedAt,
+      })
+    );
+  };
+
+  // Model-written tests can be wrong. Keep only the tests the reference
+  // solution passes, so learners are never failed by a broken test.
+  const keepVerifiedTests = async (
+    challenge: GeneratedChallenge
+  ): Promise<GeneratedChallenge> => {
+    const tests = challenge.testCases ?? [];
+    if (tests.length === 0) {
+      return challenge;
+    }
+
+    const result = await runChallengeTests({
+      source: challenge.referenceSolution,
+      language: challenge.language,
+      tests,
+    });
+    const passingNames = new Set(
+      result.results.filter((test) => test.passed).map((test) => test.name)
+    );
+
+    return {
+      ...challenge,
+      testCases: tests.filter((test) => passingNames.has(test.name)),
+    };
+  };
+
+  const generateChallenge = async (questionId?: string) => {
     resetFeedback();
 
     if (!selectedGroupId || !selectedGroup) {
@@ -1376,9 +1699,7 @@ export function ChallengeLab({
     }
 
     setIsGenerating(true);
-    setStatusMessage(
-      `Generating the next ${progressionCopy[progression.progressionLabel].label.toLowerCase()} challenge...`
-    );
+    setStatusMessage("Preparing the next question...");
 
     try {
       saveSessionSnapshot(
@@ -1389,13 +1710,18 @@ export function ChallengeLab({
       const payload = await readGeneratedChallengeStream({
         body: {
           groupId: selectedGroupId,
-          learnerLevel: progression.learnerLevel,
           createdChallengeRefs: currentHistoryEntry.createdChallenges,
           passedChallengeCount: currentHistoryEntry.passedChallenges.length,
+          difficulty:
+            difficultyChoice === "auto" ? autoDifficulty : difficultyChoice,
+          questionId,
+          seenQuestionIds: [...seenQuestionIds],
+          passedQuestionIds: [...passedQuestionIds],
         },
         onStatus: setStatusMessage,
       });
-      const generatedChallenge = payload.challenge;
+      setStatusMessage("Checking the generated tests...");
+      const generatedChallenge = await keepVerifiedTests(payload.challenge);
       const nextCopilotModel = payload.model ?? copilotModel;
       const nextSession: PersistedSession = {
         challenge: generatedChallenge,
@@ -1411,6 +1737,7 @@ export function ChallengeLab({
       setCurrentChallenge(generatedChallenge);
       setUserCode(generatedChallenge.starterCode);
       setReview(null);
+      setTestRun(null);
       setAttemptCount(0);
       setCopilotModel(nextCopilotModel);
       setGenerationUsage(payload.usage);
@@ -1431,6 +1758,30 @@ export function ChallengeLab({
     } finally {
       setStatusMessage(null);
       setIsGenerating(false);
+    }
+  };
+
+  const runTests = async () => {
+    if (!currentChallenge?.testCases?.length) {
+      return;
+    }
+
+    resetFeedback();
+    setIsTesting(true);
+
+    try {
+      const result = await runChallengeTests({
+        source: userCode,
+        language: currentChallenge.language,
+        tests: currentChallenge.testCases,
+      });
+      setTestRun(result);
+
+      if (result.status === "passed") {
+        markPassed(currentChallenge, new Date().toISOString());
+      }
+    } finally {
+      setIsTesting(false);
     }
   };
 
@@ -1480,16 +1831,8 @@ export function ChallengeLab({
         currentChallenge.groupId || selectedGroupId
       );
 
-      const historyGroupId = currentChallenge.groupId || selectedGroupId;
-      if (reviewResult.passed && historyGroupId) {
-        setHistory((currentHistory) =>
-          updatePassedHistory({
-            history: currentHistory,
-            groupId: historyGroupId,
-            challenge: currentChallenge,
-            reviewedAt: reviewResult.reviewedAt,
-          })
-        );
+      if (reviewResult.passed) {
+        markPassed(currentChallenge, reviewResult.reviewedAt);
       }
     } catch (requestError) {
       setAuthUrl(getAuthUrlFromError(requestError));
@@ -1516,21 +1859,17 @@ export function ChallengeLab({
           </Link>
           <h1 className="mt-4 text-4xl font-bold sm:text-5xl">Challenge Lab</h1>
           <p className="mt-3 max-w-4xl text-sm leading-7 text-(--text-muted) sm:text-base">
-            Generate interview-style challenges for one group, solve them in the
-            browser, and keep iterating until review passes.
+            Practise the questions frontend interviews ask most. Read the
+            question, write a solution, run the tests, and take hints one step
+            at a time when you get stuck.
           </p>
         </div>
 
         <div className="rounded-2xl border border-(--border) bg-(--bg-card) px-4 py-3 text-sm text-(--text-muted)">
-          <div>Progress is shared across all sessions and browsers.</div>
-          <div className="mt-1 text-xs uppercase tracking-[0.16em] text-(--accent)">
-            Model: {copilotModel || "gpt-5-mini"}
+          <div>Progress syncs across your sessions and browsers.</div>
+          <div className="mt-1 text-xs text-(--text-muted)">
+            Questions written by {copilotModel || "gpt-5-mini"} via Copilot
           </div>
-          {generationUsage?.totalTokens ? (
-            <div className="mt-1 text-xs uppercase tracking-[0.16em] text-(--accent)">
-              Challenge tokens: {generationUsage.totalTokens.toLocaleString()}
-            </div>
-          ) : null}
         </div>
       </header>
 
@@ -1538,12 +1877,19 @@ export function ChallengeLab({
         <ScopeSidebar
           groups={groups}
           selectedGroupId={selectedGroupId}
-          progressionLabel={progression.progressionLabel}
+          difficulty={difficultyChoice}
+          autoDifficulty={autoDifficulty}
+          questions={questions}
+          seenQuestionIds={seenQuestionIds}
+          passedQuestionIds={passedQuestionIds}
+          activeQuestionId={currentChallenge?.questionId ?? null}
           savedSessions={currentSavedSessions}
           activeChallengeId={currentChallenge?.id ?? null}
           isGenerating={isGenerating}
           onSelectGroup={setSelectedGroupId}
+          onDifficultyChange={setDifficultyChoice}
           onGenerateChallenge={() => void generateChallenge()}
+          onPickQuestion={(questionId) => void generateChallenge(questionId)}
           onRestoreSession={restoreSavedSession}
         />
 
@@ -1562,7 +1908,10 @@ export function ChallengeLab({
                 reviewStatusLabel={reviewStatusLabel}
                 isGenerating={isGenerating}
                 isReviewing={isReviewing}
+                isTesting={isTesting}
+                testRun={testRun}
                 onUserCodeChange={setUserCode}
+                onRunTests={() => void runTests()}
                 onReview={() => void reviewSolution()}
                 onGenerateAnother={() => void generateChallenge()}
               />

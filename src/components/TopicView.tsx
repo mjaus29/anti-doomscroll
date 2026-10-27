@@ -394,7 +394,7 @@ export function TopicView({
             className="relative rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-6 sm:p-8 lg:p-10"
           >
             <div className="markdown-body">
-              <MarkdownRenderer content={topicContent} />
+              <MarkdownRenderer content={topicContent} allowHtml />
             </div>
 
             {selectionTooltip ? (
