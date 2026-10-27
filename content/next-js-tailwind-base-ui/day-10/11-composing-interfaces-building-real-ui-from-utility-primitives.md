@@ -161,7 +161,7 @@ export function ProductCard({
                         active:scale-95 disabled:opacity-40
                         disabled:cursor-not-allowed
                         transition-all duration-150
-                        focus-visible:outline-none focus-visible:ring-2
+                        focus-visible:outline-hidden focus-visible:ring-2
                         focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           >
             Add to cart
@@ -224,7 +224,7 @@ const inputBase = `
   border border-gray-300 dark:border-gray-600
   text-gray-900 dark:text-white
   placeholder:text-gray-400 dark:placeholder:text-gray-500
-  focus:outline-none focus:ring-2 focus:ring-blue-500
+  focus:outline-hidden focus:ring-2 focus:ring-blue-500
   focus:border-transparent dark:focus:ring-blue-400
   transition-colors duration-150
 `
@@ -243,7 +243,7 @@ export function ContactForm() {
     <form
       className="max-w-lg mx-auto bg-white dark:bg-gray-800
                       border border-gray-200 dark:border-gray-700
-                      rounded-2xl p-6 sm:p-8 space-y-5 shadow-sm"
+                      rounded-2xl p-6 sm:p-8 space-y-5 shadow-xs"
     >
       {/* Header */}
       <div className="space-y-1">
@@ -329,7 +329,7 @@ export function ContactForm() {
                           font-semibold text-sm rounded-xl
                           hover:bg-blue-700 dark:hover:bg-blue-400
                           active:scale-[0.98] transition-all duration-150
-                          focus-visible:outline-none focus-visible:ring-2
+                          focus-visible:outline-hidden focus-visible:ring-2
                           focus-visible:ring-blue-500 focus-visible:ring-offset-2
                           disabled:opacity-50 disabled:cursor-not-allowed"
       >
@@ -509,7 +509,7 @@ export function Modal({
     >
       {/* Backdrop — click to close */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm
+        className="absolute inset-0 bg-black/50 backdrop-blur-xs
                        animate-in fade-in duration-200"
         onClick={onClose}
         aria-hidden
@@ -546,7 +546,7 @@ export function Modal({
                         hover:bg-gray-100 dark:hover:bg-gray-700
                         hover:text-gray-700 dark:hover:text-gray-300
                         transition-colors duration-150
-                        focus-visible:outline-none focus-visible:ring-2
+                        focus-visible:outline-hidden focus-visible:ring-2
                         focus-visible:ring-blue-500"
             aria-label="Close modal"
           >
@@ -620,7 +620,7 @@ export function EmptyState({
                         font-semibold text-sm rounded-xl
                         hover:bg-blue-700 dark:hover:bg-blue-400
                         active:scale-[0.98] transition-all duration-150
-                        focus-visible:outline-none focus-visible:ring-2
+                        focus-visible:outline-hidden focus-visible:ring-2
                         focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           >
             {action.label}
@@ -770,7 +770,7 @@ export default function ProductsPage() {
               className="shrink-0 px-4 py-2 bg-blue-600 dark:bg-blue-500
                                 text-white text-sm font-semibold rounded-xl
                                 hover:bg-blue-700 dark:hover:bg-blue-400
-                                transition-colors focus-visible:outline-none
+                                transition-colors focus-visible:outline-hidden
                                 focus-visible:ring-2 focus-visible:ring-blue-500
                                 focus-visible:ring-offset-2"
             >
@@ -839,7 +839,7 @@ export default function ProductsPage() {
 {
   /* ❌ All on one line — impossible to read, review, or debug */
 }
-<button className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 active:scale-95 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-blue-500 dark:hover:bg-blue-400">
+<button className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 active:scale-95 transition-all duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-blue-500 dark:hover:bg-blue-400">
   Submit
 </button>;
 ```
@@ -858,7 +858,7 @@ export default function ProductsPage() {
   hover:bg-blue-700 dark:hover:bg-blue-400
   active:scale-95
   transition-all duration-150
-  focus-visible:outline-none focus-visible:ring-2
+  focus-visible:outline-hidden focus-visible:ring-2
   focus-visible:ring-blue-500 focus-visible:ring-offset-2
   disabled:opacity-50 disabled:cursor-not-allowed
 "
@@ -991,7 +991,7 @@ export function ProfileCard({
           className="absolute bottom-2 right-3
                            px-2.5 py-0.5 text-[10px] font-bold uppercase
                            tracking-wider text-white/90
-                           bg-black/30 backdrop-blur-sm rounded-full"
+                           bg-black/30 backdrop-blur-xs rounded-full"
         >
           {role}
         </span>
@@ -1083,7 +1083,7 @@ export function ProfileCard({
                             hover:bg-blue-100 dark:hover:bg-blue-900/40
                             hover:text-blue-600 dark:hover:text-blue-400
                             transition-colors duration-150
-                            focus-visible:outline-none focus-visible:ring-2
+                            focus-visible:outline-hidden focus-visible:ring-2
                             focus-visible:ring-blue-500"
             >
               {s.icon}
@@ -1095,7 +1095,7 @@ export function ProfileCard({
         <button
           className={`w-full py-2.5 text-sm font-semibold rounded-xl
                         transition-all duration-150 active:scale-[0.98]
-                        focus-visible:outline-none focus-visible:ring-2
+                        focus-visible:outline-hidden focus-visible:ring-2
                         focus-visible:ring-offset-2
                         ${
                           isFollowing
@@ -1174,7 +1174,7 @@ SETUP (v4.3)
   Custom colors:   --color-brand-600: #2563eb → bg-brand-600 ✅
   Custom spacing:  --spacing-18: 4.5rem → p-18, gap-18 ✅
   Custom fonts:    --font-display: var(--font-playfair) → font-display ✅
-  Custom utils:    @layer utilities { .text-balance { text-wrap: balance } }
+  Custom utils:    @utility content-auto { content-visibility: auto; }   (v3: @layer utilities)
   @apply:          Last resort for 10+ repeated patterns — use sparingly
 
 LAYOUT
@@ -1223,7 +1223,7 @@ BORDERS & EFFECTS
   Border:          border (1px), border-2, border-gray-200
   Divide:          divide-y divide-gray-200 — borders between list children
   Radius:          rounded-lg (8px), rounded-xl (12px), rounded-2xl (16px), rounded-full (pill)
-  Shadow:          shadow-sm (inputs), shadow-md (cards), shadow-lg (modals)
+  Shadow:          shadow-xs (inputs), shadow-md (cards), shadow-lg (modals)
   Ring:            ring-2 ring-blue-500 ring-offset-2 — use for focus, NOT shadow
   Dark shadows:    shadow-none dark:ring-1 dark:ring-gray-700 (shadows invisible on dark bg)
   Effects:         backdrop-blur-md + bg-white/80 = frosted glass

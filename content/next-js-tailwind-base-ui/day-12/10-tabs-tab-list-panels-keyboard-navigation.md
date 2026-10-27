@@ -62,8 +62,8 @@ function TabsTab({
     <TabsPrimitive.Tab
       className={cn(
         "inline-flex items-center justify-center font-medium text-sm",
-        "transition-all duration-150 cursor-pointer select-none outline-none",
-        "focus-visible:outline-none focus-visible:ring-2",
+        "transition-all duration-150 cursor-pointer select-none outline-hidden",
+        "focus-visible:outline-hidden focus-visible:ring-2",
         "focus-visible:ring-blue-500 focus-visible:ring-offset-1",
         // Default pill in container
         variant === "default" &&
@@ -73,7 +73,7 @@ function TabsTab({
             "hover:text-gray-900 dark:hover:text-white",
             "data-[active]:bg-white dark:data-[active]:bg-gray-700",
             "data-[active]:text-gray-900 dark:data-[active]:text-white",
-            "data-[active]:shadow-sm"
+            "data-[active]:shadow-xs"
           ),
         // Standalone pills
         variant === "pills" &&
@@ -82,7 +82,7 @@ function TabsTab({
             "text-gray-600 dark:text-gray-400",
             "hover:bg-gray-100 dark:hover:bg-gray-800",
             "data-[active]:bg-blue-600 data-[active]:text-white",
-            "data-[active]:shadow-sm data-[active]:hover:bg-blue-700"
+            "data-[active]:shadow-xs data-[active]:hover:bg-blue-700"
           ),
         // Underline
         variant === "underline" &&
@@ -104,7 +104,7 @@ function TabsTab({
 function TabsPanel({ className, ...props }: TabsPrimitive.Panel.Props) {
   return (
     <TabsPrimitive.Panel
-      className={cn("outline-none mt-4", "data-[hidden]:hidden", className)}
+      className={cn("outline-hidden mt-4", "data-[hidden]:hidden", className)}
       {...props}
     />
   );
@@ -326,7 +326,7 @@ export function SettingsTabs() {
                 className="w-full px-3 py-2.5 text-sm rounded-xl border
                              border-gray-300 dark:border-gray-600
                              bg-white dark:bg-gray-900 text-gray-900 dark:text-white
-                             focus:outline-none focus:ring-2 focus:ring-blue-500
+                             focus:outline-hidden focus:ring-2 focus:ring-blue-500
                              focus:border-transparent transition-colors"
               />
             </div>
@@ -366,7 +366,7 @@ export function SettingsTabs() {
                   className="w-full px-3 py-2.5 text-sm rounded-xl border
                                border-gray-300 dark:border-gray-600
                                bg-white dark:bg-gray-900 text-gray-900 dark:text-white
-                               focus:outline-none focus:ring-2 focus:ring-blue-500
+                               focus:outline-hidden focus:ring-2 focus:ring-blue-500
                                focus:border-transparent transition-colors"
                 />
               </div>
@@ -446,7 +446,7 @@ export function SettingsTabs() {
                 id={item.id}
                 type="checkbox"
                 defaultChecked={item.defaultChecked}
-                className="mt-0.5 size-4 rounded border-gray-300
+                className="mt-0.5 size-4 rounded-sm border-gray-300
                              text-blue-600 focus:ring-blue-500 cursor-pointer"
               />
               <div className="min-w-0">

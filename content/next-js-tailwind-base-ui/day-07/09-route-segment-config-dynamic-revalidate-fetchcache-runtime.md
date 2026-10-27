@@ -360,7 +360,7 @@ export default async function BlogPostPage({ params }: { params: Params }) {
   return (
     <article className="max-w-2xl mx-auto px-4 py-12">
       <div className="mb-2">
-        <span className="text-xs text-green-600 font-mono bg-green-50 px-2 py-0.5 rounded">
+        <span className="text-xs text-green-600 font-mono bg-green-50 px-2 py-0.5 rounded-sm">
           dynamic=error · revalidate=3600
         </span>
       </div>
@@ -409,7 +409,7 @@ export default async function AdminReportsPage() {
       <div>
         <h1 className="text-2xl font-bold">Admin Reports</h1>
         <div className="flex items-center gap-2 mt-1">
-          <span className="text-xs font-mono bg-red-50 text-red-600 px-2 py-0.5 rounded border border-red-200">
+          <span className="text-xs font-mono bg-red-50 text-red-600 px-2 py-0.5 rounded-sm border border-red-200">
             force-dynamic · fetchCache=force-no-store
           </span>
         </div>

@@ -57,7 +57,7 @@ export const userRouter = createTRPCRouter({
     .query(({ ctx }) => ctx.prisma.user.findMany({ take: 50 })),
 
   create: publicProcedure
-    .input(z.object({ name: z.string(), email: z.string().email() }))
+    .input(z.object({ name: z.string(), email: z.email() }))
     .mutation(({ input, ctx }) =>
       ctx.prisma.user.create({ data: input })
     ),

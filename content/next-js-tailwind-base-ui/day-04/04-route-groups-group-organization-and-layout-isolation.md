@@ -470,7 +470,7 @@ export default async function AdminLayout({
             <Link
               key={item.href}
               href={item.href}
-              className="block px-3 py-2 rounded text-sm
+              className="block px-3 py-2 rounded-sm text-sm
                              text-red-300 hover:text-white hover:bg-red-900"
             >
               {item.label}

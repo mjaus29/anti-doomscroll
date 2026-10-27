@@ -423,7 +423,7 @@ export const adminProcedure = protectedProcedure.use(enforceAdmin)
 | Session read once in context | Not `getSession` inside every handler |
 | RBAC in middleware, ownership in handler | Ownership needs the fetched resource |
 | Not owner or missing: `NOT_FOUND` | `FORBIDDEN` leaks that the resource exists |
-| Compose inputs with Zod | `.extend()` / `.merge()` shared base schemas |
+| Compose inputs with Zod | `.extend()` shared base schemas (`A.extend(B.shape)`; `.merge()` is deprecated in Zod 4) |
 
 **`TRPCError` codes:** `BAD_REQUEST` 400, `UNAUTHORIZED` 401, `FORBIDDEN` 403, `NOT_FOUND` 404, `CONFLICT` 409, `TOO_MANY_REQUESTS` 429, `INTERNAL_SERVER_ERROR` 500.
 

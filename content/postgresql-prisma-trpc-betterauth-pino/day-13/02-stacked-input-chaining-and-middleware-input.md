@@ -30,9 +30,9 @@ const filterSchema = z.object({
   status: z.enum(['todo','in_progress','done']).optional(),
 })
 
-// Merge: combine into a new schema
+// Combine into a new schema (Zod 4: .extend(B.shape); before Zod 4 this was A.merge(B), now deprecated)
 publicProcedure
-  .input(paginationSchema.merge(filterSchema))
+  .input(paginationSchema.extend(filterSchema.shape))
   .query(({ input }) => {
     input.cursor  // number | undefined ✅
     input.limit   // number ✅
@@ -64,8 +64,8 @@ export const paginationSchema = z.object({
 })
 
 export const dateRangeSchema = z.object({
-  from: z.string().datetime().transform(s => new Date(s)).optional(),
-  to:   z.string().datetime().transform(s => new Date(s)).optional(),
+  from: z.iso.datetime().transform(s => new Date(s)).optional(),
+  to:   z.iso.datetime().transform(s => new Date(s)).optional(),
 }).refine(
   d => !d.from || !d.to || d.from <= d.to,
   { message: 'from must be before to', path: ['from'] }
@@ -82,15 +82,13 @@ export const createTaskSchema = z.object({
 
 export const updateTaskSchema = createTaskSchema
   .partial()                             // all fields optional
-  .merge(idSchema)                       // add required id
+  .extend(idSchema.shape)                // add required id
   // { id: number; title?: string; priority?: enum; projectId?: number }
 
-export const listTaskSchema = paginationSchema.merge(
-  z.object({
-    projectId: z.number().optional(),
-    status:    z.enum(['todo','in_progress','done']).optional(),
-  })
-)
+export const listTaskSchema = paginationSchema.extend({
+  projectId: z.number().optional(),
+  status:    z.enum(['todo','in_progress','done']).optional(),
+})
 ```
 
 ```typescript
@@ -186,14 +184,14 @@ procedure
   .input(z.object({ tenantId: z.string() }))   // ← can't merge a string with an object ❌
 ```
 
-**Fix:** Use object schemas for stacked inputs, or build one schema with `.merge()`:
+**Fix:** Use object schemas for stacked inputs, or build one schema with `.extend()` (Zod 4; `.merge()` is deprecated):
 
 ```typescript
 // ✅
 procedure
   .input(
     z.object({ status: z.string() })
-     .merge(z.object({ tenantId: z.string() }))
+     .extend({ tenantId: z.string() })
   )
   // input.status AND input.tenantId both exist ✅
 ```
@@ -235,14 +233,14 @@ export const taskBaseSchema = z.object({
   status:   z.enum(['todo','in_progress','done']).default('todo'),
 })
 
-export const createTaskSchema = taskBaseSchema.merge(workspaceSchema)
-export const updateTaskSchema = taskBaseSchema.partial().merge(idSchema)
+export const createTaskSchema = taskBaseSchema.extend(workspaceSchema.shape)
+export const updateTaskSchema = taskBaseSchema.partial().extend(idSchema.shape)
 export const listTaskSchema   = paginationSchema
-  .merge(workspaceSchema)
-  .merge(z.object({
+  .extend(workspaceSchema.shape)
+  .extend({
     status:   z.enum(['todo','in_progress','done']).optional(),
     priority: z.enum(['low','medium','high','critical']).optional(),
-  }))
+  })
 
 // src/server/routers/task.ts
 import { createTRPCRouter, protectedProcedure } from '@/server/trpc'

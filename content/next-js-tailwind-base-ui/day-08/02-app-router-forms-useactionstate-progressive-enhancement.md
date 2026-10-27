@@ -45,7 +45,7 @@ export function CreateProductForm() {
       <input
         name="name"
         disabled={isPending} // ← disable during submission
-        className="border rounded px-3 py-2"
+        className="border rounded-sm px-3 py-2"
       />
       {state.errors?.name && (
         <p className="text-red-500 text-sm">{state.errors.name[0]}</p>
@@ -478,7 +478,7 @@ export function ContactForm() {
           placeholder="Your name"
           autoComplete="name"
           className={`w-full border rounded-lg px-3 py-2 text-sm
-                      focus:outline-none focus:ring-2 focus:ring-blue-500
+                      focus:outline-hidden focus:ring-2 focus:ring-blue-500
                       ${state.errors?.name ? "border-red-400" : "border-gray-200"}`}
         />
         <FieldError errors={state.errors?.name} />
@@ -494,7 +494,7 @@ export function ContactForm() {
           placeholder="you@example.com"
           autoComplete="email"
           className={`w-full border rounded-lg px-3 py-2 text-sm
-                      focus:outline-none focus:ring-2 focus:ring-blue-500
+                      focus:outline-hidden focus:ring-2 focus:ring-blue-500
                       ${state.errors?.email ? "border-red-400" : "border-gray-200"}`}
         />
         <FieldError errors={state.errors?.email} />
@@ -509,7 +509,7 @@ export function ContactForm() {
           rows={4}
           placeholder="How can we help?"
           className={`w-full border rounded-lg px-3 py-2 text-sm resize-none
-                      focus:outline-none focus:ring-2 focus:ring-blue-500
+                      focus:outline-hidden focus:ring-2 focus:ring-blue-500
                       ${state.errors?.message ? "border-red-400" : "border-gray-200"}`}
         />
         <FieldError errors={state.errors?.message} />

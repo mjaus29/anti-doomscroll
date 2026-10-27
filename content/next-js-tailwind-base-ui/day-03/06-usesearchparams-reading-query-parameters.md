@@ -111,7 +111,7 @@ export function SortSelector() {
     <select
       value={currentSort}
       onChange={(e) => updateSort(e.target.value)}
-      className="border rounded px-3 py-1.5 text-sm"
+      className="border rounded-sm px-3 py-1.5 text-sm"
     >
       <option value="createdAt">Newest</option>
       <option value="price">Price: Low to High</option>
@@ -218,7 +218,7 @@ import { Suspense } from "react";
 export default function ProductsPage() {
   return (
     <Suspense
-      fallback={<div className="h-10 bg-gray-100 animate-pulse rounded" />}
+      fallback={<div className="h-10 bg-gray-100 animate-pulse rounded-sm" />}
     >
       <SearchFilters />
     </Suspense>
@@ -341,7 +341,7 @@ function SearchBoxInner() {
         onChange={handleChange}
         placeholder="Search products..."
         className="w-full border rounded-lg pl-10 pr-8 py-2 text-sm
-                   focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   focus:outline-hidden focus:ring-2 focus:ring-blue-500"
       />
       <span className="absolute left-3 top-2.5 text-gray-400 text-sm">🔍</span>
       {value && (

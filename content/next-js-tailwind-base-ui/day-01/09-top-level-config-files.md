@@ -123,7 +123,7 @@ export default nextConfig;
   "name": "my-app",
   "version": "0.1.0",
   "scripts": {
-    "dev": "next dev --turbopack", // ← local development
+    "dev": "next dev", // ← local development (Turbopack is the default in v16)
     "build": "next build", // ← production build
     "start": "next start", // ← serve production build
     "lint": "eslint", // ← ESLint check

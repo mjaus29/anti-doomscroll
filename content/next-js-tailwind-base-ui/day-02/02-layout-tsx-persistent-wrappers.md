@@ -390,19 +390,19 @@ export function DashboardSidebar({ user }: { user: User }) {
           <nav className="p-4 space-y-1">
             <Link
               href="/dashboard"
-              className="block px-3 py-2 rounded hover:bg-gray-700"
+              className="block px-3 py-2 rounded-sm hover:bg-gray-700"
             >
               Overview
             </Link>
             <Link
               href="/dashboard/orders"
-              className="block px-3 py-2 rounded hover:bg-gray-700"
+              className="block px-3 py-2 rounded-sm hover:bg-gray-700"
             >
               Orders
             </Link>
             <Link
               href="/dashboard/profile"
-              className="block px-3 py-2 rounded hover:bg-gray-700"
+              className="block px-3 py-2 rounded-sm hover:bg-gray-700"
             >
               Profile
             </Link>

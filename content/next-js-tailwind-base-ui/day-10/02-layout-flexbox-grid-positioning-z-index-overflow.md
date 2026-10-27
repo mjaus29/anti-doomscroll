@@ -197,7 +197,7 @@ Tailwind provides direct utility classes for every CSS layout property. **Flexbo
 </div>
 
 {/* ─── Sticky nav */}
-<nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-sm border-b">
+<nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-xs border-b">
   Navigation
 </nav>
 
@@ -337,7 +337,7 @@ export function DashboardLayout() {
     <div className="min-h-screen bg-gray-50">
       {/* Sticky header */}
       <header
-        className="sticky top-0 z-40 bg-white/80 backdrop-blur-sm
+        className="sticky top-0 z-40 bg-white/80 backdrop-blur-xs
                          border-b border-gray-200 px-6 h-14 flex items-center
                          justify-between"
       >

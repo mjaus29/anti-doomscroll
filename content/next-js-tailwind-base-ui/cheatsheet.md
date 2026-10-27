@@ -310,7 +310,7 @@ import { Popover } from '@base-ui/react/popover'   // in a 'use client' file
 | Menu | Root, Trigger, Portal, Positioner, Popup, Item, Group, GroupLabel, Separator |
 | Select | Root, Trigger, Value, Portal, Positioner, Popup, Item, ItemText |
 | Tabs | Root, List, Tab, Indicator, Panel (no portal) |
-| Toast | Provider, Viewport, Root, Title, Description, Action, Close |
+| Toast | `Toast.Provider` > `Portal` > `Viewport` > `Root toast={toast}` > `Content` > Title, Description, Action, Close; trigger with `Toast.useToastManager().add({ title, description, type, timeout, actionProps })` |
 
 | Styling hook | Example |
 | --- | --- |

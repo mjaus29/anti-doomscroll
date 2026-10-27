@@ -300,7 +300,7 @@ export function FeaturedProductsRow({ featured, all }: Props) {
                 // ← prefetch on hover intent
                 router.prefetch(`/products/${p.id}`)
               }
-              className="block p-3 border rounded hover:border-blue-400 transition-colors"
+              className="block p-3 border rounded-sm hover:border-blue-400 transition-colors"
             >
               <p className="text-sm font-medium truncate">{p.name}</p>
               <p className="text-xs text-gray-400">${p.price}</p>

@@ -59,7 +59,7 @@ export function Card({ children, className }: CardProps) {
       // Base styles (always applied)
       'bg-white dark:bg-gray-800',
       'border border-gray-200 dark:border-gray-700',
-      'rounded-2xl p-6 shadow-sm',
+      'rounded-2xl p-6 shadow-xs',
       // Consumer override (applied last, wins conflicts)
       className
     )}>
@@ -110,7 +110,7 @@ export function CardRoot({ children, className }: { children: React.ReactNode; c
   return (
     <div className={cn(
       'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700',
-      'rounded-2xl shadow-sm overflow-hidden',
+      'rounded-2xl shadow-xs overflow-hidden',
       className
     )}>
       {children}

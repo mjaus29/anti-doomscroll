@@ -49,7 +49,7 @@ const buttonVariants = cva(
   // ─── Base classes (always applied)
   `inline-flex items-center justify-center font-semibold
    rounded-xl transition-all duration-150 active:scale-[0.97]
-   focus-visible:outline-none focus-visible:ring-2
+   focus-visible:outline-hidden focus-visible:ring-2
    focus-visible:ring-offset-2 disabled:opacity-50
    disabled:cursor-not-allowed disabled:pointer-events-none`,
   {
@@ -113,7 +113,7 @@ export const inputBase = [
   "border border-gray-300 dark:border-gray-600",
   "text-gray-900 dark:text-white",
   "placeholder:text-gray-400 dark:placeholder:text-gray-500",
-  "focus:outline-none focus:ring-2 focus:ring-blue-500",
+  "focus:outline-hidden focus:ring-2 focus:ring-blue-500",
   "focus:border-transparent",
   "transition-colors duration-150",
 ].join(" ");
@@ -129,7 +129,7 @@ export const labelBase =
 export const cardBase = [
   "bg-white dark:bg-gray-800",
   "border border-gray-200 dark:border-gray-700",
-  "rounded-2xl shadow-sm",
+  "rounded-2xl shadow-xs",
 ].join(" ");
 
 // Usage:
@@ -173,7 +173,7 @@ import { inputBase, inputError, labelBase, cardBase } from "@/lib/styles";
                           hover:text-blue-800 transition-colors;
   }
   .prose-acme code {
-    @apply font-mono text-sm bg-gray-100 px-1.5 py-0.5 rounded;
+    @apply font-mono text-sm bg-gray-100 px-1.5 py-0.5 rounded-sm;
   }
 
   /* For a third-party date picker you can't modify directly */
@@ -209,7 +209,7 @@ import { inputBase, inputError, labelBase, cardBase } from "@/lib/styles";
 /* ❌ @apply for a component pattern */
 @layer components {
   .card {
-    @apply bg-white border border-gray-200 rounded-2xl p-6 shadow-sm;
+    @apply bg-white border border-gray-200 rounded-2xl p-6 shadow-xs;
   }
   .card-title {
     @apply text-xl font-semibold text-gray-900;
@@ -227,7 +227,7 @@ export function Card({ title, children, className }: CardProps) {
   return (
     <div
       className={cn(
-        "bg-white border border-gray-200 rounded-2xl p-6 shadow-sm",
+        "bg-white border border-gray-200 rounded-2xl p-6 shadow-xs",
         className
       )}
     >

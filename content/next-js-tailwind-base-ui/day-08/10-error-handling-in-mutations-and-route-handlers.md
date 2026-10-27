@@ -701,7 +701,7 @@ export default function ProductsError({
       {error.digest && (
         <p
           className="text-xs font-mono text-gray-400 bg-gray-50 border
-                      rounded px-3 py-1.5 mb-6"
+                      rounded-sm px-3 py-1.5 mb-6"
         >
           Error ID: {error.digest}
         </p>
@@ -847,7 +847,7 @@ export function ProductForm() {
           placeholder="e.g. Air Max 90"
           aria-describedby={state.errors?.name ? "name-error" : undefined}
           className={`w-full border rounded-lg px-3 py-2 text-sm
-                      focus:outline-none focus:ring-2 focus:ring-blue-500
+                      focus:outline-hidden focus:ring-2 focus:ring-blue-500
                       ${
                         state.errors?.name
                           ? "border-red-400 focus:ring-red-300"
@@ -876,7 +876,7 @@ export function ProductForm() {
           placeholder="0.00"
           aria-describedby={state.errors?.price ? "price-error" : undefined}
           className={`w-full border rounded-lg px-3 py-2 text-sm
-                      focus:outline-none focus:ring-2 focus:ring-blue-500
+                      focus:outline-hidden focus:ring-2 focus:ring-blue-500
                       ${
                         state.errors?.price
                           ? "border-red-400 focus:ring-red-300"
@@ -904,7 +904,7 @@ export function ProductForm() {
           placeholder="0"
           aria-describedby={state.errors?.stock ? "stock-error" : undefined}
           className={`w-full border rounded-lg px-3 py-2 text-sm
-                      focus:outline-none focus:ring-2 focus:ring-blue-500
+                      focus:outline-hidden focus:ring-2 focus:ring-blue-500
                       ${
                         state.errors?.stock
                           ? "border-red-400 focus:ring-red-300"

@@ -76,9 +76,9 @@ function StatsSkeleton() {
 function TableSkeleton({ rows }: { rows: number }) {
   return (
     <div className="animate-pulse space-y-2">
-      <div className="h-10 bg-gray-200 rounded" />
+      <div className="h-10 bg-gray-200 rounded-sm" />
       {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="h-12 bg-gray-100 rounded" />
+        <div key={i} className="h-12 bg-gray-100 rounded-sm" />
       ))}
     </div>
   );

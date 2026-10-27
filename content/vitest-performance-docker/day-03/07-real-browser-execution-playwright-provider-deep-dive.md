@@ -225,6 +225,9 @@ describe('async content appearance', () => {
     // expect.element auto-retries until the assertion passes (up to the default timeout)
     await expect.element(content).toBeVisible()
     await expect.element(content).toHaveTextContent('Loaded from server')
+    // Vitest 5: toHaveTextContent is strict equality and no longer takes a regex;
+    // use toMatchTextContent(/Loaded/) for partial or regex matches.
+    // Locators also match exactly by default (browser.locators.exact: false restores partial matching).
   })
 })
 ```

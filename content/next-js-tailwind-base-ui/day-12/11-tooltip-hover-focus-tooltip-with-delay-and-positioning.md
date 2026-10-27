@@ -189,7 +189,7 @@ export function SimpleTooltipDemo() {
                              flex items-center justify-center text-lg
                              hover:bg-gray-200 dark:hover:bg-gray-700
                              transition-colors
-                             focus-visible:outline-none focus-visible:ring-2
+                             focus-visible:outline-hidden focus-visible:ring-2
                              focus-visible:ring-blue-500"
           aria-label="New file"
         >
@@ -203,7 +203,7 @@ export function SimpleTooltipDemo() {
                              flex items-center justify-center text-lg
                              hover:bg-gray-200 dark:hover:bg-gray-700
                              transition-colors
-                             focus-visible:outline-none focus-visible:ring-2
+                             focus-visible:outline-hidden focus-visible:ring-2
                              focus-visible:ring-blue-500"
           aria-label="Open folder"
         >
@@ -217,7 +217,7 @@ export function SimpleTooltipDemo() {
                              flex items-center justify-center text-lg
                              hover:bg-red-100 dark:hover:bg-red-900/40
                              transition-colors
-                             focus-visible:outline-none focus-visible:ring-2
+                             focus-visible:outline-hidden focus-visible:ring-2
                              focus-visible:ring-red-400"
           aria-label="Delete permanently"
         >
@@ -235,9 +235,9 @@ export function RichTooltipDemo() {
       <TooltipCompound.Trigger
         className="inline-flex items-center gap-1.5 text-sm text-blue-600
                     dark:text-blue-400 underline underline-offset-2
-                    cursor-help focus-visible:outline-none
+                    cursor-help focus-visible:outline-hidden
                     focus-visible:ring-2 focus-visible:ring-blue-500
-                    focus-visible:rounded"
+                    focus-visible:rounded-sm"
       >
         What is a webhook? ℹ️
       </TooltipCompound.Trigger>
@@ -386,7 +386,7 @@ function TT({
     <span className="flex items-center gap-2">
       {disabled ? disabledReason ?? 'Unavailable' : label}
       {shortcut && !disabled && (
-        <kbd className="px-1.5 py-0.5 rounded text-[10px] font-mono
+        <kbd className="px-1.5 py-0.5 rounded-sm text-[10px] font-mono
                          bg-white/20 border border-white/30">
           {shortcut}
         </kbd>
@@ -433,7 +433,7 @@ export function ToolbarWithTooltips() {
     <TooltipPrimitive.Provider delay={400} closeDelay={100}>
       <div className="inline-flex items-center gap-1 p-1.5
                        bg-white dark:bg-gray-800 border border-gray-200
-                       dark:border-gray-700 rounded-2xl shadow-sm">
+                       dark:border-gray-700 rounded-2xl shadow-xs">
         {TOOLS.map(tool => (
           <TT
             key={tool.label}
@@ -448,7 +448,7 @@ export function ToolbarWithTooltips() {
               className={cn(
                 'size-9 rounded-xl flex items-center justify-center text-base',
                 'transition-colors duration-150',
-                'focus-visible:outline-none focus-visible:ring-2',
+                'focus-visible:outline-hidden focus-visible:ring-2',
                 'focus-visible:ring-blue-500 focus-visible:ring-offset-1',
                 tool.disabled
                   ? 'opacity-35 cursor-not-allowed text-gray-400'

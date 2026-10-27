@@ -19,12 +19,12 @@ Tailwind uses **variant prefixes** (`hover:`, `focus:`, `focus-visible:`, `activ
 <div    className="opacity-80 hover:opacity-100">
 
 {/* ─── focus: — when focused (keyboard or mouse) */}
-<input  className="border border-gray-300 focus:border-blue-500 focus:outline-none
+<input  className="border border-gray-300 focus:border-blue-500 focus:outline-hidden
                    focus:ring-2 focus:ring-blue-500/20" />
 
 {/* ─── focus-visible: — ONLY when focused via keyboard (not mouse) */}
 <button className="focus-visible:ring-2 focus-visible:ring-blue-500
-                   focus-visible:ring-offset-2 focus-visible:outline-none">
+                   focus-visible:ring-offset-2 focus-visible:outline-hidden">
   Keyboard-accessible button
 </button>
 
@@ -87,7 +87,7 @@ Tailwind uses **variant prefixes** (`hover:`, `focus:`, `focus-visible:`, `activ
                    hover:bg-blue-700 active:scale-[0.97] transition-all
                    duration-150 ease-in-out focus-visible:ring-2
                    focus-visible:ring-blue-500 focus-visible:ring-offset-2
-                   focus-visible:outline-none disabled:opacity-50
+                   focus-visible:outline-hidden disabled:opacity-50
                    disabled:cursor-not-allowed">
   Submit
 </button>
@@ -183,7 +183,7 @@ Tailwind uses **variant prefixes** (`hover:`, `focus:`, `focus-visible:`, `activ
     className="peer sr-only"   {/* visually hidden but functional */}
   />
   {/* Custom checkbox visual — responds to peer state */}
-  <span className="w-5 h-5 border-2 border-gray-300 rounded
+  <span className="w-5 h-5 border-2 border-gray-300 rounded-sm
                    peer-checked:bg-blue-600 peer-checked:border-blue-600
                    peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500
                    flex items-center justify-center transition-colors">
@@ -202,7 +202,7 @@ Tailwind uses **variant prefixes** (`hover:`, `focus:`, `focus-visible:`, `activ
   <input
     type="email"
     className="peer w-full border rounded-lg px-3 py-2
-               focus:outline-none focus:ring-2 focus:ring-blue-500
+               focus:outline-hidden focus:ring-2 focus:ring-blue-500
                invalid:border-red-400 invalid:focus:ring-red-400"
     required
   />
@@ -226,7 +226,7 @@ Tailwind uses **variant prefixes** (`hover:`, `focus:`, `focus-visible:`, `activ
 
 ### Q1: What is the difference between `focus:` and `focus-visible:` variants in Tailwind?
 
-**A:** `focus:` applies styles whenever the element receives focus — both from keyboard navigation (Tab key) and mouse click. `focus-visible:` applies styles only when the browser determines the focus indicator should be shown based on the user's input modality — typically keyboard navigation but not mouse clicks. For accessibility, you should replace `focus:outline-none` with `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500` — this removes the distracting outline for mouse users (who can see what they clicked) while maintaining a clear focus indicator for keyboard users who need to know where focus is.
+**A:** `focus:` applies styles whenever the element receives focus — both from keyboard navigation (Tab key) and mouse click. `focus-visible:` applies styles only when the browser determines the focus indicator should be shown based on the user's input modality — typically keyboard navigation but not mouse clicks. For accessibility, you should replace `focus:outline-hidden` with `focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500` — this removes the distracting outline for mouse users (who can see what they clicked) while maintaining a clear focus indicator for keyboard users who need to know where focus is.
 
 ### Q2: How does `group` work in Tailwind and what problem does it solve?
 
@@ -340,7 +340,7 @@ export function FeatureRow({
           }}
           className="px-2.5 py-1 text-xs font-medium text-blue-600 bg-blue-100
                       rounded-lg hover:bg-blue-200 active:scale-95
-                      transition-all duration-150 focus-visible:outline-none
+                      transition-all duration-150 focus-visible:outline-hidden
                       focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           Edit
@@ -352,7 +352,7 @@ export function FeatureRow({
           }}
           className="px-2.5 py-1 text-xs font-medium text-red-600 bg-red-50
                       rounded-lg hover:bg-red-100 active:scale-95
-                      transition-all duration-150 focus-visible:outline-none
+                      transition-all duration-150 focus-visible:outline-hidden
                       focus-visible:ring-2 focus-visible:ring-red-400"
         >
           Delete
@@ -396,7 +396,7 @@ export function CustomCheckbox({ label, id, defaultChecked }: CheckboxProps) {
       {/* Custom checkbox visual — responds to peer state */}
       <span
         className="relative flex shrink-0 size-5 items-center justify-center
-                        rounded border-2 border-gray-300 bg-white
+                        rounded-sm border-2 border-gray-300 bg-white
                         transition-colors duration-150 ease-in-out
                         peer-checked:border-blue-600 peer-checked:bg-blue-600
                         peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500

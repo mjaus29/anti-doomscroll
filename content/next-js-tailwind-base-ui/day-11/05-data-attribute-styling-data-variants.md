@@ -94,7 +94,7 @@
 {/* Radix Dialog overlay */}
 <Dialog.Overlay
   className="
-    fixed inset-0 bg-black/50 backdrop-blur-sm
+    fixed inset-0 bg-black/50 backdrop-blur-xs
     data-[state=open]:animate-in data-[state=open]:fade-in
     data-[state=closed]:animate-out data-[state=closed]:fade-out
     duration-200
@@ -106,7 +106,7 @@
   className="
     flex items-center justify-between w-full px-3 py-2 rounded-lg
     border border-gray-300 dark:border-gray-600 text-sm
-    focus:outline-none focus:ring-2 focus:ring-blue-500
+    focus:outline-hidden focus:ring-2 focus:ring-blue-500
     data-[placeholder]:text-gray-400
     data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed
   "
@@ -161,7 +161,7 @@ export function AsyncButton({ onSubmit }: { onSubmit: () => Promise<void> }) {
         data-[state=success]:bg-green-600
         data-[state=error]:bg-red-600 data-[state=error]:hover:bg-red-700
 
-        focus-visible:outline-none focus-visible:ring-2
+        focus-visible:outline-hidden focus-visible:ring-2
         focus-visible:ring-blue-500 focus-visible:ring-offset-2
         disabled:cursor-not-allowed
 
@@ -203,7 +203,7 @@ export function AsyncButton({ onSubmit }: { onSubmit: () => Promise<void> }) {
     flex items-center gap-3 px-3 py-2 rounded-xl text-sm
     transition-colors
     data-[active=true]:bg-blue-600 data-[active=true]:text-white
-    data-[active=true]:font-semibold data-[active=true]:shadow-sm
+    data-[active=true]:font-semibold data-[active=true]:shadow-xs
     data-[active=false]:text-gray-600 data-[active=false]:hover:bg-gray-100
     dark:data-[active=false]:text-gray-400
     dark:data-[active=false]:hover:bg-gray-800
@@ -316,7 +316,7 @@ export function StatusButton({ label, onAction }: StatusButtonProps) {
       className="
         inline-flex items-center gap-2 px-6 py-3 rounded-xl
         font-semibold text-sm transition-all duration-200 text-white
-        focus-visible:outline-none focus-visible:ring-2
+        focus-visible:outline-hidden focus-visible:ring-2
         focus-visible:ring-offset-2
 
         data-[state=idle]:bg-blue-600

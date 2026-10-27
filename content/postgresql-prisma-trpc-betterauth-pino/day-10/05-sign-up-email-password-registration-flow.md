@@ -121,7 +121,7 @@ import { z } from 'zod'
 
 const signUpSchema = z.object({
   name:     z.string().min(2).max(100),
-  email:    z.string().email(),
+  email:    z.email(),   // Zod 4 top-level format (Zod 3: z.string().email())
   password: z.string().min(8).max(128),
   username: z.string()
     .regex(/^[a-z0-9_]+$/, 'Lowercase letters, numbers, underscores only')
@@ -191,7 +191,7 @@ import { NextRequest } from 'next/server'
 
 const schema = z.object({
   name:     z.string().min(2).max(100),
-  email:    z.string().email(),
+  email:    z.email(),
   password: z.string().min(8).max(128),
   username: z.string()
     .regex(/^[a-z0-9_]+$/)

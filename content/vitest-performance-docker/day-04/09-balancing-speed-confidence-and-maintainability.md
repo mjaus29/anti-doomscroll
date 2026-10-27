@@ -233,14 +233,14 @@ export default defineConfig({
     setupFiles:   ['./src/test/setup.ts'],
 
     // ── Mock management ───────────────────────────────────────────────────
-    clearMocks:   true,
+    clearMocks:   true,    // default in Vitest 5; explicit here for clarity
     resetMocks:   true,
     restoreMocks: true,
 
     // ── Timers ────────────────────────────────────────────────────────────
     fakeTimers: {
       // auto-enable fake timers globally (opt-out per test with vi.useRealTimers)
-      // Note: Vitest 4 supports toFake config for selective faking
+      // Note: toFake selects what is faked. Vitest 5 also fakes `Temporal` when it exists globally; add toNotFake: ['Temporal'] to keep it native
       toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'],
     },
 

@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-`@base-ui/react/toast` provides a full toast notification system — a `Toast.useToastManager()` hook (this lesson wraps it as `useToast`), `Viewport` for rendering toasts, and individual `Root`/`Title`/`Description`/`Close`/`Action` anatomy. Toasts are live regions announced by screen readers automatically.
+`@base-ui/react/toast` provides a full toast notification system — a `Toast.Provider` that owns the queue, a `Toast.useToastManager()` hook (this lesson wraps it as `useToast`) whose `add({ title, description, type, timeout, actionProps })` creates toasts, a `Toast.Portal` + `Toast.Viewport` that render the stack, and per-toast `Root`/`Content`/`Title`/`Description`/`Action`/`Close` anatomy. Toasts are live regions announced by screen readers automatically.
 
 ---
 
@@ -14,29 +14,34 @@
 
 ```tsx
 {
-  /* ─── Full anatomy */
+  /* ─── Full anatomy (stacked toasts) */
 }
 import { Toast } from "@base-ui/react/toast";
 
 {
-  /* 1. ToastProvider — wraps the app, manages the toast queue */
+  /* 1. Toast.Provider — creates the toast context / queue; wrap the app once */
 }
 <Toast.Provider>
   {children}
-  {/* 2. Viewport — renders the toast stack (fixed position, portalled) */}
-  <Toast.Viewport />
+  {/* 2. Portal — moves the viewport to <body> */}
+  <Toast.Portal>
+    {/* 3. Viewport — wraps the stack (an ARIA live region) */}
+    <Toast.Viewport>
+      {/* 4. One Toast.Root per toast, rendered from useToastManager().toasts */}
+      <Toast.Root toast={toast}>
+        <Toast.Content>
+          <Toast.Title /> {/* renders toast.title */}
+          <Toast.Description /> {/* renders toast.description */}
+          <Toast.Action /> {/* renders toast.actionProps */}
+          <Toast.Close /> {/* dismiss button */}
+        </Toast.Content>
+      </Toast.Root>
+    </Toast.Viewport>
+  </Toast.Portal>
 </Toast.Provider>;
-
-{
-  /* 3. Individual toast — rendered inside Viewport automatically */
-}
-<Toast.Root>
-  <Toast.Title /> {/* Bold heading */}
-  <Toast.Description /> {/* Supporting text */}
-  <Toast.Action /> {/* Optional CTA button */}
-  <Toast.Close /> {/* Dismiss button */}
-</Toast.Root>;
 ```
+
+Toasts are **data, not JSX you pass in**: you call `toastManager.add({ title, description, type, timeout, actionProps })` and a list component renders every entry of `useToastManager().toasts` with `<Toast.Root toast={toast}>`. There is no `render` option on `add()`.
 
 ### Full Toast Implementation
 
@@ -50,23 +55,7 @@ import { cn } from "@/lib/cn";
 // ─── Provider — wrap app root once
 export const ToastProvider = ToastPrimitive.Provider;
 
-// ─── Viewport — where toasts render (add once near app root)
-export function ToastViewport({ className }: { className?: string }) {
-  return (
-    <ToastPrimitive.Viewport
-      className={cn(
-        // Fixed stack in bottom-right corner
-        "fixed bottom-4 right-4 z-[100]",
-        "flex flex-col gap-2 w-[380px] max-w-[calc(100vw-2rem)]",
-        // Remove default list styling
-        "outline-none",
-        className
-      )}
-    />
-  );
-}
-
-// ─── Toast variant styles
+// ─── Variants map to Base UI's `type` field (sets data-type on Root)
 type ToastVariant = "default" | "success" | "error" | "warning" | "info";
 
 const VARIANT_STYLES: Record<ToastVariant, string> = {
@@ -93,26 +82,13 @@ const VARIANT_TITLE_COLOR: Record<ToastVariant, string> = {
   info: "text-blue-800 dark:text-blue-200",
 };
 
-// ─── Individual toast component
-interface ToastItemProps extends ToastPrimitive.Root.Props {
-  title: string;
-  description?: string;
-  variant?: ToastVariant;
-  actionLabel?: string;
-  onAction?: () => void;
-}
+// ─── Individual toast — renders ONE entry of the manager's `toasts` array
+function ToastItem({ toast }: { toast: ToastPrimitive.Root.ToastObject }) {
+  const variant = (toast.type as ToastVariant | undefined) ?? "default";
 
-export function ToastItem({
-  title,
-  description,
-  variant = "default",
-  actionLabel,
-  onAction,
-  className,
-  ...props
-}: ToastItemProps) {
   return (
     <ToastPrimitive.Root
+      toast={toast}
       className={cn(
         // Layout
         "flex items-start gap-3 p-4 rounded-2xl",
@@ -123,45 +99,34 @@ export function ToastItem({
         "data-[starting-style]:opacity-0 data-[starting-style]:translate-x-4",
         "data-[ending-style]:opacity-0   data-[ending-style]:translate-x-4",
         // Variant color
-        VARIANT_STYLES[variant],
-        className
+        VARIANT_STYLES[variant]
       )}
-      {...props}
     >
       {/* Icon */}
       <span className="shrink-0 text-xl leading-none mt-0.5">
         {VARIANT_ICONS[variant]}
       </span>
 
-      {/* Content */}
-      <div className="flex-1 min-w-0 space-y-1">
+      {/* Content — Title/Description render toast.title / toast.description */}
+      <ToastPrimitive.Content className="flex-1 min-w-0 space-y-1">
         <ToastPrimitive.Title
           className={cn(
             "text-sm font-semibold leading-tight",
             VARIANT_TITLE_COLOR[variant]
           )}
-        >
-          {title}
-        </ToastPrimitive.Title>
-        {description && (
-          <ToastPrimitive.Description className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-            {description}
-          </ToastPrimitive.Description>
-        )}
-        {/* Action button */}
-        {actionLabel && onAction && (
+        />
+        <ToastPrimitive.Description className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed" />
+        {/* Action button — rendered from toast.actionProps (children + onClick) */}
+        {toast.actionProps && (
           <ToastPrimitive.Action
-            onClick={onAction}
             className="mt-2 text-xs font-semibold text-blue-600
                         dark:text-blue-400 hover:text-blue-800
                         dark:hover:text-blue-300 transition-colors
-                        focus-visible:outline-none focus-visible:ring-2
-                        focus-visible:ring-blue-500 focus-visible:rounded"
-          >
-            {actionLabel} →
-          </ToastPrimitive.Action>
+                        focus-visible:outline-hidden focus-visible:ring-2
+                        focus-visible:ring-blue-500 focus-visible:rounded-sm"
+          />
         )}
-      </div>
+      </ToastPrimitive.Content>
 
       {/* Close button */}
       <ToastPrimitive.Close
@@ -170,7 +135,7 @@ export function ToastItem({
                     hover:bg-gray-100 dark:hover:bg-gray-700
                     hover:text-gray-600 dark:hover:text-gray-300
                     transition-colors
-                    focus-visible:outline-none focus-visible:ring-2
+                    focus-visible:outline-hidden focus-visible:ring-2
                     focus-visible:ring-gray-400"
         aria-label="Dismiss notification"
       >
@@ -180,66 +145,73 @@ export function ToastItem({
   );
 }
 
+// ─── Viewport — Portal + Viewport + the list (add once, INSIDE the Provider)
+export function ToastViewport({ className }: { className?: string }) {
+  const { toasts } = ToastPrimitive.useToastManager();
+
+  return (
+    <ToastPrimitive.Portal>
+      <ToastPrimitive.Viewport
+        className={cn(
+          // Fixed stack in bottom-right corner
+          "fixed bottom-4 right-4 z-[100]",
+          "flex flex-col gap-2 w-[380px] max-w-[calc(100vw-2rem)]",
+          "outline-hidden",
+          className
+        )}
+      >
+        {toasts.map((toast) => (
+          <ToastItem key={toast.id} toast={toast} />
+        ))}
+      </ToastPrimitive.Viewport>
+    </ToastPrimitive.Portal>
+  );
+}
+
 // ─── useToast hook — the imperative API to trigger toasts
+interface ToastOptions {
+  title: string;
+  description?: string;
+  variant?: ToastVariant;
+  timeout?: number;
+  actionLabel?: string;
+  onAction?: () => void;
+}
+
 export function useToast() {
-  const { add } = ToastPrimitive.useToastManager();
+  const toastManager = ToastPrimitive.useToastManager();
+
+  function toast({
+    title,
+    description,
+    variant = "default",
+    timeout = 5000,
+    actionLabel,
+    onAction,
+  }: ToastOptions) {
+    return toastManager.add({
+      title,
+      description,
+      type: variant, // → data-type on Toast.Root, read back in ToastItem
+      timeout, // ms; 0 disables auto-dismiss
+      priority: variant === "error" ? "high" : "low", // high = urgent announcement
+      actionProps:
+        actionLabel && onAction
+          ? { children: `${actionLabel} →`, onClick: onAction }
+          : undefined,
+    });
+  }
 
   return {
-    toast: (options: Omit<ToastItemProps, keyof ToastPrimitive.Root.Props>) => {
-      add({
-        // Render the ToastItem with our styled component
-        render: (props) => <ToastItem {...props} {...options} />,
-        timeout: 5000,
-      });
-    },
+    toast,
     success: (title: string, description?: string) =>
-      add({
-        render: (props) => (
-          <ToastItem
-            {...props}
-            title={title}
-            description={description}
-            variant="success"
-          />
-        ),
-        timeout: 4000,
-      }),
+      toast({ title, description, variant: "success", timeout: 4000 }),
     error: (title: string, description?: string) =>
-      add({
-        render: (props) => (
-          <ToastItem
-            {...props}
-            title={title}
-            description={description}
-            variant="error"
-          />
-        ),
-        timeout: 6000,
-      }),
+      toast({ title, description, variant: "error", timeout: 6000 }),
     warning: (title: string, description?: string) =>
-      add({
-        render: (props) => (
-          <ToastItem
-            {...props}
-            title={title}
-            description={description}
-            variant="warning"
-          />
-        ),
-        timeout: 5000,
-      }),
+      toast({ title, description, variant: "warning", timeout: 5000 }),
     info: (title: string, description?: string) =>
-      add({
-        render: (props) => (
-          <ToastItem
-            {...props}
-            title={title}
-            description={description}
-            variant="info"
-          />
-        ),
-        timeout: 4000,
-      }),
+      toast({ title, description, variant: "info", timeout: 4000 }),
   };
 }
 ```
@@ -248,8 +220,7 @@ export function useToast() {
 
 ```tsx
 // src/app/layout.tsx
-import { Toast as ToastPrimitive } from "@base-ui/react/toast";
-import { ToastViewport } from "@/components/ui/toast";
+import { ToastProvider, ToastViewport } from "@/components/ui/toast";
 
 export default function RootLayout({
   children,
@@ -259,11 +230,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <ToastPrimitive.Provider>
+        <ToastProvider>
           {children}
-          {/* Viewport renders all active toasts — one instance per app */}
+          {/* Viewport renders all active toasts — one instance per app,
+              and it must sit INSIDE the provider (it calls useToastManager) */}
           <ToastViewport />
-        </ToastPrimitive.Provider>
+        </ToastProvider>
       </body>
     </html>
   );
@@ -348,7 +320,7 @@ export function ToastDemo() {
 
 ### Q1: Why is a toast notification accessible without extra ARIA attributes, and what does Base UI handle automatically?
 
-**A:** `Toast.Viewport` renders as an ARIA live region (`aria-live="polite"` for default/success/info, `aria-live="assertive"` for errors) which instructs screen readers to announce any new content added to it. When a toast appears, its `Toast.Title` and `Toast.Description` text is read aloud immediately without the user needing to navigate to it. Base UI manages the live region role, the toast role (`role="status"` or `role="alert"`), and the announcement timing. You only need to ensure the title and description text is meaningful and concise.
+**A:** `Toast.Viewport` renders as an ARIA live region (toasts are announced politely by default and urgently when added with `priority: "high"`) which instructs screen readers to announce any new content added to it. When a toast appears, its `Toast.Title` and `Toast.Description` text is read aloud immediately without the user needing to navigate to it. Base UI manages the live region, the toast roles and the announcement timing. You only need to ensure the title and description text is meaningful and concise.
 
 ---
 
@@ -483,7 +455,7 @@ export function SaveFormButton() {
         "inline-flex items-center gap-2",
         "px-6 py-2.5 rounded-xl text-sm font-semibold text-white",
         "transition-all duration-150 active:scale-[0.98]",
-        "focus-visible:outline-none focus-visible:ring-2",
+        "focus-visible:outline-hidden focus-visible:ring-2",
         "focus-visible:ring-blue-500 focus-visible:ring-offset-2",
         saving ? "bg-blue-400 cursor-wait" : "bg-blue-600 hover:bg-blue-700"
       )}

@@ -98,7 +98,7 @@
     >
       <div className="group/edit">
         <button
-          className="px-2 py-1 rounded text-xs text-blue-600
+          className="px-2 py-1 rounded-sm text-xs text-blue-600
                             group-hover/edit:bg-blue-100 transition-colors"
         >
           Edit
@@ -106,7 +106,7 @@
       </div>
       <div className="group/delete">
         <button
-          className="px-2 py-1 rounded text-xs text-red-600
+          className="px-2 py-1 rounded-sm text-xs text-red-600
                             group-hover/delete:bg-red-50 transition-colors"
         >
           Delete
@@ -215,7 +215,7 @@
   </label>
   <input
     type="email"
-    className="mt-1 w-full text-sm border-0 outline-none
+    className="mt-1 w-full text-sm border-0 outline-hidden
                      text-gray-900 dark:text-white bg-transparent"
   />
 </div>;
@@ -356,7 +356,7 @@ export function KanbanCard({
       className="
       group/card relative flex flex-col gap-3 p-4 bg-white
       dark:bg-gray-800 border border-gray-200 dark:border-gray-700
-      rounded-xl shadow-sm
+      rounded-xl shadow-xs
       hover:shadow-md dark:hover:ring-1 dark:hover:ring-gray-600
       hover:-translate-y-0.5
       focus-within:ring-2 focus-within:ring-blue-500
@@ -375,7 +375,7 @@ export function KanbanCard({
         {["✏️", "🗑️", "⋯"].map((icon) => (
           <button
             key={icon}
-            className="size-6 rounded flex items-center justify-center
+            className="size-6 rounded-sm flex items-center justify-center
                               text-xs bg-white dark:bg-gray-700 border
                               border-gray-200 dark:border-gray-600
                               hover:bg-gray-100 dark:hover:bg-gray-600

@@ -22,7 +22,7 @@ export default defineConfig({
     },
 
     // ── Mock reset between files ───────────────────────────────────────────
-    clearMocks:   true,     // clear mock.calls, mock.results between files
+    clearMocks:   true,     // clear mock.calls, mock.results before each test (default in Vitest 5; false before)
     resetMocks:   true,     // reset mock implementation between files
     restoreMocks: true,     // restore vi.spyOn originals between files
 

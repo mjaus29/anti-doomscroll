@@ -90,14 +90,14 @@ Tailwind v4.3's color system uses CSS custom properties — every color utility 
 
 <p className="text-gray-900/70">   {/* text at 70% opacity */}
 <div className="border-gray-200/50"> {/* border at 50% opacity */}
-
+{/* ─── Old v3 way (REMOVED in v4 — no longer generates any CSS) */}
 {/* ─── Old v3 way (still works but verbose) */}
 <div className="bg-blue-600 bg-opacity-50"> {/* ← deprecated pattern */}
 {/* ─── v4 way */}
 <div className="bg-blue-600/50">            {/* ← clean modifier syntax ✅ */}
 
 {/* ─── Common opacity patterns */}
-<div className="bg-black/50 backdrop-blur-sm"> {/* modal overlay */}
+<div className="bg-black/50 backdrop-blur-xs"> {/* modal overlay */}
 <nav className="bg-white/80 backdrop-blur-md"> {/* frosted glass nav */}
 <div className="bg-blue-50/50">               {/* very subtle tint */}
 ```

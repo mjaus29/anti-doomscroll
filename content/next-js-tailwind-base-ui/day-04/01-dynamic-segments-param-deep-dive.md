@@ -213,7 +213,7 @@ export default async function BlogPostPage({
   return (
     <article className="prose mx-auto py-12 px-4">
       {preview === "true" && (
-        <div className="bg-yellow-50 border border-yellow-200 px-4 py-2 rounded mb-6 text-sm">
+        <div className="bg-yellow-50 border border-yellow-200 px-4 py-2 rounded-sm mb-6 text-sm">
           Preview Mode
         </div>
       )}

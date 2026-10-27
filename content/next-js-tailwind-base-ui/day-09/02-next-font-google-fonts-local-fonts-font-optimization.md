@@ -204,7 +204,7 @@ export function BlogPost({
     <article>
       <h1 className="font-display text-4xl font-bold">{title}</h1>
       <p className="font-sans text-base leading-relaxed">{content}</p>
-      <code className="font-mono text-sm bg-gray-100 px-2 rounded">
+      <code className="font-mono text-sm bg-gray-100 px-2 rounded-sm">
         const x = 1
       </code>
     </article>

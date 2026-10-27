@@ -35,13 +35,13 @@ Loading state = useTransition pending state OR loading.tsx
 export default function ProductsLoading() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="h-8 w-48 bg-gray-200 animate-pulse rounded mb-6" />
+      <div className="h-8 w-48 bg-gray-200 animate-pulse rounded-sm mb-6" />
       <div className="grid grid-cols-3 gap-6">
         {Array.from({ length: 9 }, (_, i) => (
           <div key={i} className="space-y-3">
             <div className="aspect-square bg-gray-200 animate-pulse rounded-xl" />
-            <div className="h-4 bg-gray-200 animate-pulse rounded w-3/4" />
-            <div className="h-4 bg-gray-200 animate-pulse rounded w-1/2" />
+            <div className="h-4 bg-gray-200 animate-pulse rounded-sm w-3/4" />
+            <div className="h-4 bg-gray-200 animate-pulse rounded-sm w-1/2" />
           </div>
         ))}
       </div>
@@ -307,7 +307,7 @@ export default function RootTemplate({
         ref={barRef}
         aria-hidden="true"
         className="fixed top-0 left-0 h-[2px] bg-blue-500
-                   z-[9999] rounded-full shadow-sm shadow-blue-400"
+                   z-[9999] rounded-full shadow-xs shadow-blue-400"
         style={{ width: "0%", opacity: 0 }}
       />
       {children}
@@ -714,7 +714,7 @@ export function SubmitWithNavigation({
         "bg-blue-600 text-white",
         "hover:bg-blue-700 transition-colors",
         "disabled:opacity-60 disabled:cursor-wait",
-        "focus-visible:outline-none focus-visible:ring-2",
+        "focus-visible:outline-hidden focus-visible:ring-2",
         "focus-visible:ring-blue-500 focus-visible:ring-offset-2",
         className
       )}
@@ -811,7 +811,7 @@ export function NewProductPageContent() {
           required
           placeholder="e.g. Air Max 90"
           className="w-full border rounded-lg px-3 py-2.5 text-sm
-                     focus:outline-none focus:ring-2 focus:ring-blue-500"
+                     focus:outline-hidden focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
@@ -828,7 +828,7 @@ export function NewProductPageContent() {
           required
           placeholder="0.00"
           className="w-full border rounded-lg px-3 py-2.5 text-sm
-                     focus:outline-none focus:ring-2 focus:ring-blue-500"
+                     focus:outline-hidden focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
@@ -845,7 +845,7 @@ export function NewProductPageContent() {
           rows={4}
           placeholder="Product description..."
           className="w-full border rounded-lg px-3 py-2.5 text-sm
-                     focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                     focus:outline-hidden focus:ring-2 focus:ring-blue-500 resize-none"
         />
       </div>
 

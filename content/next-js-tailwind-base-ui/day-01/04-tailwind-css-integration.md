@@ -82,7 +82,7 @@ export default function HomePage() {
           text-white font-medium
           rounded-lg
           transition-colors duration-200
-          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+          focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
         "
         >
           Get Started
@@ -326,7 +326,7 @@ export function Card({
     <div
       className={cn(
         // Base styles
-        "rounded-xl border p-6 shadow-sm",
+        "rounded-xl border p-6 shadow-xs",
         // Variant styles
         variantStyles[variant],
         // Caller override — wins over variant via twMerge

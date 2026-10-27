@@ -360,7 +360,7 @@ export default async function WikiPage({ params }: { params: Params }) {
 
       <div className="text-gray-500 text-sm mb-8">
         Path:{" "}
-        <code className="bg-gray-100 px-2 py-0.5 rounded">
+        <code className="bg-gray-100 px-2 py-0.5 rounded-sm">
           /wiki/{fullPath}
         </code>
         {subpath.length > 0 && (

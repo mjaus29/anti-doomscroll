@@ -84,7 +84,7 @@ Tailwind v4.3 supports **complex CSS selectors** as variants — `*:` targets al
 >
   <input type="checkbox" className="sr-only peer" />
   <span
-    className="size-5 rounded border-2 border-gray-300 flex
+    className="size-5 rounded-sm border-2 border-gray-300 flex
                     items-center justify-center
                     peer-checked:border-blue-600 peer-checked:bg-blue-600
                     transition-colors"
@@ -129,7 +129,7 @@ Tailwind v4.3 supports **complex CSS selectors** as variants — `*:` targets al
     type="email"
     required
     className="w-full px-3 py-2 border rounded-lg text-sm
-                     focus:outline-none border-gray-300"
+                     focus:outline-hidden border-gray-300"
   />
 </div>;
 
@@ -402,7 +402,7 @@ export function SelectableList() {
               {/* Custom checkbox */}
               <span
                 className="
-                shrink-0 mt-0.5 size-5 rounded border-2 border-gray-300
+                shrink-0 mt-0.5 size-5 rounded-sm border-2 border-gray-300
                 flex items-center justify-center transition-colors
                 peer-checked:border-blue-600 peer-checked:bg-blue-600
               "
@@ -453,7 +453,7 @@ export function SelectableList() {
         [&_a]:hover:text-blue-800 [&_a]:transition-colors
         [&_code]:font-mono [&_code]:text-xs [&_code]:bg-gray-100
         [&_code]:dark:bg-gray-700 [&_code]:px-1.5 [&_code]:py-0.5
-        [&_code]:rounded [&_code]:text-purple-700
+        [&_code]:rounded-sm [&_code]:text-purple-700
         dark:[&_code]:text-purple-300
         [&_blockquote]:border-l-4 [&_blockquote]:border-blue-300
         [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-gray-500

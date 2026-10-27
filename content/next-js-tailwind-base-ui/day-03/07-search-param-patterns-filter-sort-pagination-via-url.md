@@ -193,7 +193,7 @@ function Controls() {
           type="checkbox"
           checked={filters.inStock}
           onChange={(e) => navigate({ inStock: e.target.checked })}
-          className="rounded"
+          className="rounded-sm"
         />
         In Stock Only
       </label>
@@ -212,7 +212,7 @@ function Controls() {
 export function ProductListControls() {
   return (
     <Suspense
-      fallback={<div className="h-12 bg-gray-100 animate-pulse rounded" />}
+      fallback={<div className="h-12 bg-gray-100 animate-pulse rounded-sm" />}
     >
       <Controls />
     </Suspense>
@@ -259,7 +259,7 @@ function PaginationInner({ total, limit = 20 }: PaginationProps) {
         href={buildPageUrl(currentPage - 1)}
         scroll={false}
         aria-disabled={currentPage === 1}
-        className={`px-3 py-1.5 rounded border text-sm ${
+        className={`px-3 py-1.5 rounded-sm border text-sm ${
           currentPage === 1
             ? "pointer-events-none text-gray-300 border-gray-200"
             : "hover:bg-gray-50"
@@ -276,7 +276,7 @@ function PaginationInner({ total, limit = 20 }: PaginationProps) {
             href={buildPageUrl(page)}
             scroll={false}
             aria-current={currentPage === page ? "page" : undefined}
-            className={`px-3 py-1.5 rounded border text-sm ${
+            className={`px-3 py-1.5 rounded-sm border text-sm ${
               currentPage === page
                 ? "bg-blue-600 text-white border-blue-600"
                 : "hover:bg-gray-50"
@@ -291,7 +291,7 @@ function PaginationInner({ total, limit = 20 }: PaginationProps) {
         href={buildPageUrl(currentPage + 1)}
         scroll={false}
         aria-disabled={currentPage === totalPages}
-        className={`px-3 py-1.5 rounded border text-sm ${
+        className={`px-3 py-1.5 rounded-sm border text-sm ${
           currentPage === totalPages
             ? "pointer-events-none text-gray-300 border-gray-200"
             : "hover:bg-gray-50"

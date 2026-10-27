@@ -13,7 +13,7 @@ The local development loop is: `pnpm dev` → edit file → see change in browse
 ### Starting the Dev Server
 
 ```bash
-pnpm dev                    # Turbopack (default in Next.js 16)
+pnpm dev                    # Turbopack (default in Next.js 16, no flag needed)
 pnpm dev -- --port 3001     # Custom port
 pnpm dev -- --hostname 0.0.0.0  # Accessible on local network (for mobile testing)
 
@@ -182,7 +182,7 @@ pnpm dev -- --hostname 0.0.0.0
 
 ### Q1: What is Turbopack and how does it improve the development experience?
 
-**A:** Turbopack is Next.js's Rust-based bundler that replaced Webpack for dev in Next.js 16. It uses incremental compilation — only rebuilding modules that changed, not the whole bundle. This reduces HMR update time from seconds (Webpack) to milliseconds (Turbopack). Cold start time for large apps drops from 30+ seconds to under 2 seconds.
+**A:** Turbopack is Next.js's Rust-based bundler that became the default bundler for both `next dev` and `next build` in Next.js 16 (replacing Webpack). It uses incremental compilation — only rebuilding modules that changed, not the whole bundle. This reduces HMR update time from seconds (Webpack) to milliseconds (Turbopack). Cold start time for large apps drops from 30+ seconds to under 2 seconds.
 
 ### Q2: What is React Fast Refresh and what breaks it?
 
@@ -196,16 +196,16 @@ pnpm dev -- --hostname 0.0.0.0
 
 ## C — Common Pitfalls + Fix
 
-### ❌ Pitfall: Running `next dev` without Turbopack on Next.js 16
-
-```bash
-next dev   # ← Without --turbopack flag, falls back to Webpack in older configs
-```
-
-**Fix:** Ensure `--turbopack` is in your dev script (it's default in Next.js 16's `create-next-app`):
+### ❌ Pitfall: Passing `--turbopack` / `--turbo` flags that are no longer needed
 
 ```json
-{ "scripts": { "dev": "next dev --turbopack" } }
+{ "scripts": { "dev": "next dev --turbopack" } }   // ← redundant in Next.js 16 (before v16 this flag opted in)
+```
+
+**Fix:** Turbopack is the default for both `next dev` and `next build` in Next.js 16, so plain `next dev` is enough. Only add `--webpack` (`next dev --webpack`) if you must opt out, e.g. because of a custom `webpack()` config:
+
+```json
+{ "scripts": { "dev": "next dev" } }
 ```
 
 ### ❌ Pitfall: Editing `.env.local` and not restarting
@@ -254,8 +254,8 @@ Write a `package.json` scripts section for a Next.js 16 project that:
 ```json
 {
   "scripts": {
-    "dev": "next dev --turbopack --port 3000",
-    "dev:network": "next dev --turbopack --hostname 0.0.0.0 --port 3000",
+    "dev": "next dev --port 3000",
+    "dev:network": "next dev --hostname 0.0.0.0 --port 3000",
     "build": "npm run type-check && npm run lint && next build",
     "start": "next start",
     "lint": "eslint",

@@ -62,9 +62,9 @@ export default function DashboardLoading() {
       <div className="grid grid-cols-3 gap-4 mb-8">
         {Array.from({ length: 3 }, (_, i) => (
           <div key={i} className="bg-white rounded-xl border p-5">
-            <div className="h-4 w-24 bg-gray-200 rounded mb-3" />
-            <div className="h-8 w-16 bg-gray-200 rounded mb-2" />
-            <div className="h-3 w-20 bg-gray-100 rounded" />
+            <div className="h-4 w-24 bg-gray-200 rounded-sm mb-3" />
+            <div className="h-8 w-16 bg-gray-200 rounded-sm mb-2" />
+            <div className="h-3 w-20 bg-gray-100 rounded-sm" />
           </div>
         ))}
       </div>
@@ -74,9 +74,9 @@ export default function DashboardLoading() {
         <div className="h-12 bg-gray-50 border-b" />
         {Array.from({ length: 5 }, (_, i) => (
           <div key={i} className="flex gap-4 px-4 py-3 border-b">
-            <div className="h-4 w-20 bg-gray-200 rounded" />
-            <div className="h-4 w-32 bg-gray-200 rounded" />
-            <div className="h-4 w-16 bg-gray-200 rounded ml-auto" />
+            <div className="h-4 w-20 bg-gray-200 rounded-sm" />
+            <div className="h-4 w-32 bg-gray-200 rounded-sm" />
+            <div className="h-4 w-16 bg-gray-200 rounded-sm ml-auto" />
           </div>
         ))}
       </div>
@@ -260,7 +260,7 @@ export default function Loading() {
 export default function Loading() {
   return (
     <div className="p-8">
-      <div className="h-8 w-48 bg-gray-200 rounded mb-6" /> {/* title */}
+      <div className="h-8 w-48 bg-gray-200 rounded-sm mb-6" /> {/* title */}
       <div className="grid grid-cols-3 gap-4 mb-8">
         {" "}
         {/* stats */}
@@ -325,13 +325,13 @@ export default function ProductsLoading() {
       <div className="h-48 bg-gray-200 animate-pulse rounded-2xl mb-10" />
 
       {/* Product grid skeleton */}
-      <div className="h-7 w-36 bg-gray-200 rounded animate-pulse mb-6" />
+      <div className="h-7 w-36 bg-gray-200 rounded-sm animate-pulse mb-6" />
       <div className="grid grid-cols-3 gap-6">
         {Array.from({ length: 6 }, (_, i) => (
           <div key={i} className="animate-pulse">
             <div className="aspect-square bg-gray-200 rounded-xl mb-3" />
-            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
-            <div className="h-4 bg-gray-200 rounded w-1/2 mb-2" />
+            <div className="h-4 bg-gray-200 rounded-sm w-3/4 mb-2" />
+            <div className="h-4 bg-gray-200 rounded-sm w-1/2 mb-2" />
             <div className="h-9 bg-gray-200 rounded-lg mt-3" />
           </div>
         ))}
@@ -442,13 +442,13 @@ export default function ProductsPage() {
       <Suspense
         fallback={
           <div>
-            <div className="h-7 w-36 bg-gray-200 rounded animate-pulse mb-6" />
+            <div className="h-7 w-36 bg-gray-200 rounded-sm animate-pulse mb-6" />
             <div className="grid grid-cols-3 gap-6">
               {Array.from({ length: 6 }, (_, i) => (
                 <div key={i} className="animate-pulse">
                   <div className="aspect-square bg-gray-200 rounded-xl mb-3" />
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
-                  <div className="h-4 bg-gray-200 rounded w-1/2 mb-2" />
+                  <div className="h-4 bg-gray-200 rounded-sm w-3/4 mb-2" />
+                  <div className="h-4 bg-gray-200 rounded-sm w-1/2 mb-2" />
                   <div className="h-9 bg-gray-200 rounded-lg mt-3" />
                 </div>
               ))}

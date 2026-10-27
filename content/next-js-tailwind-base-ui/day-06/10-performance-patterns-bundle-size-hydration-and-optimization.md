@@ -798,9 +798,9 @@ export default async function ProductsPage() {
                 <div className="aspect-square bg-gray-200" />{" "}
                 {/* matches Image */}
                 <div className="p-4">
-                  <div className="h-3 w-16 bg-gray-200 rounded mb-1.5" />
-                  <div className="h-4 w-3/4 bg-gray-200 rounded mb-1" />
-                  <div className="h-6 w-1/3 bg-gray-200 rounded mb-3" />
+                  <div className="h-3 w-16 bg-gray-200 rounded-sm mb-1.5" />
+                  <div className="h-4 w-3/4 bg-gray-200 rounded-sm mb-1" />
+                  <div className="h-6 w-1/3 bg-gray-200 rounded-sm mb-3" />
                   <div className="h-8 bg-gray-200 rounded-lg" />{" "}
                   {/* matches button */}
                 </div>

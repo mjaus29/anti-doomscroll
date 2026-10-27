@@ -1,4 +1,4 @@
-# 5 — Tailwind Styling for Primitives — `data-[state]`, `cn()`, Base UI
+# 5 — Tailwind Styling for Primitives — `data-open` / `data-closed`, `cn()`, Base UI
 
 ---
 
@@ -80,7 +80,7 @@ export const POPUP_BASE = [
   "bg-white dark:bg-gray-800",
   "border border-gray-200 dark:border-gray-700",
   "rounded-2xl shadow-xl z-50",
-  "outline-none",
+  "outline-hidden",
 ].join(" ");
 
 export const POPUP_TRANSITION = [
@@ -94,7 +94,7 @@ export const ITEM_BASE = [
   "flex items-center gap-2 w-full",
   "px-3 py-2 rounded-lg text-sm",
   "text-gray-700 dark:text-gray-300",
-  "cursor-pointer select-none outline-none",
+  "cursor-pointer select-none outline-hidden",
   "transition-colors duration-100",
 ].join(" ");
 
@@ -110,12 +110,12 @@ export const ITEM_DISABLED = [
 ].join(" ");
 
 export const FOCUS_RING =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2";
+  "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2";
 
 export const TRIGGER_BASE = [
   "inline-flex items-center gap-2",
   "font-medium transition-colors duration-150",
-  "focus-visible:outline-none focus-visible:ring-2",
+  "focus-visible:outline-hidden focus-visible:ring-2",
   "focus-visible:ring-blue-500 focus-visible:ring-offset-2",
 ].join(" ");
 ```
@@ -239,7 +239,7 @@ export function HighlightableItem({
       className={cn(
         // ─── Layout (always applied)
         "flex items-center gap-2.5 w-full px-3 py-2 rounded-xl",
-        "text-sm cursor-pointer select-none outline-none",
+        "text-sm cursor-pointer select-none outline-hidden",
         "transition-colors duration-100",
 
         // ─── Default state

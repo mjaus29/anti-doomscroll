@@ -84,6 +84,8 @@ thresholds: {
   lines: 80,
   // Also enforce on each individual file:
   perFile: true,  // any file below 80% lines fails the run
+  // Vitest 5: a top-level perFile no longer applies to glob thresholds;
+  // set perFile: true on each glob entry that needs it.
 }
 // Useful for: preventing new files from being added with 0% coverage
 ```
@@ -149,7 +151,7 @@ coverage: {
 }
 ```
 
-**Fix:** Explicitly exclude non-production code:
+**Fix:** Explicitly exclude non-production code (Vitest 5 matches `include`/`exclude` against relative paths, and a pattern with no wildcard such as `src` matches everything under that directory, so review your file set after upgrading):
 
 ```typescript
 // ✅

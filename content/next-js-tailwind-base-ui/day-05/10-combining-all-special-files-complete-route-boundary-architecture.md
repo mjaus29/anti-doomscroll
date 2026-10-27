@@ -804,7 +804,7 @@ export default function ProjectLoading() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <div className="h-7 w-48 bg-gray-200 rounded-lg mb-2" />
-          <div className="h-4 w-32 bg-gray-100 rounded" />
+          <div className="h-4 w-32 bg-gray-100 rounded-sm" />
         </div>
         <div className="h-9 w-24 bg-gray-200 rounded-lg" />
       </div>
@@ -814,19 +814,19 @@ export default function ProjectLoading() {
         {/* Main content — 2/3 width */}
         <div className="col-span-2 space-y-4">
           <div className="bg-white border rounded-xl p-5">
-            <div className="h-5 w-28 bg-gray-200 rounded mb-4" />
+            <div className="h-5 w-28 bg-gray-200 rounded-sm mb-4" />
             <div className="space-y-2">
               {[90, 80, 70, 60].map((w) => (
                 <div
                   key={w}
-                  className="h-4 bg-gray-100 rounded"
+                  className="h-4 bg-gray-100 rounded-sm"
                   style={{ width: `${w}%` }}
                 />
               ))}
             </div>
           </div>
           <div className="bg-white border rounded-xl p-5 h-40">
-            <div className="h-5 w-24 bg-gray-200 rounded mb-4" />
+            <div className="h-5 w-24 bg-gray-200 rounded-sm mb-4" />
             <div className="h-24 bg-gray-100 rounded-lg" />
           </div>
         </div>
@@ -834,11 +834,11 @@ export default function ProjectLoading() {
         {/* Sidebar — 1/3 width */}
         <div className="space-y-4">
           <div className="bg-white border rounded-xl p-4">
-            <div className="h-4 w-24 bg-gray-200 rounded mb-3" />
+            <div className="h-4 w-24 bg-gray-200 rounded-sm mb-3" />
             {[1, 2, 3].map((i) => (
               <div key={i} className="flex items-center gap-2 py-2">
                 <div className="w-7 h-7 bg-gray-200 rounded-full shrink-0" />
-                <div className="h-4 bg-gray-100 rounded flex-1" />
+                <div className="h-4 bg-gray-100 rounded-sm flex-1" />
               </div>
             ))}
           </div>
@@ -1179,11 +1179,11 @@ export default async function ProjectPage({ params }: { params: Params }) {
           <Suspense
             fallback={
               <div className="bg-white border rounded-xl p-4 animate-pulse">
-                <div className="h-4 w-20 bg-gray-200 rounded mb-3" />
+                <div className="h-4 w-20 bg-gray-200 rounded-sm mb-3" />
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="flex items-center gap-2 py-2">
                     <div className="w-7 h-7 bg-gray-200 rounded-full shrink-0" />
-                    <div className="h-4 bg-gray-100 rounded flex-1" />
+                    <div className="h-4 bg-gray-100 rounded-sm flex-1" />
                   </div>
                 ))}
               </div>

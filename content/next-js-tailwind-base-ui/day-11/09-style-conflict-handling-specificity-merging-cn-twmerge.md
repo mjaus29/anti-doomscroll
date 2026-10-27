@@ -79,7 +79,7 @@ twMerge("p-4 p-6"); // → 'p-6' (p-4 removed ✅)
 twMerge("p-4 px-6"); // → 'p-4 px-6' (different axes — both kept ✅)
 twMerge("bg-red-500 bg-blue-600"); // → 'bg-blue-600' (bg-red-500 removed ✅)
 twMerge("text-sm font-bold text-lg"); // → 'font-bold text-lg' ✅
-twMerge("rounded rounded-xl"); // → 'rounded-xl' ✅
+twMerge("rounded-sm rounded-xl"); // → 'rounded-xl' ✅
 
 // With clsx conditionals:
 cn("p-4", isLarge && "p-8");
@@ -106,10 +106,10 @@ twMerge("bg-white/50 bg-white/80"); // 'bg-white/80'
 // Size conflicts
 twMerge("w-4 w-8"); // 'w-8'
 twMerge("text-sm text-lg"); // 'text-lg'
-twMerge("rounded rounded-xl"); // 'rounded-xl'
+twMerge("rounded-sm rounded-xl"); // 'rounded-xl'
 
 // Shadow/ring conflicts
-twMerge("shadow shadow-xl"); // 'shadow-xl'
+twMerge("shadow-sm shadow-xl"); // 'shadow-xl'
 twMerge("ring-2 ring-4"); // 'ring-4'
 
 // What twMerge does NOT resolve (different properties — both kept):
@@ -172,7 +172,7 @@ function Input({ hasError, isDisabled, className }) {
       className={cn(
         "w-full px-3 py-2.5 text-sm rounded-xl border transition-colors",
         "bg-white dark:bg-gray-900 text-gray-900 dark:text-white",
-        "focus:outline-none focus:ring-2 focus:border-transparent",
+        "focus:outline-hidden focus:ring-2 focus:border-transparent",
         {
           // Object form: { className: condition }
           "border-gray-300 dark:border-gray-600 focus:ring-blue-500": !hasError,
@@ -502,7 +502,7 @@ export function Input({
             // Base
             "w-full px-3 py-2.5 text-sm rounded-xl border",
             "transition-colors duration-150",
-            "focus:outline-none focus:ring-2",
+            "focus:outline-hidden focus:ring-2",
             // State-driven (cn resolves conflicts — only ONE border color wins)
             STATE_BG[state],
             STATE_BORDER[state],

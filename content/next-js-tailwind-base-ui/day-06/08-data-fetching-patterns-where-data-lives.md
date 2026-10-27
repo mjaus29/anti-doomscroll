@@ -158,7 +158,7 @@ export function LiveOrderStatus({ orderId }: { orderId: string }) {
   });
 
   if (isLoading)
-    return <div className="animate-pulse h-12 bg-gray-100 rounded" />;
+    return <div className="animate-pulse h-12 bg-gray-100 rounded-sm" />;
 
   return (
     <div className="bg-white border rounded-xl p-5">
@@ -236,7 +236,7 @@ export default function ProductPage({ params }) {
   }, [params.id]);
 
   if (loading)
-    return <div className="animate-pulse h-48 bg-gray-100 rounded" />;
+    return <div className="animate-pulse h-48 bg-gray-100 rounded-sm" />;
   return <ProductView product={product} />;
 }
 // Problems:
@@ -680,8 +680,8 @@ export function LiveActivity() {
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="flex items-center gap-2">
               <div className="w-6 h-6 bg-gray-200 rounded-full shrink-0" />
-              <div className="h-4 bg-gray-200 rounded flex-1" />
-              <div className="h-3 bg-gray-100 rounded w-12" />
+              <div className="h-4 bg-gray-200 rounded-sm flex-1" />
+              <div className="h-3 bg-gray-100 rounded-sm w-12" />
             </div>
           ))}
         </div>

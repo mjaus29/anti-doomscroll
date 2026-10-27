@@ -104,7 +104,7 @@ function UrlTabsInner({ tabs, defaultTab, paramKey = "tab" }: UrlTabsProps) {
 export function UrlTabs(props: UrlTabsProps) {
   return (
     <Suspense
-      fallback={<div className="h-12 bg-gray-100 animate-pulse rounded" />}
+      fallback={<div className="h-12 bg-gray-100 animate-pulse rounded-sm" />}
     >
       <UrlTabsInner {...props} />
     </Suspense>
@@ -221,7 +221,7 @@ function ViewToggleInner() {
           key={v}
           href={buildViewUrl(v)}
           scroll={false}
-          className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+          className={`px-3 py-1.5 rounded-sm text-sm font-medium transition-colors ${
             view === v
               ? "bg-blue-600 text-white"
               : "text-gray-600 hover:text-gray-900"
@@ -445,7 +445,7 @@ export function ProductDetailTabs(props: Props) {
               />
             ))}
           </div>
-          <div className="h-48 bg-gray-50 animate-pulse rounded mt-4" />
+          <div className="h-48 bg-gray-50 animate-pulse rounded-sm mt-4" />
         </div>
       }
     >

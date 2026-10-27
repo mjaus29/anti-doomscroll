@@ -182,7 +182,7 @@ export default function RootNotFound() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search the site..."
             className="flex-1 border rounded-lg px-3 py-2.5 text-sm
-                       focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       focus:outline-hidden focus:ring-2 focus:ring-blue-500"
             autoFocus
           />
           <button
@@ -491,7 +491,7 @@ const isDev = process.env.NODE_ENV === "development";
 
 {
   isDev && (
-    <pre className="text-xs bg-gray-100 p-3 rounded text-left overflow-auto mt-4">
+    <pre className="text-xs bg-gray-100 p-3 rounded-sm text-left overflow-auto mt-4">
       {error.stack}
     </pre>
   );
@@ -567,7 +567,7 @@ export default function ReportsLoading() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <div className="h-8 w-32 bg-gray-200 rounded-lg mb-2" />
-          <div className="h-4 w-56 bg-gray-100 rounded" />
+          <div className="h-4 w-56 bg-gray-100 rounded-sm" />
         </div>
         <div className="h-10 w-28 bg-gray-200 rounded-lg" />
       </div>
@@ -576,17 +576,17 @@ export default function ReportsLoading() {
       <div className="grid grid-cols-2 gap-6 mb-6">
         {/* Left: chart skeleton */}
         <div className="bg-white border rounded-xl p-5">
-          <div className="h-5 w-32 bg-gray-200 rounded mb-4" />
+          <div className="h-5 w-32 bg-gray-200 rounded-sm mb-4" />
           <div className="h-48 bg-gray-100 rounded-lg" />
         </div>
         {/* Right: table skeleton */}
         <div className="bg-white border rounded-xl p-5">
-          <div className="h-5 w-28 bg-gray-200 rounded mb-4" />
+          <div className="h-5 w-28 bg-gray-200 rounded-sm mb-4" />
           <div className="space-y-2">
             {Array.from({ length: 5 }, (_, i) => (
               <div key={i} className="flex gap-3">
-                <div className="h-4 bg-gray-200 rounded flex-1" />
-                <div className="h-4 bg-gray-200 rounded w-16" />
+                <div className="h-4 bg-gray-200 rounded-sm flex-1" />
+                <div className="h-4 bg-gray-200 rounded-sm w-16" />
               </div>
             ))}
           </div>
@@ -595,12 +595,12 @@ export default function ReportsLoading() {
 
       {/* Bottom summary skeleton */}
       <div className="bg-white border rounded-xl p-5">
-        <div className="h-5 w-24 bg-gray-200 rounded mb-4" />
+        <div className="h-5 w-24 bg-gray-200 rounded-sm mb-4" />
         <div className="grid grid-cols-4 gap-4">
           {Array.from({ length: 4 }, (_, i) => (
             <div key={i}>
-              <div className="h-3 bg-gray-100 rounded w-3/4 mb-2" />
-              <div className="h-7 bg-gray-200 rounded w-1/2" />
+              <div className="h-3 bg-gray-100 rounded-sm w-3/4 mb-2" />
+              <div className="h-7 bg-gray-200 rounded-sm w-1/2" />
             </div>
           ))}
         </div>
@@ -1000,7 +1000,7 @@ export default async function ReportsPage({
         <Suspense
           fallback={
             <div className="bg-white border rounded-xl p-5 animate-pulse">
-              <div className="h-5 w-32 bg-gray-200 rounded mb-4" />
+              <div className="h-5 w-32 bg-gray-200 rounded-sm mb-4" />
               <div className="h-48 bg-gray-100 rounded-lg" />
             </div>
           }
@@ -1012,12 +1012,12 @@ export default async function ReportsPage({
         <Suspense
           fallback={
             <div className="bg-white border rounded-xl p-5 animate-pulse">
-              <div className="h-5 w-28 bg-gray-200 rounded mb-4" />
+              <div className="h-5 w-28 bg-gray-200 rounded-sm mb-4" />
               <div className="space-y-3">
                 {Array.from({ length: 5 }, (_, i) => (
                   <div key={i} className="flex justify-between">
-                    <div className="h-4 bg-gray-200 rounded w-1/2" />
-                    <div className="h-4 bg-gray-200 rounded w-16" />
+                    <div className="h-4 bg-gray-200 rounded-sm w-1/2" />
+                    <div className="h-4 bg-gray-200 rounded-sm w-16" />
                   </div>
                 ))}
               </div>

@@ -349,8 +349,8 @@ export function SnapCarousel() {
               className="
                 px-3 py-1.5 rounded-lg text-sm
                 bg-white/20 text-white placeholder:text-white/60
-                border border-white/30 backdrop-blur-sm
-                focus:outline-none focus:border-white/60
+                border border-white/30 backdrop-blur-xs
+                focus:outline-hidden focus:border-white/60
                 [caret-color:#ffffff]
                 w-48
               "

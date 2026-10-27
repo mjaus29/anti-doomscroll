@@ -4,9 +4,13 @@
       "lesson": "day-01/01-create-next-app-scaffolding-the-project",
       "date": "2026-10-27",
       "kind": "correction",
-      "summary": "create-next-app with Tailwind v4 generates no tailwind.config.ts, and ESLint uses a flat config.",
+      "summary": "create-next-app with Tailwind v4 generates no tailwind.config.ts, and ESLint uses a flat config. Turbopack is the default for next dev and next build in Next.js 16, so the --turbopack / --turbo flags are no longer needed.",
       "changes": [
-        "Key Concepts — project tree: removed `tailwind.config.ts` (Tailwind v4 is configured in globals.css) and replaced `.eslintrc.json` with `eslint.config.mjs`."
+        "Key Concepts — project tree: removed `tailwind.config.ts` (Tailwind v4 is configured in globals.css) and replaced `.eslintrc.json` with `eslint.config.mjs`.",
+        "Key Concepts — create-next-app non-interactive command and Turbopack prompt: dropped `--turbopack` (it is the default).",
+        "Why It Matters — `--turbopack` flag explanation → Turbopack is the default for dev and build; before v16 you opted in with the flag.",
+        "Interview Q&A — Q2: 'build still uses a different pipeline' → Turbopack is the default for both `next dev` and `next build`; `--webpack` opts out.",
+        "Coding Challenge — scaffold command and `dev` script: removed `--turbopack`."
       ]
     },
     {
@@ -26,11 +30,13 @@
       "lesson": "day-01/04-tailwind-css-integration",
       "date": "2026-10-27",
       "kind": "correction",
-      "summary": "Tailwind v4 projects have no tailwind.config.ts; sources are auto-detected.",
+      "summary": "Tailwind v4 projects have no tailwind.config.ts; sources are auto-detected. Also updated for Tailwind v4 utility renames.",
       "changes": [
         "TL;DR — 'most setup in globals.css instead of tailwind.config.ts' → no tailwind.config.ts is generated.",
         "Key Concepts — removed the 'minimal tailwind.config.ts with content array' snippet; added a note on automatic detection and `@source`.",
-        "Key Concepts — the v3-style config is now labelled legacy and loaded from CSS with `@config`."
+        "Key Concepts — the v3-style config is now labelled legacy and loaded from CSS with `@config`.",
+        "Key Concepts — Tailwind v4 class renames: `outline-none`→`outline-hidden`.",
+        "Coding Challenge — Tailwind v4 class renames: `shadow-sm`→`shadow-xs`."
       ]
     },
     {
@@ -46,9 +52,11 @@
       "lesson": "day-01/06-the-app-directory-structure-conventions",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy).",
+      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy). Also updated for Tailwind v4 utility renames.",
       "changes": [
-        "Key Concepts — special files list: `middleware.ts` → `proxy.ts` (Next 16 name; old name deprecated)."
+        "Key Concepts — special files list: `middleware.ts` → `proxy.ts` (Next 16 name; old name deprecated).",
+        "Key Concepts — Tailwind v4 class renames: `rounded`→`rounded-sm`.",
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`."
       ]
     },
     {
@@ -66,40 +74,47 @@
       "lesson": "day-01/09-top-level-config-files",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "There is no tailwind.config.ts in a Next 16 + Tailwind v4 project, and `next lint` is gone.",
+      "summary": "There is no tailwind.config.ts in a Next 16 + Tailwind v4 project, and `next lint` is gone. Turbopack is the default for next dev and next build in Next.js 16, so the --turbopack / --turbo flags are no longer needed.",
       "changes": [
         "TL;DR — `tailwind.config.ts` controls styling → postcss.config.mjs plus `@theme` in globals.css.",
         "Key Concepts — config file map: removed the `tailwind.config.ts` line.",
-        "Key Concepts — package.json scripts: `next lint` / `next lint --fix` → `eslint` / `eslint --fix`."
+        "Key Concepts — package.json scripts: `next lint` / `next lint --fix` → `eslint` / `eslint --fix`.",
+        "Key Concepts — package.json scripts: `next dev --turbopack` → `next dev`."
       ]
     },
     {
       "lesson": "day-01/10-local-development-flow",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "`next lint` was removed in Next.js 16.",
+      "summary": "`next lint` was removed in Next.js 16. Turbopack is the default for next dev and next build in Next.js 16, so the --turbopack / --turbo flags are no longer needed.",
       "changes": [
-        "Coding Challenge — package.json scripts: `\"next lint\"` / `\"next lint --fix\"` → `\"eslint\"` / `\"eslint --fix\"`."
+        "Coding Challenge — package.json scripts: `\"next lint\"` / `\"next lint --fix\"` → `\"eslint\"` / `\"eslint --fix\"`.",
+        "Interview Q&A — Q1: Turbopack 'replaced Webpack for dev' → default bundler for both dev and build in Next.js 16.",
+        "Common Pitfalls — 'Running next dev without Turbopack' replaced by 'Passing --turbopack/--turbo flags that are no longer needed' (use `--webpack` only to opt out).",
+        "Coding Challenge — `dev` and `dev:network` scripts: removed `--turbopack`."
       ]
     },
     {
       "lesson": "day-01/11-project-structure-overview-putting-it-all-together",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "middleware.ts is now proxy.ts and tailwind.config.ts no longer exists.",
+      "summary": "middleware.ts is now proxy.ts and tailwind.config.ts no longer exists. Turbopack is the default for next dev and next build in Next.js 16, so the --turbopack / --turbo flags are no longer needed.",
       "changes": [
         "Key Concepts — 'The middleware.ts position' section, example (`export function middleware` → `export function proxy`) and structure cheat lists: `middleware.ts` / 'Edge middleware' → `proxy.ts` / 'Proxy'.",
         "Key Concepts — config file list and full tree: removed `tailwind.config.ts`, noted postcss.config.mjs loads Tailwind v4.",
-        "Coding Challenge — before/after trees no longer list `tailwind.config.ts`."
+        "Coding Challenge — before/after trees no longer list `tailwind.config.ts`.",
+        "Key Concepts — Tailwind v4 class renames: `rounded`→`rounded-sm`.",
+        "Key Concepts — create-next-app commands (cheat sheet and 'Your next action'): removed `--turbopack`."
       ]
     },
     {
       "lesson": "day-02/02-layout-tsx-persistent-wrappers",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy).",
+      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy). Also updated for Tailwind v4 utility renames.",
       "changes": [
-        "Interview Q&A — wording 'middleware' / `middleware.ts` → 'proxy' / `proxy.ts` (Next 16 rename; old name deprecated)."
+        "Interview Q&A — wording 'middleware' / `middleware.ts` → 'proxy' / `proxy.ts` (Next 16 rename; old name deprecated).",
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`."
       ]
     },
     {
@@ -124,18 +139,20 @@
       "lesson": "day-02/10-segment-based-organization-route-groups-dynamic-segments-catch-all-routes",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy).",
+      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy). Also updated for Tailwind v4 utility renames.",
       "changes": [
-        "Coding Challenge — wording 'middleware' / `middleware.ts` → 'proxy' / `proxy.ts` (Next 16 rename; old name deprecated)."
+        "Coding Challenge — wording 'middleware' / `middleware.ts` → 'proxy' / `proxy.ts` (Next 16 rename; old name deprecated).",
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`."
       ]
     },
     {
       "lesson": "day-03/02-prefetching-how-next-js-preloads-routes",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy).",
+      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy). Also updated for Tailwind v4 utility renames.",
       "changes": [
-        "Key Concepts — wording 'middleware' / `middleware.ts` → 'proxy' / `proxy.ts` (Next 16 rename; old name deprecated)."
+        "Key Concepts — wording 'middleware' / `middleware.ts` → 'proxy' / `proxy.ts` (Next 16 rename; old name deprecated).",
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`."
       ]
     },
     {
@@ -160,9 +177,10 @@
       "lesson": "day-04/09-multi-section-app-structures-combining-all-patterns",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy).",
+      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy). Also updated for Tailwind v4 utility renames.",
       "changes": [
-        "Interview Q&A — wording 'middleware' / `middleware.ts` → 'proxy' / `proxy.ts` (Next 16 rename; old name deprecated)."
+        "Interview Q&A — wording 'middleware' / `middleware.ts` → 'proxy' / `proxy.ts` (Next 16 rename; old name deprecated).",
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`."
       ]
     },
     {
@@ -178,9 +196,10 @@
       "lesson": "day-05/06-unauthorized-tsx-401-authentication-errors",
       "date": "2026-10-27",
       "kind": "correction",
-      "summary": "unauthorized() and unauthorized.tsx only work after enabling experimental.authInterrupts.",
+      "summary": "unauthorized() and unauthorized.tsx only work after enabling experimental.authInterrupts. Also updated for Tailwind v4 utility renames.",
       "changes": [
-        "Key Concepts — added an 'Enable It First' section with `experimental: { authInterrupts: true }` in next.config.ts."
+        "Key Concepts — added an 'Enable It First' section with `experimental: { authInterrupts: true }` in next.config.ts.",
+        "Coding Challenge — Tailwind v4 class renames: `outline-none`→`outline-hidden`."
       ]
     },
     {
@@ -196,9 +215,12 @@
       "lesson": "day-06/08-data-fetching-patterns-where-data-lives",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "revalidateTag now needs a second argument (cache-life profile) in Next 16.",
+      "summary": "revalidateTag now needs a second argument (cache-life profile) in Next 16. Also updated for Tailwind v4 utility renames.",
       "changes": [
-        "Key Concepts / Coding Challenge — Server Action examples: `revalidateTag(x)` → `revalidateTag(x, \"max\")`."
+        "Key Concepts / Coding Challenge — Server Action examples: `revalidateTag(x)` → `revalidateTag(x, \"max\")`.",
+        "Key Concepts — Tailwind v4 class renames: `rounded`→`rounded-sm`.",
+        "Common Pitfalls — Tailwind v4 class renames: `rounded`→`rounded-sm`.",
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`."
       ]
     },
     {
@@ -214,34 +236,37 @@
       "lesson": "day-06/10-performance-patterns-bundle-size-hydration-and-optimization",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "fetch() is no longer cached by default (Next 15) and next/image `priority` became `preload` (Next 16).",
+      "summary": "fetch() is no longer cached by default (Next 15) and next/image `priority` became `preload` (Next 16). Also updated for Tailwind v4 utility renames.",
       "changes": [
         "Key Concepts — fetch cache levels: bare `fetch(url)` is no longer 'cached (default)'; use `cache: 'force-cache'`.",
         "Key Concepts / Interview Q&A / Common Pitfalls — next/image `priority` → `preload` (old name deprecated).",
-        "Coding Challenge — image examples use `preload`; the custom `priority` prop is renamed `preload`."
+        "Coding Challenge — image examples use `preload`; the custom `priority` prop is renamed `preload`.",
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`."
       ]
     },
     {
       "lesson": "day-07/01-fetch-in-server-components-basics-and-cache-options",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "Since Next 15, fetch is NOT cached by default; you opt in with cache: 'force-cache', revalidate or tags.",
+      "summary": "Since Next 15, fetch is NOT cached by default; you opt in with cache: 'force-cache', revalidate or tags. Also updated for Tailwind v4 utility renames.",
       "changes": [
         "TL;DR — fetch is cached across requests only when you opt in.",
         "Key Concepts — 'Cache Option 1 — Default' → 'Cache Option 1 — `cache: 'force-cache'` (opt-in)'; the tagged example no longer says revalidate:false is the default.",
         "Interview Q&A — Q1 now says fetch is uncached by default (`auto no cache`).",
-        "Coding Challenge — the store-config fetch now uses `cache: 'force-cache'`."
+        "Coding Challenge — the store-config fetch now uses `cache: 'force-cache'`.",
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`."
       ]
     },
     {
       "lesson": "day-07/03-static-vs-dynamic-rendering-how-fetching-drives-it",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "Bare fetch calls are no longer 'default cached' (Next 15), so static examples need force-cache.",
+      "summary": "Bare fetch calls are no longer 'default cached' (Next 15), so static examples need force-cache. Also updated for Tailwind v4 utility renames.",
       "changes": [
         "Key Concepts — homepage example: added `cache: \"force-cache\"` next to the tagged fetch.",
         "Common Pitfalls — locale/theme advice: middleware → proxy.",
-        "Coding Challenge — the 'default cache' RelatedProducts fetch now uses `cache: \"force-cache\"`."
+        "Coding Challenge — the 'default cache' RelatedProducts fetch now uses `cache: \"force-cache\"`.",
+        "Coding Challenge — Tailwind v4 class renames: `shadow-sm`→`shadow-xs`."
       ]
     },
     {
@@ -327,12 +352,13 @@
       "lesson": "day-08/08-redirects-server-side-client-side-middleware",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "Middleware is now proxy.ts, and it runs on Node.js (not at the CDN edge).",
+      "summary": "Middleware is now proxy.ts, and it runs on Node.js (not at the CDN edge). Also updated for Tailwind v4 utility renames.",
       "changes": [
         "TL;DR — added the Next 16 rename note (old name deprecated).",
         "Key Concepts — `src/middleware.ts` / `export function middleware` → `src/proxy.ts` / `export function proxy`.",
         "Why It Matters / Interview Q&A — 'runs at the CDN edge' → runs before routing on the Node.js runtime (Edge is not supported in proxy.ts).",
-        "Coding Challenge — middleware.ts requirement and solution → proxy.ts."
+        "Coding Challenge — middleware.ts requirement and solution → proxy.ts.",
+        "Coding Challenge — Tailwind v4 class renames: `outline-none`→`outline-hidden`."
       ]
     },
     {
@@ -348,9 +374,10 @@
       "lesson": "day-08/10-error-handling-in-mutations-and-route-handlers",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy).",
+      "summary": "Next.js 16 renamed middleware.ts to proxy.ts (export function proxy). Also updated for Tailwind v4 utility renames.",
       "changes": [
-        "Coding Challenge — summary cheat sheet: 'Middleware' → 'Proxy' wording."
+        "Coding Challenge — summary cheat sheet: 'Middleware' → 'Proxy' wording.",
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`, `outline-none`→`outline-hidden`."
       ]
     },
     {
@@ -386,9 +413,10 @@
       "lesson": "day-09/11-deployment-ready-setup-next-config-ts-health-checks-output-modes",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "`next lint` was removed in Next.js 16.",
+      "summary": "`next lint` was removed in Next.js 16. Turbopack is the default for next dev and next build in Next.js 16, so the --turbopack / --turbo flags are no longer needed.",
       "changes": [
-        "Key Concepts / Coding Challenge — package.json scripts: `\"lint\": \"next lint\"` → `\"lint\": \"eslint\"`."
+        "Key Concepts / Coding Challenge — package.json scripts: `\"lint\": \"next lint\"` → `\"lint\": \"eslint\"`.",
+        "Key Concepts — package.json scripts (both examples): `next dev --turbo` → `next dev`."
       ]
     },
     {
@@ -406,39 +434,50 @@
       "lesson": "day-10/06-colors-text-background-border-opacity-css-variables",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "Tailwind v4 CSS-variable shorthand is bg-(--var), not bg-[--var].",
+      "summary": "Tailwind v4 CSS-variable shorthand is bg-(--var), not bg-[--var]. Tailwind v4 removed bg-opacity-* utilities; use the /50 opacity modifier.",
       "changes": [
-        "Key Concepts — `bg-[--color-surface]` etc. → `bg-(--color-surface)`."
+        "Key Concepts — `bg-[--color-surface]` etc. → `bg-(--color-surface)`.",
+        "Key Concepts — Tailwind v4 class renames: `backdrop-blur-sm`→`backdrop-blur-xs`.",
+        "Key Concepts — opacity example: `bg-opacity-50` is now labelled removed in v4 (not 'still works'); use `bg-blue-600/50`."
       ]
     },
     {
       "lesson": "day-10/07-borders-shadows-and-visual-effects",
       "date": "2026-10-27",
       "kind": "correction",
-      "summary": "ring-* utilities are implemented with box-shadow, not outline.",
+      "summary": "ring-* utilities are implemented with box-shadow, not outline. Also updated for Tailwind v4 utility renames.",
       "changes": [
         "TL;DR / Key Concepts — 'ring uses outline' → 'ring uses box-shadow (no layout shift)'.",
-        "Why It Matters / Interview Q&A — the shadow-* vs ring-* answer is corrected."
+        "Why It Matters / Interview Q&A — the shadow-* vs ring-* answer is corrected.",
+        "Key Concepts — Tailwind v4 class renames: `rounded-sm`→`rounded-xs`, `rounded`→`rounded-sm`, `shadow-sm`→`shadow-xs`, `shadow`→`shadow-sm`, `outline-none`→`outline-hidden`, `blur-sm`→`blur-xs`, `blur`→`blur-sm`, `backdrop-blur-sm`→`backdrop-blur-xs`.",
+        "Common Pitfalls — Tailwind v4 class renames: `outline-none`→`outline-hidden`.",
+        "Key Concepts — Box Shadows: added a short note explaining the v3 → v4 scale shift (`shadow-sm`→`shadow-xs`, `shadow`→`shadow-sm`, same for rounded/blur, `outline-none`→`outline-hidden`, `ring`→`ring-3`)."
       ]
     },
     {
       "lesson": "day-10/10-dark-mode-dark-variant-css-variable-strategy",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "Tailwind v4 defines the dark variant with @custom-variant (not @variant) and uses bg-(--var).",
+      "summary": "Tailwind v4 defines the dark variant with @custom-variant (not @variant) and uses bg-(--var). Also updated for Tailwind v4 utility renames.",
       "changes": [
         "TL;DR / Key Concepts — `@variant dark (...)` → `@custom-variant dark (...)` for class and data-attribute strategies.",
-        "Key Concepts / Coding Challenge — `bg-[--color-bg]` → `bg-(--color-bg)` throughout."
+        "Key Concepts / Coding Challenge — `bg-[--color-bg]` → `bg-(--color-bg)` throughout.",
+        "Key Concepts — Tailwind v4 class renames: `shadow-sm`→`shadow-xs`, `outline-none`→`outline-hidden`.",
+        "Coding Challenge — Tailwind v4 class renames: `outline-none`→`outline-hidden`, `shadow-sm`→`shadow-xs`."
       ]
     },
     {
       "lesson": "day-10/11-composing-interfaces-building-real-ui-from-utility-primitives",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "Tailwind v4: @custom-variant, @utility and bg-(--var) syntax.",
+      "summary": "Tailwind v4: @custom-variant, @utility and bg-(--var) syntax. Also updated for Tailwind v4 utility renames.",
       "changes": [
         "Key Concepts — cheat list: `@variant dark` → `@custom-variant dark`; custom utils `@layer utilities` → `@utility`.",
-        "Key Concepts / Coding Challenge — `bg-[--color-*]` → `bg-(--color-*)` in examples."
+        "Key Concepts / Coding Challenge — `bg-[--color-*]` → `bg-(--color-*)` in examples.",
+        "Key Concepts — Tailwind v4 class renames: `outline-none`→`outline-hidden`, `shadow-sm`→`shadow-xs`, `backdrop-blur-sm`→`backdrop-blur-xs`.",
+        "Common Pitfalls — Tailwind v4 class renames: `outline-none`→`outline-hidden`.",
+        "Coding Challenge — Tailwind v4 class renames: `backdrop-blur-sm`→`backdrop-blur-xs`, `outline-none`→`outline-hidden`, `shadow-sm`→`shadow-xs`.",
+        "Quick reference — custom utilities now use `@utility name { ... }` (was `@layer utilities { .name { ... } }`)."
       ]
     },
     {
@@ -455,28 +494,32 @@
       "lesson": "day-11/02-arbitrary-properties-property-value-for-any-css",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "Tailwind v4 CSS-variable shorthand is w-(--progress), not w-[--progress].",
+      "summary": "Tailwind v4 CSS-variable shorthand is w-(--progress), not w-[--progress]. Also updated for Tailwind v4 utility renames.",
       "changes": [
-        "Key Concepts / Interview Q&A / Coding Challenge — `w-[--progress]`, `grid-cols-[--card-cols]` → parenthesis syntax."
+        "Key Concepts / Interview Q&A / Coding Challenge — `w-[--progress]`, `grid-cols-[--card-cols]` → parenthesis syntax.",
+        "Coding Challenge — Tailwind v4 class renames: `backdrop-blur-sm`→`backdrop-blur-xs`, `outline-none`→`outline-hidden`."
       ]
     },
     {
       "lesson": "day-11/05-data-attribute-styling-data-variants",
       "date": "2026-10-27",
       "kind": "correction",
-      "summary": "Base UI does not emit data-state; it uses data-open / data-closed (Radix uses data-state).",
+      "summary": "Base UI does not emit data-state; it uses data-open / data-closed (Radix uses data-state). Also updated for Tailwind v4 utility renames.",
       "changes": [
         "Key Concepts — 'Integration with Headless UI Libraries' comment now separates Radix (`data-state`) from Base UI (`data-open`/`data-closed`).",
-        "Why It Matters / Interview Q&A — same distinction."
+        "Why It Matters / Interview Q&A — same distinction.",
+        "Key Concepts — Tailwind v4 class renames: `backdrop-blur-sm`→`backdrop-blur-xs`, `outline-none`→`outline-hidden`, `shadow-sm`→`shadow-xs`.",
+        "Coding Challenge — Tailwind v4 class renames: `outline-none`→`outline-hidden`."
       ]
     },
     {
       "lesson": "day-11/06-theme-extension-mindset-when-to-extend-vs-override-vs-use-arbitrary",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "Tailwind v4 CSS-variable shorthand is bg-(--var).",
+      "summary": "Tailwind v4 CSS-variable shorthand is bg-(--var). Also updated for Tailwind v4 utility renames.",
       "changes": [
-        "Key Concepts / Coding Challenge — `w-[--progress]`, `h-[--spacing-nav-height]`, `bg-[--color-surface]` → `(--var)` syntax."
+        "Key Concepts / Coding Challenge — `w-[--progress]`, `h-[--spacing-nav-height]`, `bg-[--color-surface]` → `(--var)` syntax.",
+        "Coding Challenge — Tailwind v4 class renames: `outline-none`→`outline-hidden`."
       ]
     },
     {
@@ -487,19 +530,22 @@
       "changes": [
         "TL;DR / Key Concepts — `!p-4`, `hover:!bg-red-500` … → `p-4!`, `hover:bg-red-500!`; added a 'before v4' note (prefix form deprecated).",
         "Key Concepts — `@apply !p-0 ...` → `@apply p-0! ...`.",
-        "Interview Q&A / Coding Challenge — all `!`-prefixed classes (including `[&_.ql-editor]:p-4!`) converted."
+        "Interview Q&A / Coding Challenge — all `!`-prefixed classes (including `[&_.ql-editor]:p-4!`) converted.",
+        "Key Concepts — the `.reset-all` example is now `@utility reset-all { ... }` (v4); `@layer utilities` is kept only where it explains cascade order."
       ]
     },
     {
       "lesson": "day-11/11-prefixing-namespace-isolation-for-third-party-and-embedded-tailwind",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "Tailwind v4 prefixes are written like a variant at the start (tw:flex, not tw-flex), and tailwind-merge needs the prefix configured.",
+      "summary": "Tailwind v4 prefixes are written like a variant at the start (tw:flex, not tw-flex), and tailwind-merge needs the prefix configured. Also updated for Tailwind v4 utility renames.",
       "changes": [
         "TL;DR / Key Concepts — `tw-flex`, `sm:tw-flex`, `tw-hover:tw-bg-...` → `tw:flex`, `tw:sm:flex`, `tw:hover:bg-...`; `@apply` examples likewise.",
         "Interview Q&A — Q1/Q2 rewritten for the `tw:` form; `cn()` now needs `extendTailwindMerge({ prefix })`.",
         "Common Pitfalls — @apply and mixed-prefix examples use `tw:`.",
-        "Coding Challenge — widget classes `widget-...` → `widget:...`; `widgetCn` uses `extendTailwindMerge({ prefix: \"widget\" })`; cheat-sheet lines updated (`utility!`)."
+        "Coding Challenge — widget classes `widget-...` → `widget:...`; `widgetCn` uses `extendTailwindMerge({ prefix: \"widget\" })`; cheat-sheet lines updated (`utility!`).",
+        "Key Concepts — Tailwind v4 class renames: `outline-none`→`outline-hidden`.",
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`, `outline-none`→`outline-hidden`."
       ]
     },
     {
@@ -517,20 +563,25 @@
       "lesson": "day-12/02-headless-component-philosophy-what-it-means-and-why-it-matters",
       "date": "2026-10-27",
       "kind": "correction",
-      "summary": "Base UI exposes data-open/data-closed, not data-state.",
+      "summary": "Base UI exposes data-open/data-closed, not data-state. Also updated for Tailwind v4 utility renames.",
       "changes": [
         "Why It Matters — `data-state` / `data-[state=open]:` → `data-open` / `data-[open]:`.",
-        "Coding Challenge — Switch import changed to `import { Switch } from \"@base-ui/react/switch\"`."
+        "Coding Challenge — Switch import changed to `import { Switch } from \"@base-ui/react/switch\"`.",
+        "Key Concepts — Tailwind v4 class renames: `backdrop-blur-sm`→`backdrop-blur-xs`.",
+        "Coding Challenge — Tailwind v4 class renames: `outline-none`→`outline-hidden`, `shadow-sm`→`shadow-xs`."
       ]
     },
     {
       "lesson": "day-12/03-accessibility-first-composition-aria-focus-keyboard-nav",
       "date": "2026-10-27",
       "kind": "correction",
-      "summary": "Select options are Select.Item, not Select.Option.",
+      "summary": "Select options are Select.Item, not Select.Option. Also updated for Tailwind v4 utility renames.",
       "changes": [
         "Key Concepts — comment 'Select.Option gets role=option' → 'Select.Item'.",
-        "Coding Challenge — Popover import → named import."
+        "Coding Challenge — Popover import → named import.",
+        "Key Concepts — Tailwind v4 class renames: `outline-none`→`outline-hidden`.",
+        "Common Pitfalls — Tailwind v4 class renames: `outline-none`→`outline-hidden`.",
+        "Coding Challenge — Tailwind v4 class renames: `outline-none`→`outline-hidden`."
       ]
     },
     {
@@ -547,103 +598,432 @@
       "lesson": "day-12/05-tailwind-styling-for-primitives-data-state-cn-base-ui",
       "date": "2026-10-27",
       "kind": "correction",
-      "summary": "Base UI has no data-state attribute; use data-open/data-closed, and Select.Item instead of Select.Option.",
+      "summary": "Base UI has no data-state attribute; use data-open/data-closed, and Select.Item instead of Select.Option. The title still said data-[state]; Base UI uses data-open / data-closed (no data-state).",
       "changes": [
         "TL;DR / Key Concepts — attribute reference rewritten: `data-[state=open]:` → `data-[open]:`, `data-[state=closed]:` → `data-[closed]:`; `<Select.Option>` → `<Select.Item>`; `origin-(--transform-origin)`.",
         "Interview Q&A / Common Pitfalls — answers and the exit-animation pitfall use `data-open` / `data-closed`.",
-        "Coding Challenge — `Select.Option` → `Select.Item` with `Select.ItemText`."
+        "Coding Challenge — `Select.Option` → `Select.Item` with `Select.ItemText`.",
+        "Key Concepts — Tailwind v4 class renames: `outline-none`→`outline-hidden`.",
+        "Coding Challenge — Tailwind v4 class renames: `outline-none`→`outline-hidden`.",
+        "Title — `data-[state]` → `data-open` / `data-closed` (content already used the real attributes)."
       ]
     },
     {
       "lesson": "day-12/06-popover-full-implementation-with-tailwind",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "Named import and Tailwind v4 variable syntax.",
+      "summary": "Named import and Tailwind v4 variable syntax. Also updated for Tailwind v4 utility renames.",
       "changes": [
-        "Key Concepts / Coding Challenge — `import * as PopoverPrimitive` → `import { Popover as PopoverPrimitive }`; `origin-[--transform-origin]` → `origin-(--transform-origin)`."
+        "Key Concepts / Coding Challenge — `import * as PopoverPrimitive` → `import { Popover as PopoverPrimitive }`; `origin-[--transform-origin]` → `origin-(--transform-origin)`.",
+        "Key Concepts — Tailwind v4 class renames: `outline-none`→`outline-hidden`.",
+        "Coding Challenge — Tailwind v4 class renames: `outline-none`→`outline-hidden`."
       ]
     },
     {
       "lesson": "day-12/07-dialog-modal-with-overlay-focus-trap-accessible-anatomy",
       "date": "2026-10-27",
       "kind": "correction",
-      "summary": "Base UI is imported with named imports.",
+      "summary": "Base UI is imported with named imports. Also updated for Tailwind v4 utility renames.",
       "changes": [
-        "Key Concepts — `import * as DialogPrimitive` → `import { Dialog as DialogPrimitive }`."
+        "Key Concepts — `import * as DialogPrimitive` → `import { Dialog as DialogPrimitive }`.",
+        "Key Concepts — Tailwind v4 class renames: `backdrop-blur-sm`→`backdrop-blur-xs`, `outline-none`→`outline-hidden`.",
+        "Why It Matters — Tailwind v4 class renames: `backdrop-blur-sm`→`backdrop-blur-xs`.",
+        "Coding Challenge — Tailwind v4 class renames: `outline-none`→`outline-hidden`."
       ]
     },
     {
       "lesson": "day-12/08-menu-dropdown-with-items-groups-separator",
       "date": "2026-10-27",
       "kind": "correction",
-      "summary": "Menu.Item uses onClick; Base UI has no onSelect.",
+      "summary": "Menu.Item uses onClick; Base UI has no onSelect. Also updated for Tailwind v4 utility renames.",
       "changes": [
         "Key Concepts — all `onSelect={...}` → `onClick={...}`; import → `import { Menu as MenuPrimitive }`.",
         "Why It Matters / Interview Q&A — 'use onSelect, not onClick' reversed: `onClick` (with `closeOnClick`) is the handler.",
         "Common Pitfalls — pitfall flipped: using the Radix-style `onSelect` is the bug.",
-        "Coding Challenge — handlers use `onClick`."
+        "Coding Challenge — handlers use `onClick`.",
+        "Key Concepts — Tailwind v4 class renames: `outline-none`→`outline-hidden`.",
+        "Coding Challenge — Tailwind v4 class renames: `outline-none`→`outline-hidden`."
       ]
     },
     {
       "lesson": "day-12/09-select-controlled-dropdown-select",
       "date": "2026-10-27",
       "kind": "correction",
-      "summary": "Select options are Select.Item with ItemText/ItemIndicator, not Select.Option.",
+      "summary": "Select options are Select.Item with ItemText/ItemIndicator, not Select.Option. Also updated for Tailwind v4 utility renames.",
       "changes": [
         "TL;DR — anatomy: Popup → List → Item (ItemText, ItemIndicator).",
         "Key Concepts — wrapper `SelectOption` → `SelectItem` (with `ItemText`, `ItemIndicator`, `Select.List`); export `Option` → `Item`; usage updated; `min-w-(--anchor-width)`.",
         "Common Pitfalls — `min-w-(--anchor-width)` example.",
-        "Coding Challenge — `<Select.Option>` → `<Select.Item trailing={...}>`."
+        "Coding Challenge — `<Select.Option>` → `<Select.Item trailing={...}>`.",
+        "Key Concepts — Tailwind v4 class renames: `outline-none`→`outline-hidden`."
       ]
     },
     {
       "lesson": "day-12/10-tabs-tab-list-panels-keyboard-navigation",
       "date": "2026-10-27",
       "kind": "correction",
-      "summary": "The active Base UI tab is styled with data-active, not data-selected.",
+      "summary": "The active Base UI tab is styled with data-active, not data-selected. Also updated for Tailwind v4 utility renames.",
       "changes": [
-        "Key Concepts / Why It Matters — `data-[selected]:` on `Tabs.Tab` → `data-[active]:` (Panel keeps `data-[hidden]:hidden`)."
+        "Key Concepts / Why It Matters — `data-[selected]:` on `Tabs.Tab` → `data-[active]:` (Panel keeps `data-[hidden]:hidden`).",
+        "Key Concepts — Tailwind v4 class renames: `outline-none`→`outline-hidden`, `shadow-sm`→`shadow-xs`.",
+        "Coding Challenge — Tailwind v4 class renames: `outline-none`→`outline-hidden`, `rounded`→`rounded-sm`."
       ]
     },
     {
       "lesson": "day-12/11-tooltip-hover-focus-tooltip-with-delay-and-positioning",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "Named imports and Tailwind v4 variable syntax.",
+      "summary": "Named imports and Tailwind v4 variable syntax. Also updated for Tailwind v4 utility renames.",
       "changes": [
-        "Key Concepts / Coding Challenge — `import * as TooltipPrimitive` → `import { Tooltip as TooltipPrimitive }`; `origin-[--transform-origin]` → `origin-(--transform-origin)`."
+        "Key Concepts / Coding Challenge — `import * as TooltipPrimitive` → `import { Tooltip as TooltipPrimitive }`; `origin-[--transform-origin]` → `origin-(--transform-origin)`.",
+        "Key Concepts — Tailwind v4 class renames: `outline-none`→`outline-hidden`, `rounded`→`rounded-sm`.",
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`, `shadow-sm`→`shadow-xs`, `outline-none`→`outline-hidden`."
       ]
     },
     {
       "lesson": "day-12/12-toast-notifications-toast-pattern-with-base-ui-primitives",
       "date": "2026-10-27",
       "kind": "correction",
-      "summary": "Base UI's toast hook is Toast.useToastManager(); useToast is this lesson's wrapper.",
+      "summary": "Base UI's toast hook is Toast.useToastManager(); useToast is this lesson's wrapper. Base UI's Toast has no add({ render }); toasts are data rendered from useToastManager().toasts.",
       "changes": [
         "TL;DR — 'a `useToast` hook' → `Toast.useToastManager()` (wrapped as `useToast`).",
-        "Key Concepts — named imports for Toast."
+        "Key Concepts — named imports for Toast.",
+        "TL;DR — rewritten around `Toast.Provider`, `Toast.useToastManager()` and `Portal` / `Viewport` / `Root toast={toast}`.",
+        "Key Concepts — anatomy: now `Toast.Portal` > `Toast.Viewport` > `Toast.Root toast={toast}` > `Toast.Content` > Title / Description / Action / Close.",
+        "Key Concepts — implementation: `add({ render })` → `toastManager.add({ title, description, type, timeout, priority, actionProps })`; `ToastViewport` maps `useToastManager().toasts` to `ToastItem`; variant read from `toast.type`; layout snippet uses `ToastProvider` + `ToastViewport`; class strings also got Tailwind v4 renames (`outline-none`→`outline-hidden`, `rounded`→`rounded-sm`).",
+        "Interview Q&A — accessibility answer: polite vs urgent announcement is tied to `priority: \"low\" | \"high\"`."
       ]
     },
     {
       "lesson": "day-12/13-transitions-css-open-close-animations-with-data-state",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "Tailwind v4 variable syntax and named imports in the transition examples.",
+      "summary": "Tailwind v4 variable syntax and named imports in the transition examples. The title still said data-[state]; Base UI uses data-open / data-closed (no data-state).",
       "changes": [
         "Key Concepts / Why It Matters / Common Pitfalls — `origin-[--transform-origin]` → `origin-(--transform-origin)`.",
-        "Coding Challenge — named Base UI imports."
+        "Coding Challenge — named Base UI imports.",
+        "Key Concepts — Tailwind v4 class renames: `backdrop-blur-sm`→`backdrop-blur-xs`.",
+        "Coding Challenge — Tailwind v4 class renames: `outline-none`→`outline-hidden`, `backdrop-blur-sm`→`backdrop-blur-xs`, `rounded`→`rounded-sm`.",
+        "Title — `data-[state]` → `data-open` / `data-closed`."
       ]
     },
     {
       "lesson": "day-12/14-final-audit-group-4-complete-optional-extensions-overview",
       "date": "2026-10-27",
       "kind": "correction",
-      "summary": "The final-audit cheat sheet repeated the outdated Base UI/Tailwind/Next 16 facts.",
+      "summary": "The final-audit cheat sheet repeated the outdated Base UI/Tailwind/Next 16 facts. Audit table titles for lessons 5 and 13 renamed from data-[state] to data-open / data-closed.",
       "changes": [
         "Key Concepts — checklist and cheat sheet: `data-[state=open/closed]` → `data-[open]`/`data-[closed]`, `data-[active]` for Tabs.Tab; `@variant dark` → `@custom-variant dark`.",
         "Key Concepts — Menu 'onSelect not onClick' → onClick; Select options → `Select.Item`; Proxy line notes `proxy.ts` (was `middleware.ts`) and that the Edge runtime isn't supported in it.",
         "Interview Q&A — the 'data-[state=]:' answer → `data-[open]:` etc.",
-        "Coding Challenge — `SelectP.Option` → `SelectP.Item` (+ ItemText/ItemIndicator), Tabs `data-[active]`."
+        "Coding Challenge — `SelectP.Option` → `SelectP.Item` (+ ItemText/ItemIndicator), Tabs `data-[active]`.",
+        "Coding Challenge — Tailwind v4 class renames: `outline-none`→`outline-hidden`, `shadow-sm`→`shadow-xs`.",
+        "Audit table — lesson 5 and 13 titles: `data-[state]` → `data-open` / `data-closed`."
+      ]
+    },
+    {
+      "lesson": "day-01/02-typescript-in-next-js-16",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`."
+      ]
+    },
+    {
+      "lesson": "day-03/03-userouter-programmatic-navigation",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Coding Challenge — Tailwind v4 class renames: `outline-none`→`outline-hidden`."
+      ]
+    },
+    {
+      "lesson": "day-03/06-usesearchparams-reading-query-parameters",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Key Concepts — Tailwind v4 class renames: `rounded`→`rounded-sm`.",
+        "Common Pitfalls — Tailwind v4 class renames: `rounded`→`rounded-sm`.",
+        "Coding Challenge — Tailwind v4 class renames: `outline-none`→`outline-hidden`."
+      ]
+    },
+    {
+      "lesson": "day-03/07-search-param-patterns-filter-sort-pagination-via-url",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Key Concepts — Tailwind v4 class renames: `rounded`→`rounded-sm`."
+      ]
+    },
+    {
+      "lesson": "day-03/08-route-aware-navigation-active-links-and-breadcrumbs",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Coding Challenge — Tailwind v4 class renames: `backdrop-blur`→`backdrop-blur-sm`."
+      ]
+    },
+    {
+      "lesson": "day-03/09-url-driven-ui-state-the-complete-pattern",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Key Concepts — Tailwind v4 class renames: `rounded`→`rounded-sm`.",
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`."
+      ]
+    },
+    {
+      "lesson": "day-03/10-navigation-ux-loading-states-transitions-scroll-behavior",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Key Concepts — Tailwind v4 class renames: `rounded`→`rounded-sm`, `shadow-sm`→`shadow-xs`.",
+        "Coding Challenge — Tailwind v4 class renames: `outline-none`→`outline-hidden`."
+      ]
+    },
+    {
+      "lesson": "day-04/01-dynamic-segments-param-deep-dive",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Key Concepts — Tailwind v4 class renames: `rounded`→`rounded-sm`."
+      ]
+    },
+    {
+      "lesson": "day-04/02-catch-all-routes-slug",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`."
+      ]
+    },
+    {
+      "lesson": "day-04/03-optional-catch-all-routes-slug",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Coding Challenge — Tailwind v4 class renames: `shadow-sm`→`shadow-xs`."
+      ]
+    },
+    {
+      "lesson": "day-04/04-route-groups-group-organization-and-layout-isolation",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`."
+      ]
+    },
+    {
+      "lesson": "day-04/05-nested-segments-depth-inheritance-and-composition",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Key Concepts — Tailwind v4 class renames: `rounded`→`rounded-sm`.",
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`, `outline-none`→`outline-hidden`."
+      ]
+    },
+    {
+      "lesson": "day-05/01-loading-tsx-streaming-and-suspense-boundaries",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Key Concepts — Tailwind v4 class renames: `rounded`→`rounded-sm`.",
+        "Common Pitfalls — Tailwind v4 class renames: `rounded`→`rounded-sm`.",
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`."
+      ]
+    },
+    {
+      "lesson": "day-05/07-parallel-routes-slot-architecture",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`."
+      ]
+    },
+    {
+      "lesson": "day-05/09-resilient-navigation-and-recovery-flows",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Key Concepts — Tailwind v4 class renames: `outline-none`→`outline-hidden`.",
+        "Common Pitfalls — Tailwind v4 class renames: `rounded`→`rounded-sm`.",
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`."
+      ]
+    },
+    {
+      "lesson": "day-05/10-combining-all-special-files-complete-route-boundary-architecture",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`."
+      ]
+    },
+    {
+      "lesson": "day-06/04-suspense-and-streaming-progressive-rendering",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Key Concepts — Tailwind v4 class renames: `rounded`→`rounded-sm`."
+      ]
+    },
+    {
+      "lesson": "day-06/05-lazy-loading-next-dynamic-and-code-splitting",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`."
+      ]
+    },
+    {
+      "lesson": "day-06/06-composition-patterns-server-inside-client-client-inside-server",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Coding Challenge — Tailwind v4 class renames: `outline-none`→`outline-hidden`."
+      ]
+    },
+    {
+      "lesson": "day-07/08-opting-out-of-cache-cache-no-store-and-connection",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`."
+      ]
+    },
+    {
+      "lesson": "day-07/09-route-segment-config-dynamic-revalidate-fetchcache-runtime",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`."
+      ]
+    },
+    {
+      "lesson": "day-08/02-app-router-forms-useactionstate-progressive-enhancement",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Key Concepts — Tailwind v4 class renames: `rounded`→`rounded-sm`.",
+        "Coding Challenge — Tailwind v4 class renames: `outline-none`→`outline-hidden`."
+      ]
+    },
+    {
+      "lesson": "day-09/02-next-font-google-fonts-local-fonts-font-optimization",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Key Concepts — Tailwind v4 class renames: `rounded`→`rounded-sm`."
+      ]
+    },
+    {
+      "lesson": "day-10/02-layout-flexbox-grid-positioning-z-index-overflow",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Key Concepts — Tailwind v4 class renames: `backdrop-blur-sm`→`backdrop-blur-xs`.",
+        "Coding Challenge — Tailwind v4 class renames: `backdrop-blur-sm`→`backdrop-blur-xs`."
+      ]
+    },
+    {
+      "lesson": "day-10/04-sizing-width-height-min-max-aspect-ratio",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Coding Challenge — Tailwind v4 class renames: `backdrop-blur-sm`→`backdrop-blur-xs`."
+      ]
+    },
+    {
+      "lesson": "day-10/08-hover-focus-and-interactive-states",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Key Concepts — Tailwind v4 class renames: `outline-none`→`outline-hidden`, `rounded`→`rounded-sm`.",
+        "Interview Q&A — Tailwind v4 class renames: `outline-none`→`outline-hidden`.",
+        "Coding Challenge — Tailwind v4 class renames: `outline-none`→`outline-hidden`, `rounded`→`rounded-sm`."
+      ]
+    },
+    {
+      "lesson": "day-10/09-responsive-variants-mobile-first-breakpoints",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Coding Challenge — Tailwind v4 class renames: `backdrop-blur-sm`→`backdrop-blur-xs`."
+      ]
+    },
+    {
+      "lesson": "day-11/03-complex-selectors-has-not-is",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Key Concepts — Tailwind v4 class renames: `rounded`→`rounded-sm`, `outline-none`→`outline-hidden`.",
+        "Coding Challenge — Tailwind v4 class renames: `rounded`→`rounded-sm`."
+      ]
+    },
+    {
+      "lesson": "day-11/04-named-groups-and-nested-group-patterns",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Key Concepts — Tailwind v4 class renames: `rounded`→`rounded-sm`, `outline-none`→`outline-hidden`.",
+        "Coding Challenge — Tailwind v4 class renames: `shadow-sm`→`shadow-xs`, `rounded`→`rounded-sm`."
+      ]
+    },
+    {
+      "lesson": "day-11/07-duplication-control-recognising-and-taming-repeated-utilities",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Key Concepts — Tailwind v4 class renames: `outline-none`→`outline-hidden`, `shadow-sm`→`shadow-xs`, `rounded`→`rounded-sm`.",
+        "Common Pitfalls — Tailwind v4 class renames: `shadow-sm`→`shadow-xs`."
+      ]
+    },
+    {
+      "lesson": "day-11/08-component-extraction-when-how-and-what-not-to-extract",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Key Concepts — Tailwind v4 class renames: `shadow-sm`→`shadow-xs`."
+      ]
+    },
+    {
+      "lesson": "day-11/09-style-conflict-handling-specificity-merging-cn-twmerge",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Tailwind v4 renamed several utilities (shadow, rounded, blur, outline-none, ring), so class strings changed.",
+      "changes": [
+        "Key Concepts — Tailwind v4 class renames: `rounded`→`rounded-sm`, `shadow`→`shadow-sm`, `outline-none`→`outline-hidden`.",
+        "Coding Challenge — Tailwind v4 class renames: `outline-none`→`outline-hidden`."
       ]
     }
   ]

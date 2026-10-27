@@ -53,8 +53,8 @@ Borders (`border`, `border-*`, `rounded-*`), shadows (`shadow-*`), rings (`ring-
 ```tsx
 {/* ─── Uniform radius */}
 <div className="rounded-none">   {/* 0 */}
-<div className="rounded-sm">     {/* 0.125rem = 2px */}
-<div className="rounded">        {/* 0.25rem = 4px */}
+<div className="rounded-xs">     {/* 0.125rem = 2px */}
+<div className="rounded-sm">        {/* 0.25rem = 4px */}
 <div className="rounded-md">     {/* 0.375rem = 6px */}
 <div className="rounded-lg">     {/* 0.5rem = 8px — cards, buttons */}
 <div className="rounded-xl">     {/* 0.75rem = 12px — cards */}
@@ -81,11 +81,13 @@ Borders (`border`, `border-*`, `rounded-*`), shadows (`shadow-*`), rings (`ring-
 
 ### Box Shadows
 
+> **Tailwind v4 scale shift:** in v3 the names were `shadow-sm` / `shadow` / `rounded-sm` / `rounded` / `blur-sm` / `blur`; v4 renamed each one down a step (`shadow-xs` / `shadow-sm`, `rounded-xs` / `rounded-sm`, `blur-xs` / `blur-sm`, same for `drop-shadow-*` and `backdrop-blur-*`). Also `outline-none` → `outline-hidden`, and bare `ring` (3px, blue) → `ring-3`.
+
 ```tsx
 {/* ─── Default shadows */}
 <div className="shadow-none">    {/* no shadow */}
-<div className="shadow-sm">      {/* subtle shadow — inputs, small cards */}
-<div className="shadow">         {/* default shadow — standard card */}
+<div className="shadow-xs">      {/* subtle shadow — inputs, small cards */}
+<div className="shadow-sm">         {/* default shadow — standard card */}
 <div className="shadow-md">      {/* medium — hover card */}
 <div className="shadow-lg">      {/* large — modals, dropdowns */}
 <div className="shadow-xl">      {/* extra large — floating panels */}
@@ -121,13 +123,13 @@ Borders (`border`, `border-*`, `rounded-*`), shadows (`shadow-*`), rings (`ring-
 
 {/* ─── Standard focus ring pattern */}
 <button className="focus-visible:ring-2 focus-visible:ring-blue-500
-                   focus-visible:ring-offset-2 focus-visible:outline-none">
+                   focus-visible:ring-offset-2 focus-visible:outline-hidden">
   Button with accessible focus ring
 </button>
 
 {/* ─── Outline replacement */}
 <input className="border border-gray-300 rounded-lg px-3 py-2
-                  focus:outline-none focus:ring-2 focus:ring-blue-500
+                  focus:outline-hidden focus:ring-2 focus:ring-blue-500
                   focus:border-transparent" />
 ```
 
@@ -136,8 +138,8 @@ Borders (`border`, `border-*`, `rounded-*`), shadows (`shadow-*`), rings (`ring-
 ```tsx
 {/* ─── Blur */}
 <div className="blur-none">    {/* no blur */}
-<div className="blur-sm">      {/* blur: 4px */}
-<div className="blur">         {/* blur: 8px */}
+<div className="blur-xs">      {/* blur: 4px */}
+<div className="blur-sm">         {/* blur: 8px */}
 <div className="blur-md">      {/* blur: 12px */}
 <div className="blur-lg">      {/* blur: 16px */}
 <div className="blur-xl">      {/* blur: 24px */}
@@ -145,12 +147,12 @@ Borders (`border`, `border-*`, `rounded-*`), shadows (`shadow-*`), rings (`ring-
 <div className="blur-3xl">     {/* blur: 64px */}
 
 {/* ─── Backdrop blur (frosted glass) */}
-<div className="backdrop-blur-sm">   {/* 4px — subtle */}
+<div className="backdrop-blur-xs">   {/* 4px — subtle */}
 <div className="backdrop-blur-md">   {/* 12px — standard glass */}
 <div className="backdrop-blur-xl">   {/* 24px — heavy glass */}
 
 {/* ─── Frosted glass nav pattern */}
-<nav className="bg-white/80 backdrop-blur-sm border-b border-white/20
+<nav className="bg-white/80 backdrop-blur-xs border-b border-white/20
                 sticky top-0 z-40">
   Navigation
 </nav>
@@ -195,7 +197,7 @@ Borders (`border`, `border-*`, `rounded-*`), shadows (`shadow-*`), rings (`ring-
 {
   /* ❌ Removes focus indicator entirely — accessibility violation */
 }
-<button className="outline-none">
+<button className="outline-hidden">
   {" "}
   {/* keyboard users can't see focus */}
   Submit
@@ -209,7 +211,7 @@ Borders (`border`, `border-*`, `rounded-*`), shadows (`shadow-*`), rings (`ring-
   /* ✅ Hides outline for mouse, shows ring for keyboard */
 }
 <button
-  className="focus-visible:outline-none focus-visible:ring-2
+  className="focus-visible:outline-hidden focus-visible:ring-2
                    focus-visible:ring-blue-500 focus-visible:ring-offset-2"
 >
   Submit

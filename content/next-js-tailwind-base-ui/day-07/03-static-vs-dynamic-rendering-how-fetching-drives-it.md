@@ -330,7 +330,7 @@ export async function RelatedProducts({ productId }: { productId: string }) {
           <a
             key={p.id}
             href={`/products/${p.id}`}
-            className="border rounded-xl p-3 min-w-[140px] hover:shadow-sm
+            className="border rounded-xl p-3 min-w-[140px] hover:shadow-xs
                         transition-shadow bg-white shrink-0"
           >
             <p className="text-sm font-medium truncate">{p.name}</p>

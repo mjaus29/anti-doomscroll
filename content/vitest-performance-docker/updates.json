@@ -4,9 +4,10 @@
       "lesson": "day-01/03-config-file-basics-vitest-config-ts",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "Vitest 4 replaced vitest.workspace.ts / defineWorkspace with test.projects in the main config.",
+      "summary": "Vitest 4 replaced vitest.workspace.ts / defineWorkspace with test.projects in the main config; Vitest 5 also makes inline projects inherit the root config by default.",
       "changes": [
-        "Key Concepts — \"Workspace config\" example (`vitest.workspace.ts`, `defineWorkspace`) → `test.projects` in `vitest.config.ts` with `extends: true`; `vitest --project unit` unchanged."
+        "Key Concepts — \"Workspace config\" example (`vitest.workspace.ts`, `defineWorkspace`) → `test.projects` in `vitest.config.ts` with `extends: true`; `vitest --project unit` unchanged.",
+        "Key Concepts — projects example: `extends: true` comment → it is now the default in Vitest 5 (arrays like `setupFiles` are appended; `extends: false` opts out)."
       ]
     },
     {
@@ -42,46 +43,52 @@
       "lesson": "day-02/08-module-mocking-vi-mock",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "In Vitest 4 a mock called with `new` needs a function/class implementation, not an arrow function.",
+      "summary": "In Vitest 4 a mock called with `new` needs a function/class implementation, not an arrow function; Vitest 5 also throws on nested vi.mock/vi.unmock/vi.hoisted.",
       "changes": [
-        "Key Concepts — `PrismaClient: vi.fn().mockImplementation(() => ({...}))` → `mockImplementation(function () { return {...} })` with a note on the \"is not a constructor\" error."
+        "Key Concepts — `PrismaClient: vi.fn().mockImplementation(() => ({...}))` → `mockImplementation(function () { return {...} })` with a note on the \"is not a constructor\" error.",
+        "Common Pitfalls — vi.mock inside a function/hook: 'not hoisted, runs too late' → throws in Vitest 5; `vi.doMock`/`vi.doUnmock` may be called anywhere."
       ]
     },
     {
       "lesson": "day-02/10-reset-vs-clear-vs-restore-and-test-isolation",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "In Vitest 4, vi.restoreAllMocks() only restores vi.spyOn spies and no longer clears or resets mock state.",
+      "summary": "In Vitest 4, vi.restoreAllMocks() only restores vi.spyOn spies and no longer clears or resets mock state; Vitest 5 also defaults clearMocks to true.",
       "changes": [
         "Key Concepts — `restoreAllMocks` section: removed \"Clears call tracking / Resets implementations\"; spy.mock.calls is no longer cleared by it.",
         "Key Concepts — global-methods comment `= mockRestore() on every spy` replaced with the Vitest 4 behaviour.",
         "Interview Q&A — \"restoreAllMocks does everything reset does, plus restore\" → it only restores spyOn originals (Vitest 4).",
-        "Coding Challenge / recap — RESET VS CLEAR VS RESTORE summary line updated."
+        "Coding Challenge / recap — RESET VS CLEAR VS RESTORE summary line updated.",
+        "Key Concepts — config example: `clearMocks: true` is now the default (was false) in Vitest 5; set `false` to keep history across tests.",
+        "Why It Matters — `clearMocks: true` described as an opt-in default → already on by default; `restoreMocks` still opt-in.",
+        "Interview Q&A / Cheat sheet — config shortcut and isolation checklist annotated that clearMocks is the Vitest 5 default."
       ]
     },
     {
       "lesson": "day-03/06-browser-mode-setup-vitest-real-browser",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "Vitest 4 browser mode: playwright() provider factory, instances, vitest/browser imports, and projects instead of a workspace file.",
+      "summary": "Vitest 4 browser mode: playwright() provider factory, instances, vitest/browser imports, and projects instead of a workspace file; Vitest 5 also moved @vitest/browser-webdriverio to the community org.",
       "changes": [
         "Key Concepts — install is `@vitest/browser-playwright`; config uses `provider: playwright()` and `instances: [{ browser: \"chromium\" }]` instead of `provider: \"playwright\"` + `name`.",
         "Key Concepts — \"Workspace config\" (`vitest.workspace.ts`) → `test.projects` in `vitest.config.ts`; `import { userEvent } from \"@vitest/browser/context\"` → `\"vitest/browser\"`.",
         "Why It Matters / Common Pitfalls — \"workspace\" wording and the `userEvent` import updated.",
-        "Coding Challenge — challenge and solution rewritten for `projects`, `playwright()`, and `vitest/browser`."
+        "Coding Challenge — challenge and solution rewritten for `projects`, `playwright()`, and `vitest/browser`.",
+        "TL;DR — provider sentence: WebdriverIO provider is community-maintained in Vitest 5; `@vitest/browser-playwright` unchanged."
       ]
     },
     {
       "lesson": "day-03/07-real-browser-execution-playwright-provider-deep-dive",
       "date": "2026-10-27",
       "kind": "correction",
-      "summary": "Vitest's `page` is its own browser-side locator API, not the Playwright Page; page.locator() and Playwright-style assertions do not exist.",
+      "summary": "Vitest's `page` is its own browser-side locator API, not the Playwright Page; page.locator() and Playwright-style assertions do not exist; Vitest 5 also changed browser matchers.",
       "changes": [
         "TL;DR — removed the claim of \"full Playwright `page` access via `vi.importActual`\"; `page` comes from `vitest/browser` and is not the raw Playwright Page.",
         "Key Concepts — Playwright config updated for Vitest 4 (`playwright({ launchOptions, contextOptions })`, `headless` on `browser`, `instances`); `providerOptions.launch/context` removed.",
         "Key Concepts — `page.locator(\"#x\")` / `expect(locator)` examples → `page.getByRole` / `getByTestId` with `await expect.element(...)`; `page.screenshot()` returns a file path, not a Buffer.",
         "Key Concepts — cross-browser example uses `browser.instances` instead of a workspace with `name`.",
-        "Common Pitfalls / Coding Challenge — launch args via `launchOptions`; challenge solution uses `getByTestId`, `expect.element`, and `vitest/browser` imports."
+        "Common Pitfalls / Coding Challenge — launch args via `launchOptions`; challenge solution uses `getByTestId`, `expect.element`, and `vitest/browser` imports.",
+        "Coding Challenge — `toHaveTextContent` is strict equality in Vitest 5 (no regex; use `toMatchTextContent`), and locators match exactly by default."
       ]
     },
     {
@@ -107,33 +114,36 @@
       "lesson": "day-04/03-worker-pools-and-parallel-execution",
       "date": "2026-10-27",
       "kind": "correction",
-      "summary": "Vitest 4 removed poolOptions (maxThreads/singleFork) in favour of top-level maxWorkers, and the default pool is forks, not threads.",
+      "summary": "Vitest 4 removed poolOptions (maxThreads/singleFork) in favour of top-level maxWorkers, and the default pool is forks, not threads; Vitest 5 also removed describe.sequential.",
       "changes": [
         "TL;DR — default pool and sizing: `threads` default / `singleThread` → `forks` default, top-level `maxWorkers`, `maxWorkers: 1` or `fileParallelism: false` for serial runs.",
         "Key Concepts — `poolOptions.threads/forks` config replaced by top-level `maxWorkers`; serial example no longer uses `singleThread`; \"choosing the right pool\" now lists forks as the default.",
         "Why It Matters / Interview Q&A — `maxThreads` → `maxWorkers`; \"use threads (the default)\" corrected (forks is the default).",
-        "Coding Challenge — `vitest.workspace.ts` + `poolOptions` solution → `test.projects` with `maxWorkers` / `fileParallelism: false`."
+        "Coding Challenge — `vitest.workspace.ts` + `poolOptions` solution → `test.projects` with `maxWorkers` / `fileParallelism: false`.",
+        "Key Concepts — `describe.sequential(...)` → `describe(name, { concurrent: false }, ...)` (removed in Vitest 5)."
       ]
     },
     {
       "lesson": "day-04/06-module-cache-and-reducing-setup-overhead",
       "date": "2026-10-27",
       "kind": "correction",
-      "summary": "setupFiles run before every test file; the lesson contradicted itself by calling it once per worker.",
+      "summary": "setupFiles run before every test file; the lesson contradicted itself by calling it once per worker; Vitest 5 also defaults clearMocks to true.",
       "changes": [
         "TL;DR / Key Concepts — \"setupFiles once-per-worker\" → runs before each test file (cheap setup only).",
         "Why It Matters / Interview Q&A — cost reasoning changed from \"once per worker thread (8 times on 8 cores)\" to \"once per test file\".",
-        "Common Pitfalls — heading and comment \"runs N times (once per worker)\" → once per test file."
+        "Common Pitfalls — heading and comment \"runs N times (once per worker)\" → once per test file.",
+        "Coding Challenge — `clearMocks: true` comment: it is already the Vitest 5 default, and clears before each test (not per file)."
       ]
     },
     {
       "lesson": "day-04/09-balancing-speed-confidence-and-maintainability",
       "date": "2026-10-27",
       "kind": "outdated",
-      "summary": "Pool recap and challenge config updated to Vitest 4 top-level pool options.",
+      "summary": "Pool recap and challenge config updated to Vitest 4 top-level pool options; Vitest 5 also fakes Temporal and defaults clearMocks to true.",
       "changes": [
         "Coding Challenge — config uses `pool: \"forks\"`, `maxWorkers`, `isolate` instead of `pool: \"threads\"` + `poolOptions.threads`; challenge text says \"projects\" for separate pools.",
-        "Coding Challenge / recap — WORKER POOLS block: default pool, `maxWorkers`, and serial execution (`maxWorkers: 1` / `fileParallelism: false`) updated; setupFiles line says \"before every test file\"."
+        "Coding Challenge / recap — WORKER POOLS block: default pool, `maxWorkers`, and serial execution (`maxWorkers: 1` / `fileParallelism: false`) updated; setupFiles line says \"before every test file\".",
+        "Coding Challenge — config: `clearMocks` noted as default in Vitest 5; fakeTimers note: `Temporal` is faked when present, use `toNotFake: ['Temporal']` to keep it native."
       ]
     },
     {
@@ -209,6 +219,54 @@
       "changes": [
         "Coding Challenge / recap — \"RUN npm ci --frozen-lockfile\" → \"RUN npm ci\" with a note that it already fails on lockfile drift.",
         "Coding Challenge / recap — serial execution line: `poolOptions.forks.singleFork` → `fileParallelism: false` (or `maxWorkers: 1`)."
+      ]
+    },
+    {
+      "lesson": "day-01/02-vitest-setup-and-installation",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Vitest 5 requires Node.js 22.12+ and Vite 6.4+.",
+      "changes": [
+        "Key Concepts — added requirements note: Node 22.12+, Vite 6.4+ (Yarn users must add `vite` explicitly as it is a peer dependency)."
+      ]
+    },
+    {
+      "lesson": "day-01/07-watch-mode-and-filtering-tests",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "In Vitest 5, -t matches the full name joined with ' > ' and json/junit reporters write files by default.",
+      "changes": [
+        "Key Concepts — `-t` example: pattern now matches 'describe > test' full name, so `-t 'math adds'` stops matching; use `-t adds` or `-t 'math.*adds'`.",
+        "Key Concepts — `--reporter=json` / `--reporter=junit`: now write to a file (under `.vitest/`) by default; use `stdout: true` or `outputFile`."
+      ]
+    },
+    {
+      "lesson": "day-04/01-coverage-thresholds-reporters-and-enforcing-minimums",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Vitest 5 changed coverage perFile with glob thresholds and relative-path include/exclude matching.",
+      "changes": [
+        "Key Concepts — per-file thresholds: top-level `perFile` no longer applies to glob thresholds; set it on each glob.",
+        "Common Pitfalls — include/exclude: match relative paths; a bare `src` now matches `src/**`, so recheck your file set."
+      ]
+    },
+    {
+      "lesson": "day-04/02-test-performance-profiling-finding-slow-tests",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Vitest 5 rewrote benchmarking and made json/junit reporters write files by default.",
+      "changes": [
+        "TL;DR — `vitest bench`: `bench` is no longer a top-level import (use the test context); `bench.skip/only/todo` and `benchmark.*` reporter options removed.",
+        "Key Concepts — `--reporter=json --outputFile`: json now writes a file by default; explicit outputFile still respected."
+      ]
+    },
+    {
+      "lesson": "day-04/07-deterministic-ci-runs",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "clearMocks defaults to true in Vitest 5.",
+      "changes": [
+        "Key Concepts — config: `clearMocks: true` is now the default and clears before each test (was false)."
       ]
     }
   ]

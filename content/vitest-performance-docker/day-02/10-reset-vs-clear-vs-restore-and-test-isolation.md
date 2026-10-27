@@ -126,7 +126,7 @@ vi.restoreAllMocks()   // restores every vi.spyOn spy to its original (Vitest 4:
 // vitest.config.ts — set globally instead of writing beforeEach/afterEach
 export default defineConfig({
   test: {
-    clearMocks:    true,   // auto clearAllMocks before each test
+    clearMocks:    true,   // auto clearAllMocks before each test (default is true in Vitest 5; was false before)
     resetMocks:    false,  // auto resetAllMocks before each test
     restoreMocks:  true,   // auto restoreAllMocks after each test
   }
@@ -140,8 +140,8 @@ export default defineConfig({
 
 ## W — Why It Matters
 
-- Mock call history leaking between tests is the number one cause of intermittent test failures in larger suites — a test that passes alone fails when preceded by a test that called the same mock. `vi.clearAllMocks()` in `beforeEach` (or `clearMocks: true` in config) eliminates this entire class of failures.
-- The config options `clearMocks: true` and `restoreMocks: true` are the right default for most projects — they apply globally without writing `beforeEach`/`afterEach` boilerplate in every test file. Set them in `vitest.config.ts` once.
+- Mock call history leaking between tests is the number one cause of intermittent test failures in larger suites — a test that passes alone fails when preceded by a test that called the same mock. `vi.clearAllMocks()` in `beforeEach` (or `clearMocks: true` in config, which is already the default in Vitest 5) eliminates this entire class of failures.
+- In Vitest 5 `clearMocks` defaults to `true` (set `clearMocks: false` to keep call history across tests; calls recorded in setup files, top-level code or `beforeAll` are the most affected). `restoreMocks: true` is still opt-in. Both are the right default for most projects — they apply globally without writing `beforeEach`/`afterEach` boilerplate in every test file. Set them in `vitest.config.ts` once.
 - `resetAllMocks` removing implementations is a double-edged sword — if your test setup in `beforeAll` or `describe`-level `beforeEach` sets `mockReturnValue`, a subsequent `resetAllMocks` wipes it. This causes "returns undefined" bugs that are hard to trace. Prefer `clearAllMocks` (keeps implementations) over `resetAllMocks` unless you explicitly need a clean slate.
 
 ---
@@ -358,12 +358,12 @@ RESET VS CLEAR VS RESTORE
   restoreAllMocks() → RESTORES vi.spyOn originals only (no clear/reset in Vitest 4) → afterEach
 
   Config shortcut (vitest.config.ts):
-    clearMocks:   true   ← auto-clear before each test
+    clearMocks:   true   ← auto-clear before each test (default in Vitest 5)
     restoreMocks: true   ← auto-restore spies after each test
 
 TEST ISOLATION CHECKLIST
   ☐ Module-level mutable vars reset in beforeEach
-  ☐ vi.clearAllMocks() in beforeEach (or clearMocks: true in config)
+  ☐ vi.clearAllMocks() in beforeEach (or clearMocks: true in config; default in Vitest 5)
   ☐ vi.restoreAllMocks() in afterEach (or restoreMocks: true in config)
   ☐ vi.unstubAllGlobals() in afterEach
   ☐ vi.unstubAllEnvs() in afterEach

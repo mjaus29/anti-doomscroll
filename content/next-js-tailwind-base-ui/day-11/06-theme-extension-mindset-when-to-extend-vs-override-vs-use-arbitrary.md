@@ -359,7 +359,7 @@ export function ActionCard({
             bg-primary hover:bg-primary-hover
             shadow-glow-brand hover:shadow-none
             active:scale-[0.98] transition-all duration-150
-            focus-visible:outline-none focus-visible:ring-2
+            focus-visible:outline-hidden focus-visible:ring-2
             focus-visible:ring-primary focus-visible:ring-offset-2
           "
         >
@@ -373,7 +373,7 @@ export function ActionCard({
             hover:bg-destructive hover:text-white
             border border-(--color-border)
             active:scale-[0.98] transition-all duration-150
-            focus-visible:outline-none focus-visible:ring-2
+            focus-visible:outline-hidden focus-visible:ring-2
             focus-visible:ring-destructive focus-visible:ring-offset-2
           "
         >

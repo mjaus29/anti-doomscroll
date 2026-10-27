@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-Vitest has built-in timing for every test. Use `--reporter=verbose` to see per-test durations, `vitest bench` for microbenchmarks, and the `slowTestThreshold` config to flag tests that exceed a time budget. The biggest performance wins come from identifying which test files spend the most time in `beforeAll` setup, not which individual test assertions are slow.
+Vitest has built-in timing for every test. Use `--reporter=verbose` to see per-test durations, `vitest bench` for microbenchmarks (rewritten in Vitest 5: `bench` is no longer a top-level import, it comes from the test context inside `test()`; `bench.skip/only/todo` and `benchmark.reporters/outputFile/compare` were removed), and the `slowTestThreshold` config to flag tests that exceed a time budget. The biggest performance wins come from identifying which test files spend the most time in `beforeAll` setup, not which individual test assertions are slow.
 
 ---
 
@@ -42,6 +42,7 @@ npx vitest run --reporter=verbose
 ```bash
 # Profile with --reporter=json — machine-readable timing for analysis
 npx vitest run --reporter=json --outputFile=vitest-results.json
+# Vitest 5: json/junit already write to a file by default (under .vitest/); an explicit --outputFile is still respected
 
 # Find slowest test files:
 node -e "

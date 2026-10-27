@@ -84,7 +84,7 @@ Tooltip:
 {/* focus-visible: is the correct variant — keyboard only */}
 
 {/* ─── Standard focus ring pattern for ALL interactive Base UI components */}
-const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2'
+const FOCUS_RING = 'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2'
 
 {/* Applied to every interactive element */}
 <Popover.Trigger className={cn('px-4 py-2 rounded-xl', FOCUS_RING)}>
@@ -172,13 +172,13 @@ const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visibl
 
 ## C — Common Pitfalls + Fix
 
-### ❌ Pitfall: Using `outline-none` without providing an alternative focus indicator
+### ❌ Pitfall: Using `outline-hidden` without providing an alternative focus indicator
 
 ```tsx
 {
   /* ❌ Removes focus ring entirely — keyboard users can't see focus */
 }
-<Menu.Item className="px-3 py-2 rounded-lg outline-none">
+<Menu.Item className="px-3 py-2 rounded-lg outline-hidden">
   Delete item
 </Menu.Item>;
 ```
@@ -191,7 +191,7 @@ const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visibl
 }
 <Menu.Item
   className="px-3 py-2 rounded-lg
-                       focus-visible:outline-none
+                       focus-visible:outline-hidden
                        focus-visible:ring-2 focus-visible:ring-blue-500
                        focus-visible:ring-inset"
 >
@@ -245,7 +245,7 @@ export function IconButton({
         'hover:text-gray-900 dark:hover:text-white',
         'transition-all duration-150',
         // Focus ring — keyboard only
-        'focus-visible:outline-none focus-visible:ring-2',
+        'focus-visible:outline-hidden focus-visible:ring-2',
         'focus-visible:ring-blue-500 focus-visible:ring-offset-2',
         // State when popover is open (Base UI sets data-popup-open)
         'data-[popup-open]:bg-blue-50 dark:data-[popup-open]:bg-blue-900/20',

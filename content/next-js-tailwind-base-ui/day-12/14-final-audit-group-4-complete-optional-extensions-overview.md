@@ -277,13 +277,13 @@ import { cn } from "@/lib/cn";
 
 // ─── Shared style tokens
 const POPUP =
-  "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl z-50 outline-none";
+  "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl z-50 outline-hidden";
 const TRANS =
   "motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out origin-(--transform-origin) data-[starting-style]:opacity-0 data-[starting-style]:scale-95 data-[ending-style]:opacity-0 data-[ending-style]:scale-95";
 const ITEM =
-  "flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none outline-none transition-colors data-[highlighted]:bg-blue-50 dark:data-[highlighted]:bg-blue-900/20 data-[highlighted]:text-blue-700 data-[disabled]:opacity-40 data-[disabled]:pointer-events-none";
+  "flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none outline-hidden transition-colors data-[highlighted]:bg-blue-50 dark:data-[highlighted]:bg-blue-900/20 data-[highlighted]:text-blue-700 data-[disabled]:opacity-40 data-[disabled]:pointer-events-none";
 const BTN =
-  "px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98]";
+  "px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98]";
 const BTN_P = `${BTN} bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-500`;
 const BTN_S = `${BTN} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus-visible:ring-gray-400`;
 
@@ -395,7 +395,7 @@ export function ComponentShowcase() {
                   className="fixed top-1/2 left-1/2 -translate-x-1/2
                                            -translate-y-1/2 z-50 w-full max-w-md mx-4
                                            bg-white dark:bg-gray-800 rounded-2xl
-                                           shadow-2xl outline-none
+                                           shadow-2xl outline-hidden
                                            motion-safe:transition-all
                                            motion-safe:duration-200
                                            data-[starting-style]:opacity-0
@@ -477,7 +477,7 @@ export function ComponentShowcase() {
                                            text-gray-900 dark:text-white
                                            hover:border-gray-400 transition-colors
                                            cursor-pointer
-                                           focus-visible:outline-none focus-visible:ring-2
+                                           focus-visible:outline-hidden focus-visible:ring-2
                                            focus-visible:ring-blue-500
                                            data-[popup-open]:border-blue-500"
               >
@@ -536,8 +536,8 @@ export function ComponentShowcase() {
                                  transition-all cursor-pointer
                                  data-[active]:bg-white dark:data-[active]:bg-gray-700
                                  data-[active]:text-gray-900 dark:data-[active]:text-white
-                                 data-[active]:shadow-sm
-                                 focus-visible:outline-none focus-visible:ring-2
+                                 data-[active]:shadow-xs
+                                 focus-visible:outline-hidden focus-visible:ring-2
                                  focus-visible:ring-blue-500 focus-visible:ring-offset-1"
                   >
                     {v}
@@ -611,7 +611,7 @@ export function ComponentShowcase() {
           <div
             className="inline-flex flex-col items-center gap-3 px-8 py-6
                             bg-white dark:bg-gray-800 rounded-2xl border
-                            border-green-200 dark:border-green-800 shadow-sm"
+                            border-green-200 dark:border-green-800 shadow-xs"
           >
             <span className="text-5xl">🎉</span>
             <p className="text-xl font-extrabold text-gray-900 dark:text-white">
@@ -634,7 +634,7 @@ export function ComponentShowcase() {
       {/* Toast viewport */}
       <ToastP.Viewport
         className="fixed bottom-4 right-4 z-[100]
-                                    flex flex-col gap-2 w-80 outline-none"
+                                    flex flex-col gap-2 w-80 outline-hidden"
       />
     </div>
   );
@@ -651,7 +651,7 @@ export function ComponentShowcase() {
 | 2   | Headless Component Philosophy — What It Means and Why It Matters  | ☐      |
 | 3   | Accessibility-First Composition — ARIA, Focus, Keyboard Nav       | ☐      |
 | 4   | Anatomy-Based Assembly — Root, Trigger, Portal, Positioner, Popup | ☐      |
-| 5   | Tailwind Styling for Primitives — `data-[state]`, `cn()`, Base UI | ☐      |
+| 5   | Tailwind Styling for Primitives — `data-open` / `data-closed`, `cn()`, Base UI | ☐      |
 | 6   | Popover — Full Implementation with Tailwind                       | ☐      |
 | 7   | Dialog — Modal with Overlay, Focus Trap, Accessible Anatomy       | ☐      |
 | 8   | Menu — Dropdown with Items, Groups, Separator                     | ☐      |
@@ -659,7 +659,7 @@ export function ComponentShowcase() {
 | 10  | Tabs — Tab List, Panels, Keyboard Navigation                      | ☐      |
 | 11  | Tooltip — Hover/Focus Tooltip with Delay and Positioning          | ☐      |
 | 12  | Toast — Notifications with Base UI Toast Primitives               | ☐      |
-| 13  | Transitions — CSS Open/Close Animations with `data-[state]`       | ☐      |
+| 13  | Transitions — CSS Open/Close Animations with `data-open` / `data-closed`       | ☐      |
 | 14  | Final Audit — Group 4 Complete; Optional Extensions Overview      | ☐      |
 
 ---

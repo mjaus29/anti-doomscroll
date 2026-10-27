@@ -322,7 +322,7 @@ export default async function BlogPostPage({
     <article>
       <h1>{slug.replace(/-/g, " ")}</h1>
       {isPreview && (
-        <p className="text-yellow-600 bg-yellow-50 p-2 rounded">
+        <p className="text-yellow-600 bg-yellow-50 p-2 rounded-sm">
           Preview Mode Active
         </p>
       )}

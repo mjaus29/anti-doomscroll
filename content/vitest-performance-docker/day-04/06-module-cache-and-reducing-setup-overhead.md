@@ -189,7 +189,7 @@ export default defineConfig({
   test: {
     globalSetup:  './src/test/global-setup.ts',
     setupFiles:   ['./src/test/setup.ts'],
-    clearMocks:   true,     // reset mock state between test files
+    clearMocks:   true,     // reset mock state between tests (already the default in Vitest 5)
     restoreMocks: true,     // restore vi.spyOn between test files
     environment:  'jsdom',
   }

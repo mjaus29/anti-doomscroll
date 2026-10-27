@@ -297,7 +297,7 @@ export default async function HelpPage({ params }: { params: Params }) {
               key={t}
               href={`/help/${t}`}
               className="p-5 border rounded-xl hover:border-blue-400
-                         hover:shadow-sm transition-all"
+                         hover:shadow-xs transition-all"
             >
               <h2 className="font-semibold text-gray-900">{toTitle(t)}</h2>
               <p className="text-sm text-gray-500 mt-1">

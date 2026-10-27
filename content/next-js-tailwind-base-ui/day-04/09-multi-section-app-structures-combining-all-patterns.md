@@ -513,7 +513,7 @@ export default async function AppLayout({
                              transition-colors"
                 >
                   <span
-                    className="w-6 h-6 rounded bg-blue-600 flex items-center
+                    className="w-6 h-6 rounded-sm bg-blue-600 flex items-center
                                    justify-center text-xs font-bold shrink-0"
                   >
                     {ws.name[0]}

@@ -454,7 +454,7 @@ export default function DocsLayout({
                     <Link
                       href={link.href}
                       className="block px-2 py-1.5 text-sm text-gray-600
-                                 rounded hover:bg-gray-200 hover:text-gray-900
+                                 rounded-sm hover:bg-gray-200 hover:text-gray-900
                                  transition-colors"
                     >
                       {link.label}

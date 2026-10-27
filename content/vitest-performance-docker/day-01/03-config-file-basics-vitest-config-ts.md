@@ -107,7 +107,7 @@ export default defineConfig({
   test: {
     projects: [
       {
-        extends: true,               // inherit root plugins, aliases, etc.
+        extends: true,               // inherit root plugins, aliases, etc. (default is true in Vitest 5; array options like setupFiles are appended, use extends: false to opt out)
         test: {
           name:        'unit',
           environment: 'node',

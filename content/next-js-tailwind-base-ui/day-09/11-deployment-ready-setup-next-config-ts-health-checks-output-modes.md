@@ -391,7 +391,7 @@ if (warnings > 0) {
 ```json
 {
   "scripts": {
-    "dev": "next dev --turbo",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -739,7 +739,7 @@ export async function GET() {
   "name": "acme",
   "version": "1.0.0",
   "scripts": {
-    "dev": "next dev --turbo",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

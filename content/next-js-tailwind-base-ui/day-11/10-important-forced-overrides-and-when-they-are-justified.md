@@ -156,11 +156,10 @@ Tailwind's trailing `!` modifier (v4 syntax) generates `!important` for any util
 /* src/app/globals.css */
 
 /* You can use !important inside @apply too */
-@layer utilities {
+/* v4: custom utilities use @utility (v3 wrapped them in @layer utilities) */
+@utility reset-all {
   /* Force reset — for email templates */
-  .reset-all {
-    @apply p-0! m-0! border-0! bg-transparent! shadow-none!;
-  }
+  @apply p-0! m-0! border-0! bg-transparent! shadow-none!;
 }
 
 /* Or directly in CSS with Tailwind @apply */

@@ -388,13 +388,13 @@ export default function DetailDefault() {
 export default function DetailLoading() {
   return (
     <div className="p-6 animate-pulse">
-      <div className="h-6 w-3/4 bg-gray-200 rounded mb-3" />
-      <div className="h-4 w-1/2 bg-gray-200 rounded mb-6" />
+      <div className="h-6 w-3/4 bg-gray-200 rounded-sm mb-3" />
+      <div className="h-4 w-1/2 bg-gray-200 rounded-sm mb-6" />
       <div className="space-y-2">
         {Array.from({ length: 6 }, (_, i) => (
           <div
             key={i}
-            className="h-4 bg-gray-200 rounded"
+            className="h-4 bg-gray-200 rounded-sm"
             style={{ width: `${85 - i * 8}%` }}
           />
         ))}

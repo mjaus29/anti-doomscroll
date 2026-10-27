@@ -10,6 +10,8 @@ Vitest is a Vite-native test runner with Jest-compatible APIs. Install it as a d
 
 ## K — Key Concepts
 
+Vitest 5 requires Node.js 22.12+ and Vite 6.4+ (Vitest 4 accepted older versions). Yarn users must add `vite` to `package.json` themselves because it is now a peer dependency.
+
 ```bash
 # ── Install Vitest ────────────────────────────────────────────────────────
 npm install --save-dev vitest

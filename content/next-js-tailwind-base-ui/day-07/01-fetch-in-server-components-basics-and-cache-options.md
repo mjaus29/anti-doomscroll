@@ -373,7 +373,7 @@ export default async function ShopPage() {
         <h1 className="text-3xl font-bold text-gray-900">{config.name}</h1>
         <p className="text-sm text-gray-400 mt-1">
           Currency: {config.currency} · Locale: {config.locale}{" "}
-          <span className="text-xs bg-gray-100 px-2 py-0.5 rounded font-mono">
+          <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-sm font-mono">
             static (force-cache)
           </span>
         </p>
@@ -386,7 +386,7 @@ export default async function ShopPage() {
             <h2 className="text-lg font-semibold">Featured</h2>
             <span
               className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5
-                             rounded font-mono border border-blue-100"
+                             rounded-sm font-mono border border-blue-100"
             >
               tag: featured, products
             </span>
@@ -446,7 +446,7 @@ export default async function ShopPage() {
           <h2 className="text-lg font-semibold">Catalog</h2>
           <span
             className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5
-                           rounded font-mono border border-amber-100"
+                           rounded-sm font-mono border border-amber-100"
           >
             ISR: revalidate=1800
           </span>

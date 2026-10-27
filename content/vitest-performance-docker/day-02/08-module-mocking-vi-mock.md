@@ -148,13 +148,13 @@ it('returns null for missing user', async () => {
 ### ❌ Calling `vi.mock()` inside a function or conditional — not hoisted correctly
 
 ```typescript
-// ❌ vi.mock inside a function — NOT hoisted, executes too late
+// ❌ vi.mock inside a function — throws in Vitest 5 (earlier versions ran it too late)
 beforeEach(() => {
   vi.mock('./db')  // ← too late — module already imported ❌
 })
 ```
 
-**Fix:** Always call `vi.mock()` at the top level of the test file:
+**Fix:** Always call `vi.mock()` at the top level of the test file (Vitest 5 enforces this: nested `vi.mock`, `vi.unmock` and `vi.hoisted` calls now throw instead of silently running late; `vi.doMock` / `vi.doUnmock` are not hoisted and may be called anywhere):
 
 ```typescript
 // ✅ Top-level — hoisted before all imports

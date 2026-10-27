@@ -525,7 +525,7 @@ export function LandingSection() {
             {/* Floating code snippet card */}
             <div
               className="absolute bottom-6 left-6 right-6 bg-gray-900/95
-                             backdrop-blur-sm rounded-xl p-4 shadow-2xl"
+                             backdrop-blur-xs rounded-xl p-4 shadow-2xl"
             >
               <pre className="text-xs text-emerald-400 font-mono leading-relaxed">
                 {`<div class="flex items-center

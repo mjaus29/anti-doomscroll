@@ -159,7 +159,7 @@ export function Card({ title, body }: { title: string; body: string }) {
     */}
     <div className="bg-white dark:bg-gray-800
                      border border-gray-200 dark:border-gray-700
-                     rounded-2xl p-6 shadow-sm dark:shadow-none
+                     rounded-2xl p-6 shadow-xs dark:shadow-none
                      dark:ring-1 dark:ring-gray-700">
 
       <h3 className="text-gray-900 dark:text-white
@@ -213,7 +213,7 @@ export function ThemeToggle() {
                   bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400
                   hover:bg-gray-50 dark:hover:bg-gray-700
                   hover:text-gray-900 dark:hover:text-white
-                  transition-all duration-150 focus-visible:outline-none
+                  transition-all duration-150 focus-visible:outline-hidden
                   focus-visible:ring-2 focus-visible:ring-blue-500
                   focus-visible:ring-offset-2"
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
@@ -239,7 +239,7 @@ export function ThemeToggle() {
               border border-gray-300 dark:border-gray-600
               text-gray-900 dark:text-white
               placeholder:text-gray-400 dark:placeholder:text-gray-500
-              focus:outline-none focus:ring-2 focus:ring-blue-500
+              focus:outline-hidden focus:ring-2 focus:ring-blue-500
               focus:border-transparent transition-colors"
   placeholder="Enter email..."
 />;
@@ -543,7 +543,7 @@ export function ThemeToggle() {
                   hover:bg-gray-50 dark:hover:bg-gray-700
                   hover:text-gray-900 dark:hover:text-white
                   transition-all duration-150
-                  focus-visible:outline-none focus-visible:ring-2
+                  focus-visible:outline-hidden focus-visible:ring-2
                   focus-visible:ring-blue-500 focus-visible:ring-offset-2"
     >
       <span className="block dark:hidden" aria-hidden>
@@ -623,7 +623,7 @@ export function DarkCard({ icon, title, body, badge }: DarkCardProps) {
     // All colors reference CSS variables — adapt automatically ✅
     <div
       className="bg-(--color-surface) border border-(--color-border)
-                     rounded-2xl p-6 shadow-sm
+                     rounded-2xl p-6 shadow-xs
                      hover:border-(--color-brand) transition-all duration-200"
     >
       <div className="flex items-start justify-between mb-4">

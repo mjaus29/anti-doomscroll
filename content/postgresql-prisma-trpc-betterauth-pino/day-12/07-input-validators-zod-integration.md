@@ -61,7 +61,7 @@ const statusInput = z.object({
 // Usage in router:
 const taskRouter = createTRPCRouter({
   list: publicProcedure
-    .input(paginationInput.merge(z.object({ projectId: z.number().optional() })))
+    .input(paginationInput.extend({ projectId: z.number().optional() }))
     .query(({ input, ctx }) =>
       ctx.prisma.task.findMany({
         take:    input.limit,
@@ -72,6 +72,8 @@ const taskRouter = createTRPCRouter({
     ),
 })
 ```
+
+Zod 4 note: `.merge()` is deprecated — combine object schemas with `A.extend(B.shape)` (or `A.extend({ ... })` with a plain shape). Before Zod 4 this was `A.merge(B)`.
 
 ```typescript
 // ── Accessing Zod errors on the client ────────────────────────────────────
@@ -200,8 +202,7 @@ export const createTaskSchema = z.object({
   title:       z.string().min(1, 'Title is required').max(200, 'Title too long'),
   description: z.string().max(2000).optional(),
   priority:    z.enum(['low', 'medium', 'high', 'critical']).default('medium'),
-  dueDate:     z.string()
-    .datetime({ message: 'Invalid date format' })
+  dueDate:     z.iso.datetime({ error: 'Invalid date format' })   // Zod 4 (Zod 3: z.string().datetime())
     .transform(s => new Date(s))
     .refine(d => d > new Date(), { message: 'Due date must be in the future' })
     .optional(),

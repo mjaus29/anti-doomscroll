@@ -72,7 +72,7 @@ Headless = Layer 1 + 2 delivered, Layer 3 is yours
   className={cn(
     // ALL of this is your responsibility — Base UI renders a <div>
     // with the correct aria-hidden attribute — you style it
-    "fixed inset-0 bg-black/50 backdrop-blur-sm z-40",
+    "fixed inset-0 bg-black/50 backdrop-blur-xs z-40",
     "data-[open]:animate-in data-[open]:fade-in",
     "data-[closed]:animate-out data-[closed]:fade-out",
     "duration-200"
@@ -261,7 +261,7 @@ export function FeatureFlag({
           // Transitions
           "transition-colors duration-200 ease-in-out",
           // Focus ring (keyboard a11y — Base UI adds :focus-visible)
-          "focus-visible:outline-none focus-visible:ring-2",
+          "focus-visible:outline-hidden focus-visible:ring-2",
           "focus-visible:ring-blue-500 focus-visible:ring-offset-2",
           "cursor-pointer",
           // State-driven colors via data-[checked]:
@@ -272,7 +272,7 @@ export function FeatureFlag({
         <Switch.Thumb
           className={cn(
             // The sliding circle
-            "block size-5 rounded-full bg-white shadow-sm",
+            "block size-5 rounded-full bg-white shadow-xs",
             "absolute top-0.5 left-0.5",
             "transition-transform duration-200 ease-in-out",
             // Slide right when checked — Base UI sets data-checked

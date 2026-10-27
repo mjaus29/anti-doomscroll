@@ -407,7 +407,7 @@ MIDDLEWARE
 
 STACKED .INPUT()
   .input() called twice = REPLACES first schema (not additive)
-  Compose with: schema.merge(other) / schema.extend({ field }) / schema.and(other)
+  Compose with: schema.extend(other.shape) / schema.extend({ field }) / schema.and(other)  (Zod 4: .merge() deprecated)
   Shared schemas: src/lib/schemas/ — use in procedure AND client form validation
   Tenant/workspace ID: inject from ctx (session) — never from client input
   await getRawInput(): unknown — pre-validation, for middleware logging/rate-limiting (v10: rawInput)

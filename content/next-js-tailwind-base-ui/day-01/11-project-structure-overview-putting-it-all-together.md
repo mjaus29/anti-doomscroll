@@ -151,7 +151,7 @@ Why this separation matters:
 ```tsx
 // ❌ Without the layer separation:
 // ProductCard needs a button — directly uses button styles
-<button className="px-4 py-2 bg-blue-600 rounded text-white hover:bg-blue-700 ...">
+<button className="px-4 py-2 bg-blue-600 rounded-sm text-white hover:bg-blue-700 ...">
   Add to Cart
 </button>;
 // → Button styles duplicated in 40 components → hard to update globally
@@ -582,7 +582,7 @@ import type { Cart } from "@/types"; // ← barrel type import
 
 ```
 SCAFFOLD
-  npx create-next-app@latest --typescript --eslint --tailwind --src-dir --app --turbopack
+  npx create-next-app@latest --typescript --eslint --tailwind --src-dir --app
 
 CONFIG FILES (root level — don't touch without understanding)
   next.config.ts     ← framework behavior (images, redirects, headers, env)
@@ -633,7 +633,7 @@ DEV LOOP
 
 ---
 
-> **Your next action:** Run `npx create-next-app@latest my-first-app --typescript --eslint --tailwind --src-dir --app --turbopack` right now. Open the project in VS Code. Spend 5 minutes just reading the generated file structure — match every file to what you just learned.
+> **Your next action:** Run `npx create-next-app@latest my-first-app --typescript --eslint --tailwind --src-dir --app` right now. Open the project in VS Code. Spend 5 minutes just reading the generated file structure — match every file to what you just learned.
 >
 > _Doing one small thing beats opening a feed._
 

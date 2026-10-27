@@ -55,7 +55,7 @@ export default async function OrgLayout({
   return (
     <div>
       <header className="bg-white border-b px-6 py-3 flex items-center gap-3">
-        <img src={org.logoUrl} alt={org.name} className="w-6 h-6 rounded" />
+        <img src={org.logoUrl} alt={org.name} className="w-6 h-6 rounded-sm" />
         <span className="font-semibold">{org.name}</span>
       </header>
       <div className="flex">
@@ -291,7 +291,7 @@ export default async function TeamLayout({
           <p className="text-xs text-gray-500 px-2 mb-1">CHANNELS</p>
           <a
             href={`/teams/${teamId}/channels/general`}
-            className="block px-3 py-1.5 rounded text-sm text-gray-300
+            className="block px-3 py-1.5 rounded-sm text-sm text-gray-300
                         hover:bg-gray-700 hover:text-white"
           >
             #general
@@ -347,7 +347,7 @@ export default async function ChannelLayout({
           type="text"
           placeholder={`Message #${channel.name}`}
           className="w-full border rounded-lg px-4 py-2.5 text-sm
-                     focus:outline-none focus:ring-2 focus:ring-blue-500"
+                     focus:outline-hidden focus:ring-2 focus:ring-blue-500"
         />
       </div>
     </div>

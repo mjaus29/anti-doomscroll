@@ -75,7 +75,7 @@ function PopoverContent({
             // Base
             "relative bg-white dark:bg-gray-800 z-50",
             "border border-gray-200 dark:border-gray-700",
-            "rounded-2xl shadow-xl outline-none",
+            "rounded-2xl shadow-xl outline-hidden",
             "min-w-[220px] max-w-sm",
             // Transition
             "transition-all duration-200 ease-out",
@@ -160,7 +160,7 @@ function PopoverClose({
         "hover:bg-gray-100 dark:hover:bg-gray-700",
         "hover:text-gray-700 dark:hover:text-gray-300",
         "transition-colors duration-150 shrink-0",
-        "focus-visible:outline-none focus-visible:ring-2",
+        "focus-visible:outline-hidden focus-visible:ring-2",
         "focus-visible:ring-blue-500",
         className
       )}
@@ -230,7 +230,7 @@ export function UserCardPopover({
         className="flex items-center gap-2 rounded-xl p-1.5
                                    hover:bg-gray-100 dark:hover:bg-gray-800
                                    transition-colors
-                                   focus-visible:outline-none focus-visible:ring-2
+                                   focus-visible:outline-hidden focus-visible:ring-2
                                    focus-visible:ring-blue-500"
       >
         <div
@@ -412,7 +412,7 @@ export function ColorPickerPopover({
           "bg-white dark:bg-gray-900",
           "hover:bg-gray-50 dark:hover:bg-gray-800",
           "transition-colors text-sm font-medium text-gray-700 dark:text-gray-300",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+          "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500",
           "data-[popup-open]:border-blue-500"
         )}
       >
@@ -450,7 +450,7 @@ export function ColorPickerPopover({
                   className={cn(
                     "size-7 rounded-lg border-2 transition-transform",
                     "hover:scale-110 active:scale-95",
-                    "focus-visible:outline-none focus-visible:ring-2",
+                    "focus-visible:outline-hidden focus-visible:ring-2",
                     "focus-visible:ring-blue-500 focus-visible:ring-offset-1",
                     value === color
                       ? "border-blue-500 scale-110"
@@ -478,7 +478,7 @@ export function ColorPickerPopover({
                   className="flex-1 px-2.5 py-1.5 text-xs font-mono rounded-lg
                               border border-gray-300 dark:border-gray-600
                               bg-white dark:bg-gray-900 text-gray-900 dark:text-white
-                              focus:outline-none focus:ring-2 focus:ring-blue-500
+                              focus:outline-hidden focus:ring-2 focus:ring-blue-500
                               focus:border-transparent"
                 />
                 <button

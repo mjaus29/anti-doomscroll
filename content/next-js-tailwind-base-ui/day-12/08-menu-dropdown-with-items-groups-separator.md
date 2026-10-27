@@ -46,7 +46,7 @@ function MenuContent({
             "min-w-[180px] max-w-xs p-1.5",
             "bg-white dark:bg-gray-800",
             "border border-gray-200 dark:border-gray-700",
-            "rounded-2xl shadow-xl z-50 outline-none",
+            "rounded-2xl shadow-xl z-50 outline-hidden",
             "transition-all duration-150 ease-out origin-(--transform-origin)",
             "data-[starting-style]:opacity-0 data-[starting-style]:scale-95",
             "data-[ending-style]:opacity-0   data-[ending-style]:scale-95",
@@ -76,7 +76,7 @@ function MenuItem({
       className={cn(
         "flex items-center gap-2 w-full px-3 py-2 rounded-xl",
         "text-sm text-gray-700 dark:text-gray-300",
-        "cursor-pointer select-none outline-none",
+        "cursor-pointer select-none outline-hidden",
         "transition-colors duration-100",
         "data-[highlighted]:bg-gray-100 dark:data-[highlighted]:bg-gray-700",
         "data-[highlighted]:text-gray-900 dark:data-[highlighted]:text-white",
@@ -288,7 +288,7 @@ export function RowActionsMenu({
         className="inline-flex items-center justify-center size-8 rounded-lg
                     text-gray-400 hover:text-gray-700 dark:hover:text-gray-300
                     hover:bg-gray-100 dark:hover:bg-gray-700
-                    transition-colors focus-visible:outline-none
+                    transition-colors focus-visible:outline-hidden
                     focus-visible:ring-2 focus-visible:ring-blue-500
                     data-[popup-open]:bg-gray-100 data-[popup-open]:text-gray-700"
       >

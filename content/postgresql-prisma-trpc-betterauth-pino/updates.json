@@ -382,10 +382,11 @@
       "lesson": "day-10/05-sign-up-email-password-registration-flow",
       "date": "2026-10-27",
       "kind": "correction",
-      "summary": "Sign-up hashes the password with scrypt (BetterAuth default), not bcrypt.",
+      "summary": "Sign-up hashes the password with scrypt (BetterAuth default), not bcrypt. Zod 4 moved string formats to top level: z.string().email() → z.email().",
       "changes": [
         "TL;DR / Key Concepts — \"bcrypt-hashed\", \"bcrypt(password, costFactor=10)\" → scrypt.",
-        "Interview Q&A — answer says scrypt, configurable via `emailAndPassword.password.hash`."
+        "Interview Q&A — answer says scrypt, configurable via `emailAndPassword.password.hash`.",
+        "Key Concepts — sign-up schemas: `z.string().email()` → `z.email()` (both examples)."
       ]
     },
     {
@@ -422,11 +423,12 @@
       "lesson": "day-11/01-email-password-options-rules-auto-sign-in-custom-hashing",
       "date": "2026-10-27",
       "kind": "correction",
-      "summary": "BetterAuth hashes passwords with scrypt by default, not bcrypt.",
+      "summary": "BetterAuth hashes passwords with scrypt by default, not bcrypt. Zod 4 moved string formats to top level: z.string().email() → z.email().",
       "changes": [
         "Key Concepts — comments saying the default is bcrypt (cost 10) now say scrypt; maxPasswordLength comment no longer cites bcrypt's 72-byte truncation.",
         "Why It Matters — default hasher bullet rewritten for scrypt.",
-        "Interview Q&A — maxPasswordLength / DoS answer now talks about scrypt (memory-hard, slow) instead of bcrypt."
+        "Interview Q&A — maxPasswordLength / DoS answer now talks about scrypt (memory-hard, slow) instead of bcrypt.",
+        "Key Concepts — sign-up schema: `z.string().email()` → `z.email()`."
       ]
     },
     {
@@ -518,12 +520,15 @@
       "lesson": "day-13/02-stacked-input-chaining-and-middleware-input",
       "date": "2026-10-27",
       "kind": "correction",
-      "summary": "In tRPC v11 chained `.input()` calls are merged (object schemas), not replaced; middleware uses `getRawInput()` rather than `rawInput`.",
+      "summary": "In tRPC v11 chained `.input()` calls are merged (object schemas), not replaced; middleware uses `getRawInput()` rather than `rawInput`. Zod 4 deprecates .merge() (use .extend(B.shape)) and moves string formats to the top level.",
       "changes": [
         "TL;DR — rewritten: stacked `.input()` merges object inputs (later call wins on duplicate keys); `getRawInput()` replaces `rawInput`.",
         "Key Concepts — \"calling it twice replaces\" example replaced with a merging example; `rawInput` middleware example now `await getRawInput()`.",
         "Why It Matters / Interview Q&A — answers changed from \"No, it replaces\" to \"Yes, object schemas merge\".",
-        "Common Pitfalls — pitfall changed to chaining a non-object schema / relying on duplicate keys."
+        "Common Pitfalls — pitfall changed to chaining a non-object schema / relying on duplicate keys.",
+        "Key Concepts — composing schemas: `A.merge(B)` → `A.extend(B.shape)` (and `.partial().extend(idSchema.shape)`); `z.string().datetime()` → `z.iso.datetime()`.",
+        "Common Pitfalls — fix snippet: `.merge(z.object({...}))` → `.extend({...})`.",
+        "Coding Challenge — solution: all `.merge(...)` calls → `.extend(...shape)` / `.extend({...})`."
       ]
     },
     {
@@ -548,10 +553,11 @@
       "lesson": "day-13/08-betterauth-session-based-access-control-full-patterns",
       "date": "2026-10-27",
       "kind": "correction",
-      "summary": "tRPC v11 middleware reads raw input with `await getRawInput()`.",
+      "summary": "tRPC v11 middleware reads raw input with `await getRawInput()`. Zod 4 deprecates .merge() (use .extend(B.shape)).",
       "changes": [
         "Coding Challenge / end-of-day recap — middleware signature and notes use `getRawInput()` (v10: `rawInput`).",
-        "Coding Challenge / end-of-day recap — `PrismaClient` import path updated to the generated client."
+        "Coding Challenge / end-of-day recap — `PrismaClient` import path updated to the generated client.",
+        "Key Concepts — cheat sheet: 'Compose with schema.merge(other)' → `schema.extend(other.shape)`."
       ]
     },
     {
@@ -598,6 +604,25 @@
       "changes": [
         "Key Concepts — rate-limit snippet: `middleware.ts` → `proxy.ts`, `middleware()` → `proxy()`.",
         "Coding Challenge / recap — request IDs \"generate at edge (middleware.ts)\" → in proxy.ts."
+      ]
+    },
+    {
+      "lesson": "day-12/02-routers-createtrpcrouter-sub-routers-approuter",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 moved string formats to top level: z.string().email() → z.email().",
+      "changes": [
+        "Key Concepts — router example input: `z.string().email()` → `z.email()`."
+      ]
+    },
+    {
+      "lesson": "day-12/07-input-validators-zod-integration",
+      "date": "2026-10-27",
+      "kind": "outdated",
+      "summary": "Zod 4 deprecates .merge() (use .extend(B.shape)) and moves string formats to the top level.",
+      "changes": [
+        "Key Concepts — router usage: `paginationInput.merge(z.object({...}))` → `paginationInput.extend({...})`; added a Zod 4 note on `.merge()`.",
+        "Coding Challenge — `dueDate`: `z.string().datetime({ message })` → `z.iso.datetime({ error })`."
       ]
     }
   ]

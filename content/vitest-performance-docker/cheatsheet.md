@@ -6,10 +6,10 @@ A one-page refresher for the three halves of this group: testing with Vitest, me
 
 | Concept | Syntax / example | Note |
 | :------ | :--------------- | :--- |
-| Install | `npm i -D vitest` (+ `@vitest/coverage-v8`, `@vitest/ui`) | Uses Vite's pipeline: TS, ESM, aliases work out of the box |
+| Install | `npm i -D vitest` (+ `@vitest/coverage-v8`, `@vitest/ui`); Vitest 5 needs Node 22.12+ and Vite 6.4+ | Uses Vite's pipeline: TS, ESM, aliases work out of the box |
 | Watch mode | `vitest` | Re-runs affected tests on save |
 | Single run (CI) | `vitest run` | Exits with a non-zero code on failure |
-| Filter by file / name | `vitest run auth` · `vitest -t "returns null"` | In watch mode: `p` file, `t` name, `f` failed only |
+| Filter by file / name | `vitest run auth` · `vitest -t "returns null"` | In watch mode: `p` file, `t` name, `f` failed only. Vitest 5: `-t` matches the full name joined with ` > `, so use `-t adds` or `-t 'math.*adds'`, not `-t 'math adds'` |
 | Config | `vitest.config.ts` with `defineConfig({ test: {...} })` | Or a `test` key inside an existing `vite.config.ts` |
 | Environment | `environment: 'node'` (default) / `'jsdom'` / `'happy-dom'` | Per file: `// @vitest-environment jsdom` at the top |
 | Globals | `globals: true` | Lets you skip `import { describe, it, expect }`; add `vitest/globals` to tsconfig `types` |
@@ -104,7 +104,7 @@ it('debounces calls', async () => {
 
 | Cleanup | What it does | Where |
 | :------ | :----------- | :---- |
-| `vi.clearAllMocks()` | Clears `mock.calls` / results; keeps implementations | `beforeEach` |
+| `vi.clearAllMocks()` | Clears `mock.calls` / results; keeps implementations (Vitest 5: `clearMocks` defaults to `true`, so this runs before each test automatically) | `beforeEach` |
 | `vi.resetAllMocks()` | Clears calls and drops `mockReturnValue` / `mockImplementation` | When each test sets its own behaviour |
 | `vi.restoreAllMocks()` | Puts `vi.spyOn` originals back (Vitest 4: does not clear call history or reset `vi.fn()` mocks) | `afterEach` whenever you spy |
 
@@ -116,7 +116,7 @@ Lessons: [Fake Timers](/group/vitest-performance-docker/day/02/04-fake-timers-se
 | :---------- | :---- | :---------- |
 | `jsdom` | fast | Logic, DOM structure, events; widest API coverage of the simulators |
 | `happy-dom` | about 2–4x faster than jsdom | Large suites when you don't hit API gaps |
-| Browser Mode (Playwright / WebdriverIO) | slowest | Real layout, CSS, Web APIs, cross-browser checks |
+| Browser Mode (Playwright / WebdriverIO; WebdriverIO provider is community-maintained in Vitest 5) | slowest | Real layout, CSS, Web APIs, cross-browser checks |
 
 Pattern: **query → act → assert**. Query by role, label, or text rather than internal IDs, then assert on what the user sees.
 
@@ -136,7 +136,7 @@ it('shows an error for an empty email', () => {
 | Enable | `browser: { enabled: true, provider: playwright(), instances: [{ browser: 'chromium' }] }` + `npm i -D @vitest/browser-playwright` |
 | Isolation | Fresh browser context (like incognito) per test **file**; clean the DOM between tests in a file |
 | Real input | `await userEvent.type(input, 'Mark')` · `await userEvent.click(button)` (always `await`) |
-| Version note | Vitest 4: `provider: playwright()` from `@vitest/browser-playwright`, `instances: [{ browser: 'chromium' }]`, and `import { page, userEvent } from 'vitest/browser'`. Before Vitest 4: `provider: 'playwright'`, `name: 'chromium'`, and `@vitest/browser/context`. `page` is Vitest's locator API (use `expect.element(...)`), not the raw Playwright `Page` |
+| Version note | Vitest 4+ (still true in 5): `provider: playwright()` from `@vitest/browser-playwright`, `instances: [{ browser: 'chromium' }]`, and `import { page, userEvent } from 'vitest/browser'`. Before Vitest 4: `provider: 'playwright'`, `name: 'chromium'`, and `@vitest/browser/context`. `page` is Vitest's locator API (use `expect.element(...)`), not the raw Playwright `Page`. Vitest 5: locators match exactly by default, `toHaveTextContent` is strict equality (use `toMatchTextContent` for regex/partial), and `render` in `vitest-browser-vue` / `-svelte` is async |
 | Mixed suites | Keep most tests in jsdom; run `*.browser.test.ts` in a separate project (`test.projects`, which replaced `vitest.workspace.ts`; `environmentMatchGlobs` is gone too; use `extends: true` to inherit root plugins) |
 
 Lessons: [jsdom Fundamentals](/group/vitest-performance-docker/day/03/01-jsdom-fundamentals-what-it-is-and-how-vitest-uses-it) · [DOM Interaction Testing](/group/vitest-performance-docker/day/03/03-dom-interaction-testing-query-fire-assert) · [Browser Mode Setup](/group/vitest-performance-docker/day/03/06-browser-mode-setup-vitest-real-browser) · [Simulated vs Real Browser](/group/vitest-performance-docker/day/03/08-simulated-vs-real-browser-choosing-the-right-environment)
@@ -148,9 +148,9 @@ Lessons: [jsdom Fundamentals](/group/vitest-performance-docker/day/03/01-jsdom-f
 | Coverage report | `vitest run --coverage` | `v8` = fast, built in; `istanbul` = instrumented |
 | Enforce minimums | `coverage.thresholds: { lines: 80, branches: 75 }` | Fails the run below the floor |
 | Reporters | `text` (terminal), `html` (local browsing), `lcov` (CI tools) | |
-| Include untested files | `coverage.include: ['src/**']` | `coverage.all` was removed in Vitest 4: only files matching `include` (or loaded by tests) are reported |
+| Include untested files | `coverage.include: ['src/**']` | `coverage.all` was removed in Vitest 4: only files matching `include` (or loaded by tests) are reported. Vitest 5: `include`/`exclude` match relative paths and a bare `src` matches `src/**`; `perFile` must be set on each glob threshold |
 | Find slow tests | `--reporter=verbose`, `slowTestThreshold` | Usually heavy `beforeAll`/`beforeEach`, real timers, real network |
-| Pool | `pool: 'forks'` (default: isolated, native addons) / `'threads'` (lighter) / `'vmThreads'`, `'vmForks'` | `poolOptions` was removed in Vitest 4 |
+| Pool | `pool: 'forks'` (default: isolated, native addons) / `'threads'` (lighter) / `'vmThreads'`, `'vmForks'` | `poolOptions` was removed in Vitest 4; `describe.sequential` was removed in Vitest 5 (use `concurrent: false`) |
 | Workers | `maxWorkers: 4` | Run serially: `fileParallelism: false` |
 | Module isolation | `isolate: true` (default) | `false` only after profiling, and only for stateless tests |
 | Shard across CI | `vitest run --shard=2/3` | Splits by file count, not time; merge coverage afterwards |

@@ -197,7 +197,7 @@ export function Button({
         "ui:inline-flex ui:items-center ui:justify-center",
         "ui:font-semibold ui:rounded-xl ui:transition-all ui:duration-150",
         "ui:active:scale-[0.98]",
-        "ui:focus-visible:outline-none ui:focus-visible:ring-2",
+        "ui:focus-visible:outline-hidden ui:focus-visible:ring-2",
         "ui:focus-visible:ring-offset-2",
         "ui:disabled:opacity-50 ui:disabled:cursor-not-allowed",
         // Variant
@@ -448,7 +448,7 @@ export function FeedbackWidget() {
             onClick={() => setState("closed")}
             className="widget:text-white/70 widget:hover:text-white
                         widget:transition-colors widget:text-lg widget:leading-none
-                        widget:p-1 widget:rounded"
+                        widget:p-1 widget:rounded-sm"
             aria-label="Close feedback widget"
           >
             ✕
@@ -520,7 +520,7 @@ export function FeedbackWidget() {
                              widget:bg-white widget:text-gray-900
                              widget:placeholder:text-gray-400
                              widget:resize-none
-                             widget:focus:outline-none widget:focus:ring-2
+                             widget:focus:outline-hidden widget:focus:ring-2
                              widget:focus:ring-blue-500 widget:focus:border-transparent
                              widget:transition-colors widget:duration-150"
               />
@@ -539,7 +539,7 @@ export function FeedbackWidget() {
                            widget:data-[state=submitting]:animate-pulse
                            widget:bg-blue-600 widget:hover:bg-blue-700
                            widget:active:scale-[0.98]
-                           widget:focus-visible:outline-none
+                           widget:focus-visible:outline-hidden
                            widget:focus-visible:ring-2
                            widget:focus-visible:ring-blue-500
                            widget:focus-visible:ring-offset-2
@@ -563,7 +563,7 @@ export function FeedbackWidget() {
                      widget:transition-all widget:duration-150
                      widget:flex widget:items-center widget:justify-center
                      widget:active:scale-95
-                     widget:focus-visible:outline-none widget:focus-visible:ring-2
+                     widget:focus-visible:outline-hidden widget:focus-visible:ring-2
                      widget:focus-visible:ring-blue-500 widget:focus-visible:ring-offset-2"
       >
         {state === "closed" ? "💬" : "✕"}

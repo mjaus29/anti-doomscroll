@@ -1,4 +1,4 @@
-# 13 — Transitions — CSS Open/Close Animations with `data-[state]`
+# 13 — Transitions — CSS Open/Close Animations with `data-open` / `data-closed`
 
 ---
 
@@ -160,7 +160,7 @@ const TOAST_SLIDE = `
 
 <Dialog.Backdrop
   className="
-    fixed inset-0 bg-black/50 backdrop-blur-sm z-40
+    fixed inset-0 bg-black/50 backdrop-blur-xs z-40
     transition-opacity duration-300
     data-[starting-style]:opacity-0
     data-[ending-style]:opacity-0
@@ -329,7 +329,7 @@ function TransitionMenu() {
                                          border border-gray-200 dark:border-gray-700
                                          rounded-xl text-sm font-medium
                                          hover:bg-gray-50 dark:hover:bg-gray-700
-                                         transition-colors focus-visible:outline-none
+                                         transition-colors focus-visible:outline-hidden
                                          focus-visible:ring-2 focus-visible:ring-blue-500"
       >
         Menu (fade + scale) ▾
@@ -340,7 +340,7 @@ function TransitionMenu() {
             className={cn(
               "min-w-[160px] p-1.5 bg-white dark:bg-gray-800",
               "border border-gray-200 dark:border-gray-700",
-              "rounded-2xl shadow-xl z-50 outline-none",
+              "rounded-2xl shadow-xl z-50 outline-hidden",
               // Transition — fade + scale from correct origin
               "motion-safe:transition-all motion-safe:duration-150 motion-safe:ease-out",
               "origin-(--transform-origin)",
@@ -352,7 +352,7 @@ function TransitionMenu() {
               <MenuPrimitive.Item
                 key={item}
                 className="px-3 py-2 text-sm rounded-xl text-gray-700
-                             dark:text-gray-300 cursor-pointer outline-none
+                             dark:text-gray-300 cursor-pointer outline-hidden
                              data-[highlighted]:bg-gray-100
                              dark:data-[highlighted]:bg-gray-700"
               >
@@ -374,7 +374,7 @@ function TransitionDialog() {
         className="px-4 py-2 bg-blue-600 text-white
                                             rounded-xl text-sm font-medium
                                             hover:bg-blue-700 transition-colors
-                                            focus-visible:outline-none
+                                            focus-visible:outline-hidden
                                             focus-visible:ring-2
                                             focus-visible:ring-blue-500
                                             focus-visible:ring-offset-2"
@@ -385,7 +385,7 @@ function TransitionDialog() {
         {/* Backdrop: 300ms fade */}
         <DialogPrimitive.Backdrop
           className="
-          fixed inset-0 bg-black/50 backdrop-blur-sm z-40
+          fixed inset-0 bg-black/50 backdrop-blur-xs z-40
           motion-safe:transition-opacity motion-safe:duration-300
           data-[starting-style]:opacity-0
           data-[ending-style]:opacity-0
@@ -396,7 +396,7 @@ function TransitionDialog() {
           className="
           fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
           z-50 w-full max-w-md mx-4
-          bg-white dark:bg-gray-800 rounded-2xl shadow-2xl outline-none
+          bg-white dark:bg-gray-800 rounded-2xl shadow-2xl outline-hidden
           motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out
           origin-center
           data-[starting-style]:opacity-0 data-[starting-style]:scale-[0.97]
@@ -440,7 +440,7 @@ function TransitionTooltip() {
         className="px-4 py-2 bg-purple-600 text-white
                                              rounded-xl text-sm font-medium
                                              hover:bg-purple-700 transition-colors
-                                             focus-visible:outline-none
+                                             focus-visible:outline-hidden
                                              focus-visible:ring-2
                                              focus-visible:ring-purple-500
                                              focus-visible:ring-offset-2"
@@ -488,21 +488,21 @@ export function TransitionShowcase() {
           All transitions use CSS only via{" "}
           <code
             className="font-mono text-xs bg-gray-100 dark:bg-gray-800
-                            px-1.5 py-0.5 rounded"
+                            px-1.5 py-0.5 rounded-sm"
           >
             data-[starting-style]
           </code>{" "}
           and{" "}
           <code
             className="font-mono text-xs bg-gray-100 dark:bg-gray-800
-                            px-1.5 py-0.5 rounded"
+                            px-1.5 py-0.5 rounded-sm"
           >
             data-[ending-style]
           </code>
           . Respects{" "}
           <code
             className="font-mono text-xs bg-gray-100 dark:bg-gray-800
-                                     px-1.5 py-0.5 rounded"
+                                     px-1.5 py-0.5 rounded-sm"
           >
             prefers-reduced-motion
           </code>

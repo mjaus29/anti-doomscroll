@@ -30,7 +30,7 @@ bunx create-next-app@latest my-app
 ✔ Would you like to use Tailwind CSS?        › Yes   ← yes for most projects
 ✔ Would you like your code inside a `src/` directory?  › Yes ← recommended
 ✔ Would you like to use App Router?          › Yes   ← the only modern choice
-✔ Would you like to use Turbopack for `next dev`? › Yes ← default in v16
+✔ Would you like to use Turbopack? › Yes ← default in v16 (no flag needed)
 ✔ Would you like to customize the import alias? › No (or @/* which is default)
 ```
 
@@ -44,7 +44,6 @@ npx create-next-app@latest my-app \
   --tailwind \
   --src-dir \
   --app \
-  --turbopack \
   --import-alias "@/*" \
   --no-git          # skip git init if you want to control this
 ```
@@ -105,7 +104,7 @@ npx create-next-app@latest --example blog-starter my-app
 
 - Manual setup of TypeScript + ESLint + Tailwind + App Router has dozens of interdependencies and config files — `create-next-app` gets them right without you needing to know all of them yet.
 - Next.js 16 uses `next.config.ts` (TypeScript) by default — the old `next.config.js` still works but TypeScript config gives you type checking on Next.js configuration options.
-- The `--turbopack` flag enables the Rust-based bundler that replaces Webpack for dev — **10–700x faster** HMR (Hot Module Replacement). It's the default in Next.js 16.
+- Turbopack, the Rust-based bundler, replaces Webpack and is the default for both `next dev` and `next build` in Next.js 16 — no `--turbopack` flag needed (before v16 you opted in with `next dev --turbopack`). It gives **10–700x faster** HMR (Hot Module Replacement).
 - Choosing the wrong options (Pages Router, no TypeScript, no src/) creates friction when following any modern Next.js tutorial or working with teams — always use the options above.
 
 ---
@@ -118,7 +117,7 @@ npx create-next-app@latest --example blog-starter my-app
 
 ### Q2: What is Turbopack and why is it enabled by default in Next.js 16?
 
-**A:** Turbopack is the Rust-based successor to Webpack, built by the Vercel team. It bundles only what changed incrementally — making dev server startup and HMR dramatically faster than Webpack (10–700x in benchmarks for large apps). In Next.js 16, it's the default for `next dev`. The production build (`next build`) still uses a different pipeline — Turbopack for production reached stable in Next.js 15.2.
+**A:** Turbopack is the Rust-based successor to Webpack, built by the Vercel team. It bundles only what changed incrementally — making dev server startup and HMR dramatically faster than Webpack (10–700x in benchmarks for large apps). In Next.js 16 it is the default bundler for both `next dev` and `next build`, with no flag needed (before v16 you opted in with `--turbopack`; use `--webpack` to opt out).
 
 ### Q3: Should you use the Pages Router or App Router in a new Next.js 16 project?
 
@@ -204,7 +203,6 @@ pnpm dlx create-next-app@latest storefront \
   --tailwind \
   --src-dir \
   --app \
-  --turbopack \
   --import-alias "@/*" \
   --no-git
 
@@ -219,7 +217,7 @@ pnpm dev -- --port 3001
 // package.json
 {
   "scripts": {
-    "dev": "next dev --turbopack --port 3001"
+    "dev": "next dev --port 3001"
   }
 }
 ```

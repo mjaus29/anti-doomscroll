@@ -288,7 +288,7 @@ const RevenueChart = dynamic(() => import("./_components/revenue-chart"), {
   ssr: false,
   loading: () => (
     <div className="bg-white border rounded-xl p-5 animate-pulse">
-      <div className="h-5 w-32 bg-gray-200 rounded mb-4" />
+      <div className="h-5 w-32 bg-gray-200 rounded-sm mb-4" />
       <div className="flex items-end gap-2 h-32">
         {[1, 2, 3, 4, 5, 6, 7].map((i) => (
           <div

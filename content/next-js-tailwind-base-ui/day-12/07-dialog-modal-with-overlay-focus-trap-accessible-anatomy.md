@@ -33,7 +33,7 @@ function DialogBackdrop({
   return (
     <DialogPrimitive.Backdrop
       className={cn(
-        "fixed inset-0 bg-black/50 backdrop-blur-sm z-40",
+        "fixed inset-0 bg-black/50 backdrop-blur-xs z-40",
         "transition-opacity duration-200",
         "data-[starting-style]:opacity-0",
         "data-[ending-style]:opacity-0",
@@ -58,7 +58,7 @@ function DialogPopup({
         // Visual
         "bg-white dark:bg-gray-800",
         "border border-gray-200 dark:border-gray-700",
-        "rounded-2xl shadow-2xl outline-none",
+        "rounded-2xl shadow-2xl outline-hidden",
         // Transition
         "transition-all duration-200 ease-out",
         "data-[starting-style]:opacity-0 data-[starting-style]:scale-95 data-[starting-style]:-translate-x-1/2 data-[starting-style]:-translate-y-[calc(50%-8px)]",
@@ -171,7 +171,7 @@ function DialogClose({
         "hover:bg-gray-100 dark:hover:bg-gray-700",
         "hover:text-gray-700 dark:hover:text-gray-300",
         "transition-colors duration-150",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+        "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500",
         className
       )}
       {...props}
@@ -286,7 +286,7 @@ export function ConfirmDialog({
 ## W — Why It Matters
 
 - `Dialog.Title` and `Dialog.Description` are not optional from an accessibility standpoint — screen readers announce `aria-labelledby` and `aria-describedby` when the dialog opens. Without them, a screen reader user only hears "dialog" with no context. Base UI auto-wires these IDs, but you must render the components.
-- `Dialog.Backdrop` with `backdrop-blur-sm` provides the modern frosted glass backdrop effect — but ensure sufficient opacity (`bg-black/50` minimum) so the backdrop clearly separates the dialog from the content behind it for users with visual processing difficulties.
+- `Dialog.Backdrop` with `backdrop-blur-xs` provides the modern frosted glass backdrop effect — but ensure sufficient opacity (`bg-black/50` minimum) so the backdrop clearly separates the dialog from the content behind it for users with visual processing difficulties.
 - Focus trap is the hardest part of an accessible dialog — Base UI manages it automatically. Do not add `tabIndex={-1}` or `tabIndex={0}` to elements inside the dialog unless you have a specific reason, as it affects the focus trap's tab order.
 
 ---
@@ -369,7 +369,7 @@ export function FormDialog() {
     "border-gray-300 dark:border-gray-600",
     "bg-white dark:bg-gray-900 text-gray-900 dark:text-white",
     "placeholder:text-gray-400",
-    "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+    "focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-transparent",
     "transition-colors"
   );
 
@@ -379,7 +379,7 @@ export function FormDialog() {
         className="px-5 py-2.5 bg-blue-600 text-white
                                    font-semibold text-sm rounded-xl
                                    hover:bg-blue-700 transition-colors
-                                   focus-visible:outline-none focus-visible:ring-2
+                                   focus-visible:outline-hidden focus-visible:ring-2
                                    focus-visible:ring-blue-500 focus-visible:ring-offset-2"
       >
         Invite member

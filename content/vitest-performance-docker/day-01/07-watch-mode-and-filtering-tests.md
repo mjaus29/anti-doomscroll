@@ -37,6 +37,8 @@ npx vitest run formatPrice    # runs files with 'formatPrice' in the path
 
 # Run tests matching a test name pattern
 npx vitest run -t "adds two numbers"    # runs tests whose name matches
+# Vitest 5: the pattern is matched against the FULL name joined with ' > ' (e.g. "math > adds two numbers"),
+# so -t 'math adds' no longer matches; use -t adds or -t 'math.*adds'
 
 # Run a specific file
 npx vitest run src/utils/format.test.ts
@@ -72,8 +74,8 @@ npx vitest run format -t "handles zero"
 # ── Reporter options ───────────────────────────────────────────────────────
 npx vitest run --reporter=verbose    # show each individual test name
 npx vitest run --reporter=dot        # one dot per test (compact)
-npx vitest run --reporter=json       # machine-readable JSON output (CI)
-npx vitest run --reporter=junit      # JUnit XML (for CI test reporting dashboards)
+npx vitest run --reporter=json       # machine-readable JSON output (CI) (Vitest 5: written to a file by default)
+npx vitest run --reporter=junit      # JUnit XML (Vitest 5: written to a file under .vitest/ by default; add stdout: true or outputFile to control it)
 npx vitest run --reporter=html       # HTML report (saved to file)
 
 # Multiple reporters:

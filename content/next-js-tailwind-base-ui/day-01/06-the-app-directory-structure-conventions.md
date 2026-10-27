@@ -132,7 +132,7 @@ export default function ProductsError({
       <p className="text-gray-500 mt-2">{error.message}</p>
       <button
         onClick={reset}
-        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
+        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-sm"
       >
         Try Again
       </button>
@@ -288,19 +288,19 @@ export default function DashboardLayout({
         <nav className="space-y-2">
           <a
             href="/dashboard"
-            className="block px-3 py-2 rounded hover:bg-gray-700"
+            className="block px-3 py-2 rounded-sm hover:bg-gray-700"
           >
             Overview
           </a>
           <a
             href="/dashboard/orders"
-            className="block px-3 py-2 rounded hover:bg-gray-700"
+            className="block px-3 py-2 rounded-sm hover:bg-gray-700"
           >
             Orders
           </a>
           <a
             href="/dashboard/profile"
-            className="block px-3 py-2 rounded hover:bg-gray-700"
+            className="block px-3 py-2 rounded-sm hover:bg-gray-700"
           >
             Profile
           </a>
@@ -342,7 +342,7 @@ export default async function OrdersPage() {
 export default function OrdersLoading() {
   return (
     <div className="space-y-4">
-      <div className="animate-pulse h-8 w-48 bg-gray-200 rounded" />
+      <div className="animate-pulse h-8 w-48 bg-gray-200 rounded-sm" />
       {Array.from({ length: 4 }, (_, i) => (
         <div key={i} className="animate-pulse h-16 bg-gray-100 rounded-lg" />
       ))}

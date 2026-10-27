@@ -360,7 +360,7 @@ export async function CachedConfig() {
         <p className="text-xs font-semibold text-gray-500 uppercase">
           App Config
         </p>
-        <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded font-mono">
+        <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-sm font-mono">
           force-cache
         </span>
       </div>
@@ -423,7 +423,7 @@ export async function LiveMetrics() {
         <h3 className="font-semibold text-gray-900">Live Metrics</h3>
         <span
           className="text-xs bg-red-50 text-red-600 border border-red-200
-                         px-2 py-0.5 rounded font-mono"
+                         px-2 py-0.5 rounded-sm font-mono"
         >
           no-cache · direct DB
         </span>
@@ -498,8 +498,8 @@ export default async function LiveDashboardPage() {
                 <div className="grid grid-cols-2 gap-px bg-gray-100">
                   {[1, 2, 3, 4].map((i) => (
                     <div key={i} className="bg-white p-4 h-20 animate-pulse">
-                      <div className="h-3 bg-gray-200 rounded w-1/2 mb-2" />
-                      <div className="h-7 bg-gray-200 rounded w-1/3" />
+                      <div className="h-3 bg-gray-200 rounded-sm w-1/2 mb-2" />
+                      <div className="h-7 bg-gray-200 rounded-sm w-1/3" />
                     </div>
                   ))}
                 </div>

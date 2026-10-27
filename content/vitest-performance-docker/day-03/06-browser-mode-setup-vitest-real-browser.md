@@ -4,7 +4,7 @@
 
 ## T — TL;DR
 
-Vitest Browser Mode runs your tests inside a real browser (Chromium, Firefox, or WebKit) using Playwright or WebdriverIO as the provider. Set `browser.enabled: true` in config, install a provider, and your test files run in an actual browser tab — giving you real layout, real CSS, real Web APIs, and real network behaviour. No more jsdom limitations.
+Vitest Browser Mode runs your tests inside a real browser (Chromium, Firefox, or WebKit) using Playwright or WebdriverIO as the provider (in Vitest 5 `@vitest/browser-webdriverio` moved to the vitest-community organization and is community-maintained; `@vitest/browser-playwright` stays official). Set `browser.enabled: true` in config, install a provider, and your test files run in an actual browser tab — giving you real layout, real CSS, real Web APIs, and real network behaviour. No more jsdom limitations.
 
 ---
 

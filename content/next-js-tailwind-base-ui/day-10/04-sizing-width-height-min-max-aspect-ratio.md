@@ -259,7 +259,7 @@ export function MediaCard({
         {/* Category badge overlay */}
         <span
           className="absolute top-3 left-3 px-2.5 py-1 bg-black/60
-                          backdrop-blur-sm text-white text-xs font-semibold
+                          backdrop-blur-xs text-white text-xs font-semibold
                           rounded-full"
         >
           {category}

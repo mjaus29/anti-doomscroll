@@ -70,8 +70,10 @@ describe.concurrent('parallel within file', () => {
 
 ```typescript
 // ── Serial execution when needed ──────────────────────────────────────────
-// Use .sequential (or describe without .concurrent) to force serial order
-describe.sequential('must run in order', () => {
+// Vitest 5 removed .sequential / describe.sequential; tests are serial unless marked concurrent.
+// To opt out of a concurrent config, use `concurrent: false` (describe/test option or config).
+// Before Vitest 5 this was `describe.sequential(...)`.
+describe('must run in order', { concurrent: false }, () => {
   it('step 1: create', () => { /* ... */ })
   it('step 2: update', () => { /* ... */ })  // depends on step 1
   it('step 3: delete', () => { /* ... */ })
