@@ -45,7 +45,7 @@ Optional model override:
 COPILOT_CHALLENGE_MODEL=gpt-4.1
 ```
 
-The default is `gpt-5-mini`, which is one of Copilot's included `0x` premium-cost models on paid plans.
+The default is `gpt-6-luna`, which is one of Copilot's included `0x` premium-cost models on paid plans.
 
 OAuth endpoints in this app:
 
