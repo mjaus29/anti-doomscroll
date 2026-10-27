@@ -7,7 +7,11 @@ import {
   readAppState,
   writeAppState,
 } from "@/lib/app-state-client";
-import { getQuestionBank, type BankQuestion } from "@/lib/challenge-bank";
+import {
+  getQuestionBank,
+  pickNextQuestion,
+  type BankQuestion,
+} from "@/lib/challenge-bank";
 import {
   createChallengeReference,
   getChallengeTrackLabel,
@@ -220,17 +224,46 @@ function upsertSavedSession({
   session: PersistedSession;
 }): ChallengeArchive {
   const currentSessions = archive[groupId] ?? [];
-  const nextSessions = [
+  const nextSessions = dedupeSessionsByQuestion([
     createSavedChallengeSession(session),
     ...currentSessions.filter(
       (entry) => entry.challenge.id !== session.challenge.id
     ),
-  ];
+  ]);
 
   return {
     ...archive,
     [groupId]: nextSessions,
   };
+}
+
+// One saved session per bank question: sessions are newest first, so the
+// first one seen for a question wins and older copies are dropped.
+function dedupeSessionsByQuestion(
+  sessions: SavedChallengeSession[]
+): SavedChallengeSession[] {
+  const seenQuestionIds = new Set<string>();
+
+  return sessions.filter((session) => {
+    const { questionId } = session.challenge;
+    if (!questionId) {
+      return true;
+    }
+    if (seenQuestionIds.has(questionId)) {
+      return false;
+    }
+    seenQuestionIds.add(questionId);
+    return true;
+  });
+}
+
+function dedupeArchive(archive: ChallengeArchive): ChallengeArchive {
+  return Object.fromEntries(
+    Object.entries(archive).map(([groupId, sessions]) => [
+      groupId,
+      dedupeSessionsByQuestion(sessions),
+    ])
+  );
 }
 
 function updateGeneratedHistory({
@@ -1367,7 +1400,7 @@ export function ChallengeLab({
           ? storedArchiveValue
           : null;
         if (storedArchive) {
-          setArchive(storedArchive);
+          setArchive(dedupeArchive(storedArchive));
         }
 
         const storedSessionValue = storedValues[STORAGE_KEYS.session];
@@ -1761,6 +1794,44 @@ export function ChallengeLab({
     }
   };
 
+  // A question is generated once; picking it again reopens the latest saved
+  // session (with its draft) instead of asking Copilot for a new version.
+  const pickQuestion = (questionId: string) => {
+    if (currentChallenge?.questionId === questionId) {
+      return;
+    }
+
+    const savedSession = currentSavedSessions.find(
+      (session) => session.challenge.questionId === questionId
+    );
+    if (savedSession) {
+      restoreSavedSession(savedSession);
+      return;
+    }
+
+    void generateChallenge(questionId);
+  };
+
+  // Picks the next question here (not on the server) so a question that was
+  // already generated reopens from the archive instead of regenerating.
+  const openNextQuestion = () => {
+    if (!selectedGroupId) {
+      void generateChallenge();
+      return;
+    }
+
+    const next = pickNextQuestion({
+      groupId: selectedGroupId,
+      difficulty: difficultyChoice === "auto" ? autoDifficulty : difficultyChoice,
+      seenIds: seenQuestionIds,
+      passedIds: passedQuestionIds,
+      excludeId: currentChallenge?.questionId,
+    });
+
+    if (next) pickQuestion(next.id);
+    else void generateChallenge();
+  };
+
   const runTests = async () => {
     if (!currentChallenge?.testCases?.length) {
       return;
@@ -1888,8 +1959,8 @@ export function ChallengeLab({
           isGenerating={isGenerating}
           onSelectGroup={setSelectedGroupId}
           onDifficultyChange={setDifficultyChoice}
-          onGenerateChallenge={() => void generateChallenge()}
-          onPickQuestion={(questionId) => void generateChallenge(questionId)}
+          onGenerateChallenge={openNextQuestion}
+          onPickQuestion={pickQuestion}
           onRestoreSession={restoreSavedSession}
         />
 
@@ -1913,7 +1984,7 @@ export function ChallengeLab({
                 onUserCodeChange={setUserCode}
                 onRunTests={() => void runTests()}
                 onReview={() => void reviewSolution()}
-                onGenerateAnother={() => void generateChallenge()}
+                onGenerateAnother={openNextQuestion}
               />
               <ChallengeNoticeStack
                 statusMessage={statusMessage}
@@ -1928,7 +1999,7 @@ export function ChallengeLab({
               error={error}
               authUrl={authUrl}
               isGenerating={isGenerating}
-              onGenerateChallenge={() => void generateChallenge()}
+              onGenerateChallenge={openNextQuestion}
             />
           )}
         </div>

@@ -209,13 +209,18 @@ export function pickNextQuestion({
   difficulty,
   seenIds,
   passedIds,
+  excludeId,
 }: {
   groupId: string;
   difficulty: ChallengeDifficulty;
   seenIds: ReadonlySet<string>;
   passedIds: ReadonlySet<string>;
+  /** Skip this question (the one already open) so "next" always moves on. */
+  excludeId?: string;
 }): BankQuestion | null {
-  const atLevel = getQuestionBank(groupId).filter((question) => question.difficulty === difficulty);
+  const atLevel = getQuestionBank(groupId).filter(
+    (question) => question.difficulty === difficulty && question.id !== excludeId
+  );
   return (
     atLevel.find((question) => !seenIds.has(question.id)) ??
     atLevel.find((question) => !passedIds.has(question.id)) ??
