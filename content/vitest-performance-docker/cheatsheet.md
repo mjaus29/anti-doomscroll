@@ -218,7 +218,7 @@ module.exports = { ci: { assert: { assertions: {
 | Image | `<Image src=... width height sizes="100vw" preload />` | Next.js 16: `preload` inserts a preload `<link>`, only for the LCP image; `priority` is deprecated (docs: usually prefer `loading="eager"` or `fetchPriority="high"`, not combined with `preload`) |
 | Font | `Inter({ subsets: ['latin'], display: 'swap' })` | Self-hosted, size-adjusted fallback → near-zero CLS |
 | Third-party script | `<Script strategy="afterInteractive" />` | `lazyOnload` for chat widgets; `beforeInteractive` only for must-run-first scripts |
-| Data cache | `fetch(url, { next: { revalidate: 3600, tags: ['products'] } })` | `revalidateTag('products')` busts it on demand |
+| Data cache | `fetch(url, { next: { revalidate: 3600, tags: ['products'] } })` | `revalidateTag('products', 'max')` busts it on demand (Next 16 needs the second argument) |
 
 Lessons: [Lab vs Field Data](/group/vitest-performance-docker/day/05/06-lab-vs-field-data-pagespeed-insights-and-lighthouse) · [Performance Budgets and Lighthouse CI](/group/vitest-performance-docker/day/05/08-performance-budgets-and-lighthouse-ci) · [Bundle Control](/group/vitest-performance-docker/day/05/09-bundle-control-code-splitting-and-lazy-loading) · [Next.js Optimization](/group/vitest-performance-docker/day/05/10-next-js-optimization-image-font-script-and-caching)
 

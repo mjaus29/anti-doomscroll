@@ -427,7 +427,7 @@ export const adminProcedure = protectedProcedure.use(enforceAdmin)
 
 **`TRPCError` codes:** `BAD_REQUEST` 400, `UNAUTHORIZED` 401, `FORBIDDEN` 403, `NOT_FOUND` 404, `CONFLICT` 409, `TOO_MANY_REQUESTS` 429, `INTERNAL_SERVER_ERROR` 500.
 
-**errorFormatter:** add `zodError: error.cause instanceof ZodError ? error.cause.flatten() : null` to `shape.data`; read `err.data?.zodError?.fieldErrors` on the client. Map Prisma codes to `TRPCError` in one shared `handlePrismaError` helper; never leak raw messages.
+**errorFormatter:** add `zodError: error.cause instanceof ZodError ? z.flattenError(error.cause) : null` to `shape.data` (Zod 3: `error.cause.flatten()`); read `err.data?.zodError?.fieldErrors` on the client. Map Prisma codes to `TRPCError` in one shared `handlePrismaError` helper; never leak raw messages.
 
 Lessons: [Middleware](/group/postgresql-prisma-trpc-betterauth-pino/day/13/01-middleware-t-middleware-next-context-transformation) · [Authorization](/group/postgresql-prisma-trpc-betterauth-pino/day/13/03-authorization-patterns-ownership-and-rbac) · [Error formatting](/group/postgresql-prisma-trpc-betterauth-pino/day/13/06-error-formatting-custom-shapes-client-handling) · [Prisma integration](/group/postgresql-prisma-trpc-betterauth-pino/day/13/07-prisma-integration-transactions-error-codes)
 
